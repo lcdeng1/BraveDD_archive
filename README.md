@@ -6,9 +6,10 @@ to encode functions over binary variables with various ranges,
 various (including dynamic) reduction rules, possibly with edge values,
 swap flags, and complement flags.
 This supports the following types of BDDs:
-    - Byrant's fully-reduced BDDs (standard BDDs)
+    - Bryant's fully-reduced BDDs (standard ROBDDs)
     - Zero suppressed BDDs
-    - Edge valued BDDs
+    - Multi-terminal BDDs
+    - Edge-valued BDDs
     - ESR, CESR, and RexBDDs
 
 
