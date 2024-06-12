@@ -1,0 +1,5 @@
+*.o
+build_bdd
+read_bdd
+read_bdds
+test_parser
