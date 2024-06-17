@@ -1,0 +1,6 @@
+*.sh
+src/info.h
+build*
+*.dot
+*.pdf
+*.tar.gz
