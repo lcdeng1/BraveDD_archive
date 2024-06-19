@@ -15,11 +15,23 @@ This supports the following types of BDDs:
 
 ## Current status
 
-Right now this is under development ...
+Under development ... :-)
 
 ## Building the library
 
 [CMake](https://cmake.org/) is required to build.
+
+0. Building as preset:
+    ```
+    cmake . --preset==release
+    ```
+    or
+    ```
+    cmake . --preset==debug
+    cd build-debug
+    make
+    ```
+OR:
 1. Set up the building location:
     ```
     $ mkdir build
@@ -35,6 +47,23 @@ Right now this is under development ...
    ```
    $ make clean
    ```
+## Running examples
+The ```examples/example_0.cc``` is a simple example to use this library. You can run it as follows:
+
+```
+cd build/examples
+./example_0
+```
+For now, it will output the basic information:
+```
+****************************[BraveDD]****************************
+Version: 	0.0.1
+Homepage: 	https://github.com/asminer/brave_dd
+Copyright: 	Copyright (C) 2024, .
+License: 	Apache License, version 2.0
+Last Update: 	Jun 14, 2024
+*****************************************************************
+```
 
 
 ##### Acknowledgments
