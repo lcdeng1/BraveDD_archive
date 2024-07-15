@@ -8,7 +8,7 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::EdgeLabel::EdgeLabel()
+BRAVE_DD::EdgeLabels::EdgeLabels()
 {
 
 }

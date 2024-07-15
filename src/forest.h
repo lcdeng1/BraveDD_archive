@@ -251,6 +251,7 @@ class BRAVE_DD::Forest {
     // TBD
 
     /****************************** I/O *****************************/
+    void exportSetting();
     void exportEdge();
     void exportForest();
     // TBD

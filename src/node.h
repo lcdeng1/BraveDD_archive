@@ -2,12 +2,11 @@
 #define BRAVE_DD_NODE_H
 
 #include "defines.h"
-#include "edge_label.h"
 #include "edge.h"
 
 namespace BRAVE_DD {
-    class Forest;
     class Node;
+    class Mxde;
 
 }
 
@@ -21,19 +20,17 @@ class BRAVE_DD::Node {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-    Node(bool isRelation);
+    Node();
     ~Node();
 
     /// Methods =====================================================
     /**
      *  Get the down node handle for the given index of child
-     *  0: low/left or 00 for relation nodes
-     *  1: high/right or 01 for relation nodes
-     *  2: 10 child for relation nodes
-     *  3: 11 child for relation nodes
+     *  0: low/left
+     *  1: high/right
      */
-    inline NodeHandle getChild(int i) const {
-        return childNode[i];
+    inline Edge getChild(bool i) const {
+        return i?child1:child0;
     }
     
     
@@ -46,18 +43,35 @@ class BRAVE_DD::Node {
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-    /// Level of the node
-    //  Note:
-    //      >=0: for regular node, or for unprimed node of relation
-    //      <0: illegal for regular node, or for primed node of relation.
-    int level;
-
-    NodeHandle* childNode;      // Down pointers
-    EdgeLabel* childEdge;       // Edge labels
+    Edge child0, child1;
     unsigned long hashValue;    // Hash of the node
-    unsigned parentFID;         // ID of the parent forest
-    const Forest* parentForest; // Parent forest where the node belongs
 
+};
+
+// ******************************************************************
+// *                                                                *
+// *                           Node  class                          *
+// *                                                                *
+// ******************************************************************
+
+class BRAVE_DD::Mxde {
+    /*-------------------------------------------------------------*/
+    public:
+    /*-------------------------------------------------------------*/
+    Mxde();
+    ~Mxde();
+
+    /// Get this node's hash value
+    inline unsigned long hash() const { return hashValue; }
+
+    /// Compute the node's hash value
+    void computeHash();
+
+    /*-------------------------------------------------------------*/
+    private:
+    /*-------------------------------------------------------------*/
+    Edge child00, child01, child10, child11;
+    unsigned long hashValue;
 };
 
 #endif

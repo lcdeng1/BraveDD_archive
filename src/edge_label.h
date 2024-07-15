@@ -8,7 +8,7 @@
 
 //
 namespace BRAVE_DD {
-    class EdgeLabel;
+    class EdgeLabels;
 
     // input and output
     // TBD
@@ -18,26 +18,26 @@ namespace BRAVE_DD {
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                          EdgeLabel class                       *
+// *                          EdgeLabels class                       *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
-class BRAVE_DD::EdgeLabel {
+class BRAVE_DD::EdgeLabels {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
         /// Initializes to VOID
-        EdgeLabel();
+        EdgeLabels();
         /// Initializes to RULE
-        EdgeLabel(ReductionRule v);
+        EdgeLabels(ReductionRule v);
         /// Initializes to INT
-        EdgeLabel(int v);
+        EdgeLabels(int v);
         /// Initializes to LONG
-        EdgeLabel(long v);
+        EdgeLabels(long v);
         /// Initializes to FLOAT
-        EdgeLabel(float v);
+        EdgeLabels(float v);
         /// Initializes to DOUBLE
-        EdgeLabel(double v);
+        EdgeLabels(double v);
 
         //******************************************
         //  Checkers for the value type
@@ -372,7 +372,7 @@ class BRAVE_DD::EdgeLabel {
         inline bool equalsSwap(bool s) const {
             return s == swap;
         }
-        inline bool equalsEdge(const EdgeLabel &v) const {
+        inline bool equalsEdge(const EdgeLabels &v) const {
             if (v.getComp() != complement || v.getSwap() != swap) return false;
             switch (valueType) {
                 case ValueType::VOID:

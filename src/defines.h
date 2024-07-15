@@ -71,29 +71,6 @@ namespace BRAVE_DD {
         540916397205031, 0 };
 
     /**
-     *  Labels for edge rule and flags storage
-     *  Each label is constructed as:
-     *            [ unused(1 bit) | rule(4 bits) | flags(3 bits)]
-     *  
-     */
-    typedef uint8_t EdgeLabels;
-
-    /**
-     *  Handles for edges storage
-     *  This effectively limits the number of possible nodes per forest.
-     *  Each handle is constructed as:
-     *            [ rule | flags | level | nodeIdx ]
-     *  "nodeIdx" limits the number of nodes per level in node manager.
-     * 
-     *  The number of bits occupied by each part depends on the forest setting:
-     *      Bits of "rule" = |log(numRules)|;
-     *      Bits of "flags" = complement bit + swap bits;
-     *      Bits of "level" = |log(maxLevel)|;
-     *      Bits of "nodeIdx" = the remain bits;
-     */
-    typedef uint64_t EdgeHandle;
-
-    /**
      *  Handles for nodes storage
      *  This effectively limits the number of possible nodes per forest.
      *  Each handle is constructed as:
@@ -103,7 +80,7 @@ namespace BRAVE_DD {
      *  "index" in node manager occupies the rest bits
      *
      */
-    typedef uint64_t NodeHandle;
+    typedef uint32_t NodeHandle;
 
 }; // namespace
 

@@ -5,6 +5,8 @@
 #include "io.h"
 
 namespace BRAVE_DD {
+    /* Operators for Edges */
+
     Edge operator+(const Edge &e1, const Edge &e2);
     Edge operator-(const Edge &e1, const Edge &e2);
     Edge operator*(const Edge &e1, const Edge &e2);
@@ -22,7 +24,28 @@ namespace BRAVE_DD {
     Edge operator&=(Edge &e1, const Edge &e2);
     Edge operator|=(Edge &e1, const Edge &e2);
 
+    /* Operators for Roots */
+    
+    Root operator+(const Root &e1, const Root &e2);
+    Root operator-(const Root &e1, const Root &e2);
+    Root operator*(const Root &e1, const Root &e2);
+    Root operator/(const Root &e1, const Root &e2);
+
+    Root operator&(const Root &e1, const Root &e2);
+    Root operator|(const Root &e1, const Root &e2);
+    Root operator!(const Root &e);
+
+    Root operator+=(Root &e1, const Root &e2);
+    Root operator-=(Root &e1, const Root &e2);
+    Root operator*=(Root &e1, const Root &e2);
+    Root operator/=(Root &e1, const Root &e2);
+
+    Root operator&=(Root &e1, const Root &e2);
+    Root operator|=(Root &e1, const Root &e2);
+
     /* These will let us do C++ style output, with our output class */
+    
+    inline Output& operator<<(Output &s, const ForestSetting &setting);
     inline Output& operator<<(Output &s, const Edge &e);
     inline Output& operator<<(Output &s, char x);
     inline Output& operator<<(Output &s, std::string x);

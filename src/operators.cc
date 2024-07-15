@@ -84,7 +84,88 @@ namespace BRAVE_DD {
         return e1;
     }
 
+    Root operator+(const Root &e1, const Root &e2)
+    {
+        Root out;
+        // implementations TBD
+        return out;
+    }
+    Root operator-(const Root &e1, const Root &e2)
+    {
+        Root out;
+        // implementations TBD
+        return out;
+    }
+    Root operator*(const Root &e1, const Root &e2){
+        Root out;
+        // implementations TBD
+        return out;
+    }
+    Root operator/(const Root &e1, const Root &e2)
+    {
+        Root out;
+        // implementations TBD
+        return out;
+    }
+
+    Root operator&(const Root &e1, const Root &e2)
+    {
+        Root out;
+        // implementations TBD
+        return out;
+    }
+    Root operator|(const Root &e1, const Root &e2)
+    {
+        Root out;
+        // implementations TBD
+        return out;
+    }
+    Root operator!(const Root &e)
+    {
+        // implementations TBD
+        return e;
+    }
+
+    Root operator+=(Root &e1, const Root &e2)
+    {
+        // implementations TBD
+        return e1;
+    }
+    Root operator-=(Root &e1, const Root &e2)
+    {
+        // implementations TBD
+        return e1;
+    }
+    Root operator*=(Root &e1, const Root &e2)
+    {
+        // implementations TBD
+        return e1;
+    }
+    Root operator/=(Root &e1, const Root &e2)
+    {
+        // implementations TBD
+        return e1;
+    }
+
+    Root operator&=(Root &e1, const Root &e2)
+    {
+        // implementations TBD
+        return e1;
+    }
+    Root operator|=(Root &e1, const Root &e2)
+    {
+        // implementations TBD
+        return e1;
+    }
+
     /* These will let us do C++ style output, with our output class */
+
+    inline Output& operator<<(Output &s, const ForestSetting &setting)
+    {
+        //
+        return s;
+    }
+
     
     inline Output& operator<<(Output &s, const Edge &e)
     {

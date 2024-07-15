@@ -63,6 +63,11 @@ BRAVE_DD::Root::Root(Forest* f)
 {
     //
 }
+BRAVE_DD::Root::Root(Forest* f, const Edge& e)
+:edge(e)
+{
+    //
+}
 BRAVE_DD::Root::~Root()
 {
     //

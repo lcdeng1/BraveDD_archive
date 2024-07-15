@@ -23,7 +23,7 @@ int main () {
     setting1.setEncodeMechanism(EDGE_PLUS);    // Encoding mechanism
     setting1.setDim(1);                        // Dimension
     setting1.setReductionType(FULLY);          // Reudction type
-    // ^ may add or delete rules here             // Add/delete reduction rules
+    // ^ may add or delete rules here          // Add/delete reduction rules
     setting1.setSwapType(NO_SWAP);             // Swap flag
     setting1.setCompType(COMP);                // Complement flag
     setting1.setMergeType(PUSH_UP);            // Merge type (this will be removed)
@@ -36,14 +36,8 @@ int main () {
      * Note: this will construct the setting as predefined BDD
      *       with the given name.
      */
-    // ForestSetting* setting2 = new ForestSetting("RexBDD", 10, 0);
+    // ForestSetting* setting2 = new ForestSetting("RexBDD", 10);
     ForestSetting setting2("RexBDD", 10);
-
-    /**
-     * Configuring the setting users need
-     * Note: it will check the consistency.
-     */
-    
     
     /**
      * Forest construction
@@ -52,11 +46,11 @@ int main () {
     Forest* forest1 = new Forest(setting1);
     Forest* forest2 = new Forest(setting2);
 
-    // /**
-    //  * Some Operations
-    //  * 
-    //  */
-    // // Edges
+    /**
+     * Some Operations
+     * 
+     */
+    // Edges
     Edge edge1, edge2, edge3, edge4;
     forest1->makeConstant(0, 5, &edge1);
     forest1->makeConstant(1, 5, &edge2);
@@ -67,6 +61,10 @@ int main () {
     edge1 += edge2;
     edge3 = edge3 & edge4;
     edge3 |= edge4;
+
+    // Roots
+    Root root1(forest1, edge1), root2(forest1, edge2);
+    root1 += root2;
 
     // Forests
     
