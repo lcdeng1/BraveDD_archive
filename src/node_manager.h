@@ -89,7 +89,6 @@ class BRAVE_DD::NodeManager {
             /// Shrink the hash table
             void shrink();
 
-        private:
             Forest* parent;             // Parent forest
             PackedNode* nodes;          // Actual pack node storage
             int sizeIndex;              // Index of prime number for size

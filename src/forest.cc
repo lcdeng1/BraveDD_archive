@@ -8,16 +8,31 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::Forest::Forest(ForestSetting* s)
+BRAVE_DD::Forest::Forest(const ForestSetting& s):setting(s)
 {
-    //
-    setting = s;
+    try
+    {
+        /* Check consistency */
+        s.checkConsistency();
+    }
+    catch(const BRAVE_DD::error& e)
+    {
+        std::cerr << e.what() << '\n';
+        exit(e.getCode());
+    }
+
     nodeMan = new NodeManager(this);
+    uniqueTable = new UniqueTable(this);
+    stats = new Statistics();
 
 }
 BRAVE_DD::Forest::~Forest()
 {
     //
+    // setting.~ForestSetting();
+    delete nodeMan;
+    delete uniqueTable;
+    delete stats;
 }
 
 /**************************** Make edge *************************/
