@@ -23,6 +23,7 @@ int main () {
     setting1.setEncodeMechanism(EDGE_PLUS);    // Encoding mechanism
     setting1.setDim(1);                        // Dimension
     setting1.setReductionType(FULLY);          // Reudction type
+    setting1.addReductionRule(RULE_AH0);
     // ^ may add or delete rules here          // Add/delete reduction rules
     setting1.setSwapType(NO_SWAP);             // Swap flag
     setting1.setCompType(COMP);                // Complement flag
@@ -50,21 +51,15 @@ int main () {
      * Some Operations
      * 
      */
-    // Edges
-    Edge edge1, edge2, edge3, edge4;
-    forest1->makeConstant(0, 5, &edge1);
-    forest1->makeConstant(1, 5, &edge2);
-    forest2->makeVariable(5, &edge3);
-    forest2->makeVariable(5, &edge4);
-    edge1 = !edge2;
-    edge1 = edge1 + edge2;
-    edge1 += edge2;
-    edge3 = edge3 & edge4;
-    edge3 |= edge4;
 
     // Roots
-    Root root1(forest1, edge1), root2(forest1, edge2);
+    Root root1(forest1), root2(forest1);
+    root1 = forest1->constant(5);
+    root2 = forest1->variable(5);
     root1 += root2;
+
+    EdgeLabel l;
+    ReductionRule r = unpackRule(l);
 
     // Forests
     
@@ -75,8 +70,8 @@ int main () {
      * Clean Everything
      * 
      */
-    forest1->~Forest();
-    forest2->~Forest();
+    delete forest1;
+    delete forest2;
 
     return 0;
 }

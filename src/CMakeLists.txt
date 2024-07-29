@@ -1,5 +1,6 @@
 # Add source files
-file(GLOB SRC_FILES "*.cc" "*.cpp")
+file(GLOB_RECURSE SRC_FILES "*.cc" "*.cpp")
+file(GLOB_RECURSE HEADER_FILES "*.h")
 
 # Add compile options
 if (MSVC)
@@ -14,5 +15,5 @@ add_library(BraveDD ${SRC_FILES})
 # Add include directories
 target_include_directories(BraveDD
     PUBLIC
-    ${PROJECT_SOURCE_DIR}/src
+    ${HEADER_FILES}
 )

@@ -4,6 +4,7 @@
 #include "defines.h"
 #include "setting.h"
 #include "node.h"
+#include "edge.h"
 #include "packed_node.h"
 #include "node_manager.h"
 #include "unique_table.h"
@@ -221,9 +222,9 @@ class BRAVE_DD::Forest {
      */
     void reduceEdge(unsigned lvl, EdgeLabel label, Node* P, Edge* out);
 
-    /**************************** Make edge *************************/
-    void makeConstant(long val, unsigned lvl, Edge* out);
-    void makeVariable(unsigned lvl, Edge* out);
+    /**************************** Make root *************************/
+    Root constant(int val);
+    Root variable(int lvl);
 
     /************************* Within Operations ********************/
     unsigned evaluate(unsigned lvl, Edge* root, bool* vars);

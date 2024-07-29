@@ -24,19 +24,31 @@ namespace BRAVE_DD {
     /* Get the complement flag from the given EdgeLabel */
     static inline bool unpackComp(const EdgeLabel label)
     {
-        uint8_t COMP_MASK = (uint8_t)(0x01 << 3);
+        uint8_t COMP_MASK = (uint8_t)0x01;
         return label & COMP_MASK;
     }
     /* Get the swap flag from the given EdgeLabel */
     static inline bool unpackSwap(const EdgeLabel label, const bool isTo)
     {
-        uint64_t SWAP_MASK = (uint64_t)(0x01 << 4);
+        uint64_t SWAP_MASK = (uint64_t)(0x01 << 1);
         return isTo ? (label & SWAP_MASK) : (label & (SWAP_MASK << 1));
     }
-
+    /* Packing */
     static inline void packRule(EdgeLabel label, ReductionRule rule)
     {
-        //
+        label = label | ((uint8_t)(rule) << 3);
+    }
+    static inline void packComp(EdgeLabel label, bool comp)
+    {
+        label = label | ((uint8_t)comp);
+    }
+    static inline void packSwap(EdgeLabel label, bool swap)
+    {
+        label = label | ((uint8_t)swap << 2);
+    }
+    static inline void packSwapTo(EdgeLabel label, bool swap)
+    {
+        label = label | ((uint8_t)swap << 1);
     }
 
     /**

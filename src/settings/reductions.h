@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <algorithm>  // for std::count
-#include "error.h"
+#include "../error.h"
 
 namespace BRAVE_DD {
     ///  Reduction type
@@ -50,8 +50,7 @@ namespace BRAVE_DD {
         RULE_AH1 = 7,
         RULE_I0  = 8,
         RULE_X   = 9,
-        RULE_I1  = 10,
-        // INVALID_RULE = -1   // the end of the reduction rules set
+        RULE_I1  = 10
     } ReductionRule;
     /// Reduction type and set of rules
     class Reductions;

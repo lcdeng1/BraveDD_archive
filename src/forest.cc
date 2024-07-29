@@ -36,11 +36,15 @@ BRAVE_DD::Forest::~Forest()
 }
 
 /**************************** Make edge *************************/
-void BRAVE_DD::Forest::makeConstant(long val, unsigned lvl, Edge* out)
+BRAVE_DD::Root BRAVE_DD::Forest::constant(int val)
 {
-    //
+    BRAVE_DD::Root result(this);
+    // TBD
+    return result;
 }
-void BRAVE_DD::Forest::makeVariable(unsigned lvl, Edge* out)
+BRAVE_DD::Root BRAVE_DD::Forest::variable(int lvl)
 {
-    //
+    BRAVE_DD::Root result(this);
+    // TBD
+    return result;
 }

@@ -2,9 +2,9 @@
 #define BRAVE_DD_SETTING_H
 
 #include "defines.h"
-#include "range.h"
-#include "reductions.h"
-#include "edge_flags.h"
+#include "settings/range.h"
+#include "settings/reductions.h"
+#include "settings/edge_flags.h"
 
 namespace BRAVE_DD {
     /// Encoding mechanism
