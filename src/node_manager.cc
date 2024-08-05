@@ -1,5 +1,6 @@
 #include "node_manager.h"
 
+using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -8,11 +9,11 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::NodeManager::NodeManager(Forest *f)
+NodeManager::NodeManager(Forest *f)
 {
     //
 }
-BRAVE_DD::NodeManager::~NodeManager()
+NodeManager::~NodeManager()
 {
     //
 }

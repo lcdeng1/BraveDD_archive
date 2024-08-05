@@ -6,7 +6,7 @@
 
 namespace BRAVE_DD {
     class Node;
-    class Mxde;
+    class Mxnode;
 
 }
 
@@ -50,16 +50,16 @@ class BRAVE_DD::Node {
 
 // ******************************************************************
 // *                                                                *
-// *                           Node  class                          *
+// *                           Mxnode  class                          *
 // *                                                                *
 // ******************************************************************
 
-class BRAVE_DD::Mxde {
+class BRAVE_DD::Mxnode {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-    Mxde();
-    ~Mxde();
+    Mxnode();
+    ~Mxnode();
 
     /// Get this node's hash value
     inline unsigned long hash() const { return hashValue; }

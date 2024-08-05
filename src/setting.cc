@@ -1,6 +1,7 @@
 #include "setting.h"
 #include <regex>
 
+using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -9,12 +10,12 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::VarDomain::VarDomain(unsigned size)
+VarDomain::VarDomain(uint16_t size)
 {
     maxLevel = size;
     // ordering TBD
 }
-BRAVE_DD::VarDomain::~VarDomain()
+VarDomain::~VarDomain()
 {
     //
 }
@@ -27,7 +28,7 @@ BRAVE_DD::VarDomain::~VarDomain()
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::ForestSetting::ForestSetting(const unsigned numVals)
+ForestSetting::ForestSetting(const unsigned numVals)
 :domain(numVals), range(BOOLEAN, VOID), reductions(REX), flags(ONE, COMP)
 {
     // User defined number of variables
@@ -37,7 +38,7 @@ BRAVE_DD::ForestSetting::ForestSetting(const unsigned numVals)
     name = "RexBDD";
 }
 
-BRAVE_DD::ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals)
+ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals)
 :domain(numVals), range(BOOLEAN, VOID), reductions(REX), flags(ONE, COMP)
 {
     // BDDs
@@ -73,7 +74,7 @@ BRAVE_DD::ForestSetting::ForestSetting(const std::string& bdd, const unsigned nu
     }
 }
 
-BRAVE_DD::ForestSetting::~ForestSetting()
+ForestSetting::~ForestSetting()
 {
     //
 }

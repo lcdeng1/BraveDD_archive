@@ -1,7 +1,9 @@
 #include "defines.h"
 #include "error.h"
 
-const char* BRAVE_DD::error::getName() const
+using namespace BRAVE_DD;
+
+const char* error::getName() const
 {
     switch (errCode) {
         case  ErrCode::UNINITIALIZED:         return "Uninitialized";

@@ -156,6 +156,7 @@ class BRAVE_DD::UniqueTable {
             private:
                 Forest* parent;
                 NodeHandle* table;
+                uint16_t level;
                 int sizeIndex;              // Table size at this level, index of PRIMES
                 uint64_t numEntries;        // The number of nodes at this level
                 unsigned nextExpandSize;    // The size for next expand

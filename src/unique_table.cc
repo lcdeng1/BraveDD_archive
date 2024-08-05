@@ -1,6 +1,7 @@
 #include "unique_table.h"
 #include "forest.h"
 
+using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -9,15 +10,15 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::UniqueTable::UniqueTable()
+UniqueTable::UniqueTable()
 {
     //
 }
-BRAVE_DD::UniqueTable::UniqueTable(Forest* f)
+UniqueTable::UniqueTable(Forest* f)
 {
     //
 }
-BRAVE_DD::UniqueTable::~UniqueTable()
+UniqueTable::~UniqueTable()
 {
     //
 }
@@ -31,22 +32,22 @@ BRAVE_DD::UniqueTable::~UniqueTable()
         bool equals(int p): return true iff this item equals node p.
 */
 template <typename T> 
-BRAVE_DD::NodeHandle BRAVE_DD::UniqueTable::subtable::find(const T &key) const
+NodeHandle UniqueTable::subtable::find(const T &key) const
 {
     unsigned h = key.hash() % PRIMES[sizeIndex];
-    // BRAVE_DD::CHECK_RANGE(__FILE__, __LINE__, 0u, h, PRIMES[sizeIndex]);
+    // CHECK_RANGE(__FILE__, __LINE__, 0u, h, PRIMES[sizeIndex]);
     NodeHandle prev = 0;
     for (NodeHandle ptr = table[h];
             ptr != 0;
-            ptr = parent->getNodeNext(ptr))
+            ptr = parent->getNodeNext(level, ptr))
     {
-        if (parent->areDuplicates(ptr, key)) {
+        if (parent->areDuplicates(level, ptr, key)) {
             // MATCH
             if (ptr != table[h]) {
                 // Move to front
                 BRAVE_DD_DCASSERT(prev);
-                parent->setNodeNext(prev, parent->getNodeNext(ptr));
-                parent->setNodeNext(ptr, table[h]);
+                parent->setNodeNext(level, prev, parent->getNodeNext(level, ptr));
+                parent->setNodeNext(level, ptr, table[h]);
                 table[h] = ptr;
             }
             BRAVE_DD_DCASSERT(table[h] == ptr);

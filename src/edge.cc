@@ -1,5 +1,6 @@
 #include "edge.h"
 
+using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -8,19 +9,19 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::EdgeValue::EdgeValue()
+EdgeValue::EdgeValue()
 {
     //
 }
-BRAVE_DD::EdgeValue::EdgeValue(int i)
+EdgeValue::EdgeValue(int i)
 {
     //
 }
-BRAVE_DD::EdgeValue::EdgeValue(double d)
+EdgeValue::EdgeValue(double d)
 {
     //
 }
-BRAVE_DD::EdgeValue::EdgeValue(float f)
+EdgeValue::EdgeValue(float f)
 {
     //
 }
@@ -33,42 +34,17 @@ BRAVE_DD::EdgeValue::EdgeValue(float f)
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::Edge::Edge()
+Edge::Edge()
 {
     handle = 0;
     value = 0;
     display = "<>";
 }
-BRAVE_DD::Edge::Edge(const Edge &e)
+Edge::Edge(const Edge &e)
 {
     //
 }
-BRAVE_DD::Edge::~Edge()
+Edge::~Edge()
 {
 
-}
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                         Root  methods                          *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-BRAVE_DD::Root::Root()
-{
-    //
-}
-BRAVE_DD::Root::Root(Forest* f)
-{
-    //
-}
-BRAVE_DD::Root::Root(Forest* f, const Edge& e)
-:edge(e)
-{
-    //
-}
-BRAVE_DD::Root::~Root()
-{
-    //
 }

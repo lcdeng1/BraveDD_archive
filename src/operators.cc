@@ -84,78 +84,83 @@ namespace BRAVE_DD {
         return e1;
     }
 
-    Root operator+(const Root &e1, const Root &e2)
+    Func operator+(const Func &e1, const Func &e2)
     {
-        Root out;
+        Func out;
         // implementations TBD
         return out;
     }
-    Root operator-(const Root &e1, const Root &e2)
+    Func operator-(const Func &e1, const Func &e2)
     {
-        Root out;
+        Func out;
         // implementations TBD
         return out;
     }
-    Root operator*(const Root &e1, const Root &e2){
-        Root out;
+    Func operator*(const Func &e1, const Func &e2){
+        Func out;
         // implementations TBD
         return out;
     }
-    Root operator/(const Root &e1, const Root &e2)
+    Func operator/(const Func &e1, const Func &e2)
     {
-        Root out;
+        Func out;
         // implementations TBD
         return out;
     }
 
-    Root operator&(const Root &e1, const Root &e2)
+    Func operator&(const Func &e1, const Func &e2)
     {
-        Root out;
+        Func out;
         // implementations TBD
         return out;
     }
-    Root operator|(const Root &e1, const Root &e2)
+    Func operator|(const Func &e1, const Func &e2)
     {
-        Root out;
+        Func out;
         // implementations TBD
         return out;
     }
-    Root operator!(const Root &e)
+    Func operator!(const Func &e)
     {
         // implementations TBD
         return e;
     }
 
-    Root operator+=(Root &e1, const Root &e2)
+    Func operator+=(Func &e1, const Func &e2)
     {
         // implementations TBD
         return e1;
     }
-    Root operator-=(Root &e1, const Root &e2)
+    Func operator-=(Func &e1, const Func &e2)
     {
         // implementations TBD
         return e1;
     }
-    Root operator*=(Root &e1, const Root &e2)
+    Func operator*=(Func &e1, const Func &e2)
     {
         // implementations TBD
         return e1;
     }
-    Root operator/=(Root &e1, const Root &e2)
+    Func operator/=(Func &e1, const Func &e2)
     {
         // implementations TBD
         return e1;
     }
 
-    Root operator&=(Root &e1, const Root &e2)
+    Func operator&=(Func &e1, const Func &e2)
     {
         // implementations TBD
         return e1;
     }
-    Root operator|=(Root &e1, const Root &e2)
+    Func operator|=(Func &e1, const Func &e2)
     {
         // implementations TBD
         return e1;
+    }
+
+    bool operator==(const Edge &e1, const Edge &e2)
+    {
+        return 0;
     }
 
     /* These will let us do C++ style output, with our output class */

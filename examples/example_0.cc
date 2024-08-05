@@ -32,7 +32,7 @@ int main () {
 
 
     /**
-     * Forest Setting Construction 2
+     * [Optional] Forest Setting Construction 2
      * (name of predefined BDD, number of variables, is relation)
      * Note: this will construct the setting as predefined BDD
      *       with the given name.
@@ -53,13 +53,10 @@ int main () {
      */
 
     // Roots
-    Root root1(forest1), root2(forest1);
+    Func root1(forest1), root2(forest1);
     root1 = forest1->constant(5);
     root2 = forest1->variable(5);
     root1 += root2;
-
-    EdgeLabel l;
-    ReductionRule r = unpackRule(l);
 
     // Forests
     

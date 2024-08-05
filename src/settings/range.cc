@@ -1,5 +1,6 @@
 #include "range.h"
 
+using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -8,7 +9,7 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::Range::Range(const RangeType range, const ValueType val)
+Range::Range(const RangeType range, const ValueType val)
 {
     //
     rangeType = range;
@@ -16,14 +17,14 @@ BRAVE_DD::Range::Range(const RangeType range, const ValueType val)
     // Check the consistency
 
 }
-BRAVE_DD::Range::Range(unsigned long size)
+Range::Range(unsigned long size)
 {
     //
     rangeType = FINITE;
     valueType = LONG;
     maxRange = size;
 }
-BRAVE_DD::Range::~Range()
+Range::~Range()
 {
     //
 }

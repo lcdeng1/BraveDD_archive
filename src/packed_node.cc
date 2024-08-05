@@ -1,5 +1,6 @@
 #include "packed_node.h"
 
+using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -8,15 +9,15 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::PackedNode::PackedNode()
+PackedNode::PackedNode()
 {
     //
 }
-BRAVE_DD::PackedNode::PackedNode(ForestSetting* s)
+PackedNode::PackedNode(ForestSetting* s)
 {
     //
 }
-BRAVE_DD::PackedNode::~PackedNode()
+PackedNode::~PackedNode()
 {
     //
 }

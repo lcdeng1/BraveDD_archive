@@ -5,10 +5,17 @@
 #include "setting.h"
 
 namespace BRAVE_DD {
+    enum class SpecialValue {
+        POS_INF,
+        NEG_INF,
+        UNDEF
+    };
     /**
      *  Labels for edge rule and flags storage
      *  Each label is constructed as:
      *            [ unused(1 bit) | rule(4 bits) | flags(3 bits)]
+     * 
+     *  flags(3 bits): swap(_from) | swap_to | complement
      *  
      */
     typedef uint8_t EdgeLabel;
@@ -28,10 +35,15 @@ namespace BRAVE_DD {
         return label & COMP_MASK;
     }
     /* Get the swap flag from the given EdgeLabel */
-    static inline bool unpackSwap(const EdgeLabel label, const bool isTo)
+    static inline bool unpackSwap(const EdgeLabel label)
+    {
+        uint64_t SWAP_MASK = (uint64_t)(0x01 << 2);
+        return label & SWAP_MASK;
+    }
+    static inline bool unpackSwapTo(const EdgeLabel label)
     {
         uint64_t SWAP_MASK = (uint64_t)(0x01 << 1);
-        return isTo ? (label & SWAP_MASK) : (label & (SWAP_MASK << 1));
+        return label & SWAP_MASK;
     }
     /* Packing */
     static inline void packRule(EdgeLabel label, ReductionRule rule)
@@ -85,14 +97,19 @@ namespace BRAVE_DD {
     /* Get the complement flag from the given EdgeHandle */
     static inline bool unpackComp(const EdgeHandle handle)
     {
-        uint64_t COMP_MASK = (uint64_t)(0x01) << 51;
+        uint64_t COMP_MASK = (uint64_t)(0x01) << 48;
         return handle & COMP_MASK;
     }
     /* Get the swap flag from the given EdgeHandle */
-    static inline bool unpackSwap(const EdgeHandle handle, const bool isTo)
+    static inline bool unpackSwap(const EdgeHandle handle)
     {
-        uint64_t SWAP_MASK = (uint64_t)(0x01) << 52;
-        return isTo ? (handle & SWAP_MASK) : (handle & (SWAP_MASK << 1));
+        uint64_t SWAP_MASK = (uint64_t)(0x01) << 50;
+        return handle & SWAP_MASK;
+    }
+    static inline bool unpackSwapTo(const EdgeHandle handle)
+    {
+        uint64_t SWAP_MASK = (uint64_t)(0x01) << 49;
+        return handle & SWAP_MASK;
     }
     /* Get the target node index from the given EdgeHandle */
     static inline NodeHandle unpackNode(const EdgeHandle handle)
@@ -105,10 +122,35 @@ namespace BRAVE_DD {
         uint64_t LABEL_MASK = (uint64_t)((0x01<<8) - 1) << 48;
         return (EdgeLabel)((handle & LABEL_MASK) >> 48);
     }
+    /* Packing */
+    static inline void packRule(EdgeHandle handle, ReductionRule rule)
+    {
+        handle = handle | ((uint64_t)rule << 51);
+    }
+    static inline void packLevel(EdgeHandle handle, uint16_t level)
+    {
+        handle = handle | ((uint64_t)level << 32);
+    }
+    static inline void packComp(EdgeHandle handle, bool comp)
+    {
+        handle = handle | ((uint64_t)comp << 48);
+    }
+    static inline void packSwap(EdgeHandle handle, bool swap)
+    {
+        handle = handle | ((uint64_t)swap << 50);
+    }
+    static inline void packSwapTo(EdgeHandle handle, bool swap)
+    {
+        handle = handle | ((uint64_t)swap << 49);
+    }
+    static inline void packTarget(EdgeHandle handle, NodeHandle target)
+    {
+        handle = handle | ((uint64_t)target);
+    }
+
 
     class EdgeValue;
     class Edge;
-    class Root;
     class Forest;
     // file I/O
     // TBD
@@ -132,8 +174,71 @@ class BRAVE_DD::EdgeValue {
     EdgeValue(float f);
 
     ValueType getType() const { return valueType; }
+    inline void getValueTo(void* p, ValueType type) const {
+        switch (type) {
+            case VOID:
+                return;
+            case INT:
+                *((int*) p) = getIntValue();
+                return;
+            case LONG:
+                *((long*) p) = getLongValue();
+                return;
+            case FLOAT:
+                *((float*) p) = getFloatValue();
+                return;
+            case DOUBLE:
+                *((double*) p) = getDoubleValue();
+                return;
+            default:
+                throw error(BRAVE_DD::ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
+        }
+    }
+    inline void setValue(const void* p, ValueType type) {
+        switch (type) {
+            case VOID:
+                setVoid();
+            case INT:
+                setInt(p);
+            case LONG:
+                setLong(p);
+            case FLOAT:
+                setFloat(p);
+            case DOUBLE:
+                setDouble(p);
+            default:
+                throw error(BRAVE_DD::ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
+            }
+    }
     /*-------------------------------------------------------------*/
     private:
+    /*-------------------------------------------------------------*/
+    inline int getIntValue() const { return intValue;}
+    inline long getLongValue() const { return longValue;}
+    inline float getFloatValue() const { return floatValue;}
+    inline double getDoubleValue() const { return doubleValue;}
+    inline void setVoid() {valueType = VOID;}
+    inline void setInt(const void *p) {
+        BRAVE_DD_DCASSERT(p);
+        valueType = INT;
+        intValue = *((const int*) p);
+    }
+    inline void setLong(const void *p) {
+        BRAVE_DD_DCASSERT(p);
+        valueType = LONG;
+        longValue = *((const long*) p);
+    }
+    inline void setFloat(const void *p) {
+        BRAVE_DD_DCASSERT(p);
+        valueType = FLOAT;
+        floatValue = *((const float*) p);
+    }
+    inline void setDouble(const void *p) {
+        BRAVE_DD_DCASSERT(p);
+        valueType = DOUBLE;
+        doubleValue = *((const double*) p);
+    }
+
     /*-------------------------------------------------------------*/
     ValueType valueType;
     /// Values
@@ -156,93 +261,12 @@ class BRAVE_DD::Edge {
     public:
     /*-------------------------------------------------------------*/
         Edge();
+        Edge(uint16_t level, NodeHandle target);
         // / Copy Constructor.
         Edge(const Edge &e);
-
         /// Destructor.
         ~Edge();
 
-        //******************************************
-        //  Getters
-        //******************************************
-
-        
-        
-        inline NodeHandle getTarget() const {
-            return unpackNode(handle);
-        }
-        inline EdgeLabel getLabel() const {
-            return unpackLabel(handle);
-        }
-        inline ValueType getEdgeValueType() const {
-            return value.getType();
-        }
-        // template<typename T>
-        // inline void getEdgeValueTo(T &v) const {
-        //     label.getValueTo(v);
-        // }
-        inline ReductionRule getEdgeRule() const {
-            return unpackRule(handle);
-        }
-        inline bool getEdgeComp() const {
-            return unpackComp(handle);
-        }
-        inline bool getEdgeSwap(bool isTo) const {
-            return unpackSwap(handle, isTo);
-        }
-        //
-        // More getter TBD here
-        //
-
-        //******************************************
-        //  Setters
-        //******************************************
-        
-
-        
-
-        // inline void setTarget(NodeHandle t) {
-        //     targetNode = t;
-        // }
-        // inline void setEdgeValueType(ValueType t) {
-        //     label.setValueType(t);
-        // }
-        // template<typename T>
-        // inline void setEdgeValue(T v) {
-        //     label.setValue(v);
-        // }
-        // inline void setEdgeRule(ReductionRule r) {
-        //     label.setRule(r);
-        // }
-        // inline void setEdgeComp(bool c) {
-        //     label.setComp(c);
-        // }
-        // inline void setEdgeSwap(bool s) {
-        //     label.setSwap(s);
-        // }
-        // template<typename T>
-        // inline void set(NodeHandle handle, T val) {
-        //     setTarget(handle);
-        //     setEdgeValue(val);
-        // }
-        // inline void set(NodeHandle handle, ReductionRule rul) {
-        //     setTarget(handle);
-        //     setEdgeRule(rul);
-        // }
-
-        //
-        // More setter TBD here
-        //
-        /// Complement edge rule
-        void compEdgeRule();
-        /// Swap edge rule
-        void swapEdgeRule();
-
-        //******************************************
-        //  Check for equality
-        //******************************************
-        bool equals(const Edge& e);
-        bool isSameForest(const Edge& e);
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
@@ -254,41 +278,6 @@ class BRAVE_DD::Edge {
         EdgeValue       value;      // Edge value.
 
         std::string     display;    // for displaying if needed in the future
-};
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                          Root class                            *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-class BRAVE_DD::Root {
-    /*-------------------------------------------------------------*/
-    public:
-    /*-------------------------------------------------------------*/
-    Root();
-    Root(Forest* f);
-    Root(Forest* f, const Edge& e);
-    ~Root();
-
-    inline Forest* getForest() const {return parent;};
-    inline bool isAttachedTo(const Forest* p) const {return getForest() == p;}
-    inline bool isSameForest(const Root &e) const {return parent == e.getForest();}
-    
-    /// Attach to a forest.
-    void attach(Forest* p);
-    /// Detach from the forest.
-    inline void detach() { attach(nullptr); }
-
-    /*-------------------------------------------------------------*/
-    private:
-    /*-------------------------------------------------------------*/
-    Forest*     parent;     // parent forest
-    Edge        edge;       // edge information
-    /* For the roots registry in the parent forest */
-    Root*       prevRoot;   // Previous root edge in parent forest
-    Root*       nextRoot;   // Next root edge in parent forest
 };
 
 #endif

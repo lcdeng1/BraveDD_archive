@@ -1,5 +1,6 @@
 #include "statistics.h"
 
+using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -8,7 +9,7 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::Statistics::Statistics()
+Statistics::Statistics()
 {
     //
     activeNodes = 0;
@@ -17,7 +18,7 @@ BRAVE_DD::Statistics::Statistics()
     numOpsTerms = 0;
     numHitsCT = 0;
 }
-BRAVE_DD::Statistics::~Statistics()
+Statistics::~Statistics()
 {
     //
 }

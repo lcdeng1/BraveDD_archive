@@ -2,17 +2,18 @@
 #include "io.h"
 #include "error.h"
 
+using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                         Input  methods                         *
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::Input::Input()
+Input::Input()
 {
 }
 
-BRAVE_DD::Input::~Input()
+Input::~Input()
 {
 }
 
@@ -23,10 +24,10 @@ BRAVE_DD::Input::~Input()
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::Output::Output()
+Output::Output()
 {
 }
 
-BRAVE_DD::Output::~Output()
+Output::~Output()
 {
 }

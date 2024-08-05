@@ -1,19 +1,27 @@
-#include "node.h"
+#include "function.h"
 
 using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                          Node methods                          *
+// *                         Func  methods                          *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
-
-Node::Node()
+Func::Func()
 {
     //
 }
-Node::~Node()
+Func::Func(Forest* f)
+{
+    //
+}
+Func::Func(Forest* f, const Edge& e)
+:edge(e)
+{
+    //
+}
+Func::~Func()
 {
     //
 }
@@ -21,16 +29,19 @@ Node::~Node()
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                        Mxnode methods                          *
+// *                         FuncSet  methods                       *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
-
-Mxnode::Mxnode()
+FuncSet::FuncSet()
 {
     //
 }
-Mxnode::~Mxnode()
+FuncSet::FuncSet(Forest* f)
+{
+    //
+}
+FuncSet::~FuncSet()
 {
     //
 }

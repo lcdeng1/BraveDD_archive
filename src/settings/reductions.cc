@@ -1,5 +1,6 @@
 #include "reductions.h"
 
+using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -8,7 +9,7 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::Reductions::Reductions(const ReductionType reductionType)
+Reductions::Reductions(const ReductionType reductionType)
 {
     dimension = 1;
     type = reductionType;
@@ -33,15 +34,15 @@ BRAVE_DD::Reductions::Reductions(const ReductionType reductionType)
         rules = std::vector<bool>(2,1);
     } else {
         // Error for USER_DEFINED
-        throw error(BRAVE_DD::ErrCode::UNINITIALIZED, __FILE__, __LINE__);
+        throw error(ErrCode::UNINITIALIZED, __FILE__, __LINE__);
     }
 
 }
-BRAVE_DD::Reductions::Reductions(const std::vector<bool> &ruleSet)
+Reductions::Reductions(const std::vector<bool> &ruleSet)
 {
     dimension = 1;
 }
-BRAVE_DD::Reductions::~Reductions()
+Reductions::~Reductions()
 {
     //
 }

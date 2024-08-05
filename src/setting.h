@@ -36,32 +36,32 @@ class BRAVE_DD::VarDomain {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-        VarDomain(const unsigned size);
-        VarDomain(const std::vector<unsigned>& order, unsigned size);
+        VarDomain(const uint16_t size);
+        VarDomain(const std::vector<uint16_t>& order, uint16_t size);
         ~VarDomain();
         /**
          * Getters
          */
         /// Get the max level (number of variables)
-        inline unsigned getNumVars() const {return maxLevel;}
+        inline uint16_t getNumVars() const {return maxLevel;}
         /// Get the variable index for a given level
-        inline unsigned getVar(unsigned lvl) const {return level2Var[lvl];}
+        inline uint16_t getVar(uint16_t lvl) const {return level2Var[lvl];}
         /// Get the level for a given variable index
-        inline unsigned getLevel(unsigned var) const {return var2Level[var];}
+        inline uint16_t getLevel(uint16_t var) const {return var2Level[var];}
         /**
          * Setters
          */
         /// Set the number of variables
-        inline void setNumVars(const unsigned num) {maxLevel = num;}
+        inline void setNumVars(const uint16_t num) {maxLevel = num;}
         // ordering TBD
 
 
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-        unsigned                maxLevel;   // number of variables
-        std::vector<unsigned>   level2Var;  // Variable order: indexed by levels
-        std::vector<unsigned>   var2Level;  // Variable order: indexed by variables
+        uint16_t                maxLevel;   // number of variables
+        std::vector<uint16_t>   level2Var;  // Variable order: indexed by levels
+        std::vector<uint16_t>   var2Level;  // Variable order: indexed by variables
 };
 
 // ******************************************************************
@@ -89,14 +89,14 @@ class BRAVE_DD::ForestSetting {
         //******************************************
         //  Getters for the type
         //******************************************
-        /* Domain */
+        /* Domain =======================================================================*/
         /// Get the number of variables
-        inline unsigned getNumVars() const {return domain.getNumVars();}
+        inline uint16_t getNumVars() const {return domain.getNumVars();}
         /// Get the variable index for a given level
-        inline unsigned getVar(unsigned lvl) const {return domain.getVar(lvl);}
+        inline uint16_t getVar(uint16_t lvl) const {return domain.getVar(lvl);}
         /// Get the level for a given variable index
-        inline unsigned getLevel(unsigned var) const {return domain.getLevel(var);}
-        /* Range */
+        inline uint16_t getLevel(uint16_t var) const {return domain.getLevel(var);}
+        /* Range ========================================================================*/
         /// Get the RangeType 
         inline RangeType getRangeType() const {return range.getRangeType();}
         /// Get the ValueType 
@@ -109,10 +109,10 @@ class BRAVE_DD::ForestSetting {
         inline bool hasPosInf() const {return range.hasPosInf();}
         /// Check if the undefine value has been set
         inline bool hasUnDef() const {return range.hasUnDef();}
-        /* Encoding */
+        /* Encoding =====================================================================*/
         /// Get the encoding mechanism
         inline EncodeMechanism getEncodeMechanism() const {return encodingType;}
-        /* Reduction */
+        /* Reduction ====================================================================*/
         inline bool isRelation() const {return reductions.getDim() > 1;}
         /// Get the reduction type
         inline ReductionType getReductionType() const {return reductions.getType();}
@@ -120,16 +120,16 @@ class BRAVE_DD::ForestSetting {
         inline int getReductionSize() const {return reductions.getNumRules();}
         /// Check if the given ReductionRule is applied 
         inline bool hasReductionRule(ReductionRule rule) const {return reductions.hasRule(rule);}
-        /* Swap */
+        /* Swap =========================================================================*/
         /// Get the type of swap flag applied
         inline SwapSet getSwapType() const {return flags.getSwapType();}
-        /* Complement */
+        /* Complement ===================================================================*/
         /// Get the type of complement flag applied
         inline CompSet getCompType() const {return flags.getCompType();}
-        /* Merge */
+        /* Merge ========================================================================*/
         /// Get the type of merge mechanism applied (will be removed later)
         inline MergeType getMergeType() const {return mergeType;}
-        /* Name */
+        /* Name =========================================================================*/
         inline std::string getName() const {return name;}
 
         //******************************************
@@ -137,7 +137,7 @@ class BRAVE_DD::ForestSetting {
         //******************************************
         /* Domain */
         /// Set the number of variables
-        inline void setNumVars(const unsigned num) {domain.setNumVars(num);}
+        inline void setNumVars(const uint16_t num) {domain.setNumVars(num);}
         // ordering TBD
         /* Range */
         /// Set the range type
@@ -194,6 +194,8 @@ class BRAVE_DD::ForestSetting {
         //******************************************
         //  I/O
         //******************************************
+        void exportSetting(std::ostream& out); // goto settings
+        void importSetting(std::istream& in); // goto settings
 
     /*-------------------------------------------------------------*/
     private:

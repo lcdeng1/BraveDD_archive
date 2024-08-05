@@ -2,6 +2,7 @@
 #define BRAVE_DD_OPERATORS_H
 
 #include "edge.h"
+#include "function.h"
 #include "io.h"
 
 namespace BRAVE_DD {
@@ -24,24 +25,27 @@ namespace BRAVE_DD {
     Edge operator&=(Edge &e1, const Edge &e2);
     Edge operator|=(Edge &e1, const Edge &e2);
 
-    /* Operators for Roots */
+    /* Operators for Funcs */
     
-    Root operator+(const Root &e1, const Root &e2);
-    Root operator-(const Root &e1, const Root &e2);
-    Root operator*(const Root &e1, const Root &e2);
-    Root operator/(const Root &e1, const Root &e2);
+    Func operator+(const Func &e1, const Func &e2);
+    Func operator-(const Func &e1, const Func &e2);
+    Func operator*(const Func &e1, const Func &e2);
+    Func operator/(const Func &e1, const Func &e2);
 
-    Root operator&(const Root &e1, const Root &e2);
-    Root operator|(const Root &e1, const Root &e2);
-    Root operator!(const Root &e);
+    Func operator&(const Func &e1, const Func &e2);
+    Func operator|(const Func &e1, const Func &e2);
+    Func operator!(const Func &e);
 
-    Root operator+=(Root &e1, const Root &e2);
-    Root operator-=(Root &e1, const Root &e2);
-    Root operator*=(Root &e1, const Root &e2);
-    Root operator/=(Root &e1, const Root &e2);
+    Func operator+=(Func &e1, const Func &e2);
+    Func operator-=(Func &e1, const Func &e2);
+    Func operator*=(Func &e1, const Func &e2);
+    Func operator/=(Func &e1, const Func &e2);
 
-    Root operator&=(Root &e1, const Root &e2);
-    Root operator|=(Root &e1, const Root &e2);
+    Func operator&=(Func &e1, const Func &e2);
+    Func operator|=(Func &e1, const Func &e2);
+
+    /* Operators for comparing */
+    bool operator==(const Edge &e1, const Edge &e2);
 
     /* These will let us do C++ style output, with our output class */
     

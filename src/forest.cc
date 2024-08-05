@@ -1,5 +1,6 @@
 #include "forest.h"
 
+using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -8,14 +9,14 @@
 // *                                                                *
 // ******************************************************************
 
-BRAVE_DD::Forest::Forest(const ForestSetting& s):setting(s)
+Forest::Forest(const ForestSetting& s):setting(s)
 {
     try
     {
         /* Check consistency */
         s.checkConsistency();
     }
-    catch(const BRAVE_DD::error& e)
+    catch(const error& e)
     {
         std::cerr << e.what() << '\n';
         exit(e.getCode());
@@ -26,7 +27,7 @@ BRAVE_DD::Forest::Forest(const ForestSetting& s):setting(s)
     stats = new Statistics();
 
 }
-BRAVE_DD::Forest::~Forest()
+Forest::~Forest()
 {
     //
     // setting.~ForestSetting();
@@ -36,15 +37,60 @@ BRAVE_DD::Forest::~Forest()
 }
 
 /**************************** Make edge *************************/
-BRAVE_DD::Root BRAVE_DD::Forest::constant(int val)
+Func Forest::constant(int val)
 {
-    BRAVE_DD::Root result(this);
+    Func result;
     // TBD
     return result;
 }
-BRAVE_DD::Root BRAVE_DD::Forest::variable(int lvl)
+Func Forest::constant(long val)
 {
-    BRAVE_DD::Root result(this);
+    Func result;
     // TBD
     return result;
+}
+Func Forest::constant(float val)
+{
+    Func result;
+    // TBD
+    return result;
+}
+Func Forest::constant(double val)
+{
+    Func result;
+    // TBD
+    return result;
+}
+Func Forest::variable(uint16_t lvl)
+{
+    Func result;
+    // TBD
+    return result;
+}
+Func Forest::variable(uint16_t lvl, int low, int high)
+{
+    Func result;
+    // TBD
+    return result;
+}
+
+/****************************** I/O *****************************/
+void Forest::exportFunc(std::ostream& out, FuncSet func)
+{
+    //
+}
+void Forest::exportForest(std::ostream& out)
+{
+    //
+}
+FuncSet Forest::importFunc(std::istream& in)
+{
+    //
+    FuncSet result;
+    // TBD
+    return result;
+}
+void Forest::importForest(std::istream& in)
+{
+    //
 }
