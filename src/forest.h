@@ -196,43 +196,27 @@ class BRAVE_DD::Forest {
      */
     void reduceEdge(unsigned lvl, EdgeLabel label, Node* P, Edge* out);
 
-    /**************************** Make Func *************************/
-    // Constant false Func
-    Func falseFunc();
-    // Constant true Func
-    Func trueFunc();
-    // Constant Func 
-
-    Func constant(int val);
-    Func constant(long val);
-    Func constant(float val);
-    Func constant(double val);
-    Func variable(uint16_t lvl);
-    Func variable(uint16_t lvl, int low, int high);
-    // ...
 
     /************************* Within Operations ********************/
-    unsigned evaluate(unsigned lvl, Func Func, bool* vars);
-    bool evaluate(unsigned lvl, Func Func, bool* froms, bool* tos);
+    bool evaluate(Func Func, bool* aFrom, bool* aTo); // return type
     // TBD
 
     /***************************** Cardinality **********************/
-    uint64_t countNumNodes();   // all Funcs
-    uint64_t countNumNodes(Func Func);
-    uint64_t countNumNodes(unsigned size, ...);
-    uint64_t countNumNodesByLevel(uint16_t lvl);
+    uint64_t countNodes();   // all Funcs
+    uint64_t countNodes(FuncArray funcs);
+    uint64_t countNodesAtLevel(uint16_t lvl);
+    uint64_t countNodesAtLevel(uint16_t lvl, Func func);
+    uint64_t countNodesAtLevel(uint16_t lvl, FuncArray funcs);
 
-    uint64_t mass(Func Func);
-    uint64_t count(Func Func, int val); // ...
-    uint64_t count(Func Func, int low, int high); // low and high are both included
-    uint64_t countPosInf(Func Func);
-    uint64_t countNegInf(Func Func);
-    uint64_t countUndef(Func Func);
-    unsigned minValue(Func Func);
-    unsigned maxValue(Func Func);
-    // TBD
+    uint64_t mass(Func func);
 
-    /************************** Computing Table *********************/
+    uint64_t count(Func func, int val); // ...
+    // mpz_t count(); // gmp here?
+    uint64_t count(Func func, long min, long max); // min and max are both included
+    uint64_t count(Func func, double min, double max); // min and max are both included
+    uint64_t count(Func func, SpecialValue val);
+    unsigned minValue(Func func); // return type
+    unsigned maxValue(Func func); // return type
     // TBD
 
     /************************* Garbage Collection *******************/
@@ -241,13 +225,15 @@ class BRAVE_DD::Forest {
     // TBD
 
     /************************* Statistics Information ***************/
-    uint64_t getPeakNodes();    
+    uint64_t getPeakNodes();    // largest result of getCurrentNodes(), since the last call to resetPeakNodes()
+    uint64_t getCurrentNodes(); // number of nodes in UT, including disconnected
+    void resetPeakNodes();
     // TBD
 
     /****************************** I/O *****************************/
-    void exportFunc(std::ostream& out, FuncSet func);
+    void exportFunc(std::ostream& out, FuncArray func);
     void exportForest(std::ostream& out);
-    FuncSet importFunc(std::istream& in);
+    FuncArray importFunc(std::istream& in);
     void importForest(std::istream& in);
     
     // TBD
@@ -267,10 +253,6 @@ class BRAVE_DD::Forest {
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-    /****************************** Edges ***************************/
-    /// Getters and setters for edges (maybe move to the public? TBD)
-
-
     /// Helper Methods ==============================================
     /* Marker */
     /**
@@ -300,7 +282,7 @@ class BRAVE_DD::Forest {
         NodeManager*        nodeMan;        // Node manager.
         UniqueTable*        uniqueTable;    // Unique table.
         Func*               funcs;          // Registry of Func edges.
-        FuncSet*            funcSets;       // Sets of Func used for I/O.
+        FuncArray*          funcSets;       // Sets of Func used for I/O.
         Statistics*         stats;          // Performance measurement.
 
 };

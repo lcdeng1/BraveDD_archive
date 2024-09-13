@@ -15,6 +15,7 @@ namespace BRAVE_DD {
 
     Edge operator&(const Edge &e1, const Edge &e2);
     Edge operator|(const Edge &e1, const Edge &e2);
+    Edge operator^(const Edge &e1, const Edge &e2);
     Edge operator!(const Edge &e);
 
     Edge operator+=(Edge &e1, const Edge &e2);
@@ -34,6 +35,7 @@ namespace BRAVE_DD {
 
     Func operator&(const Func &e1, const Func &e2);
     Func operator|(const Func &e1, const Func &e2);
+    Func operator^(const Func &e1, const Func &e2);
     Func operator!(const Func &e);
 
     Func operator+=(Func &e1, const Func &e2);

@@ -35,47 +35,15 @@ Forest::~Forest()
     delete uniqueTable;
     delete stats;
 }
-
-/**************************** Make edge *************************/
-Func Forest::constant(int val)
+/***************************** Cardinality **********************/
+uint64_t Forest::count(Func func, int val)
 {
-    Func result;
+    uint64_t num = 0;
     // TBD
-    return result;
+    return num;
 }
-Func Forest::constant(long val)
-{
-    Func result;
-    // TBD
-    return result;
-}
-Func Forest::constant(float val)
-{
-    Func result;
-    // TBD
-    return result;
-}
-Func Forest::constant(double val)
-{
-    Func result;
-    // TBD
-    return result;
-}
-Func Forest::variable(uint16_t lvl)
-{
-    Func result;
-    // TBD
-    return result;
-}
-Func Forest::variable(uint16_t lvl, int low, int high)
-{
-    Func result;
-    // TBD
-    return result;
-}
-
 /****************************** I/O *****************************/
-void Forest::exportFunc(std::ostream& out, FuncSet func)
+void Forest::exportFunc(std::ostream& out, FuncArray func)
 {
     //
 }
@@ -83,10 +51,10 @@ void Forest::exportForest(std::ostream& out)
 {
     //
 }
-FuncSet Forest::importFunc(std::istream& in)
+FuncArray Forest::importFunc(std::istream& in)
 {
     //
-    FuncSet result;
+    FuncArray result;
     // TBD
     return result;
 }

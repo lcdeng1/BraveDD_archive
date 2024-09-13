@@ -47,10 +47,12 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals)
         encodingType = TERMINAL;
         mergeType = PUSH_UP;
         name = "RexBDD";
-    } else if (std::regex_match(bdd, std::regex("^(M|m)(T|t)(B|b)(D|d)(D|d)$"))) {
-        // setting for MTBDD
+    } else if (std::regex_match(bdd, std::regex("^(Q|q)(B|b)(D|d)(D|d)$"))) {
+        // setting for QBDD
     } else if (std::regex_match(bdd, std::regex("^(F|f)(B|b)(D|d)(D|d)$"))) {
         // setting for FBDD
+    } else if (std::regex_match(bdd, std::regex("^(M|m)(T|t)(B|b)(D|d)(D|d)$"))) {
+        // setting for MTBDD
     } else if (std::regex_match(bdd, std::regex("^(E|e)(V|v)(\\+)?(B|b)(D|d)(D|d)$"))) {
         // setting for EV+BDD
     } else if (std::regex_match(bdd, std::regex("^(E|e)(V|v)(\\+)?(?:(\\%)|mod)(B|b)(D|d)(D|d)$"))) {

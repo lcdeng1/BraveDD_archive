@@ -29,9 +29,11 @@
 #include <limits>
 #include <cmath>
 #include <vector>
+#include <list>
 #include <algorithm>  // for std::count
 #include <iostream>
 #include "io.h"
+// #include "gmp.h"
 
 //
 // Typedefs and constants

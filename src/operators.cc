@@ -120,6 +120,12 @@ namespace BRAVE_DD {
         // implementations TBD
         return out;
     }
+    Func operator^(const Func &e1, const Func &e2)
+    {
+        Func out;
+        // implementations TBD
+        return out;
+    }
     Func operator!(const Func &e)
     {
         // implementations TBD

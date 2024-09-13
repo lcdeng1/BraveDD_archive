@@ -54,8 +54,8 @@ int main () {
 
     // Roots
     Func root1(forest1), root2(forest1);
-    root1 = forest1->constant(5);
-    root2 = forest1->variable(5);
+    root1.constant(5);
+    root2.variable(5);
     root1 += root2;
 
     // Forests

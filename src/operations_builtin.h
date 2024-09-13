@@ -1,6 +1,10 @@
 #ifndef BRAVE_DD_OPERATIONS_BUILTIN_H
 #define BRAVE_DD_OPERATIONS_BUILTIN_H
 
+#include "defines.h"
+#include "forest.h"
+#include "function.h"
+
 namespace BRAVE_DD {
     // ******************************************************************
     // *                                                                *
@@ -28,6 +32,7 @@ namespace BRAVE_DD {
     // *                      Saturation operations                     *
     // *                                                                *
     // ******************************************************************
+    Func saturate(Func set, FuncArray forwards);
 }
 
 #endif

@@ -272,6 +272,7 @@ class BRAVE_DD::Edge {
     /*-------------------------------------------------------------*/
         /* Getters and Setters under Forest */
         friend class Forest;
+        friend class Func;
 
         /* Actual edge information */
         EdgeHandle      handle;     // Rule, flags, taget node and level.
