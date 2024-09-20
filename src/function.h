@@ -43,28 +43,17 @@ class BRAVE_DD::Func {
     void trueFunc();
     // Constant Func
     /* For dimention 1 and 2 */
-    void constant(bool val);
-    void constant(int val);
-    void constant(long val);
-    void constant(float val);
-    void constant(double val);
-    void constant(SpecialValue val);
+    void constant(EdgeValue val);
     /* For dimention of 2 (Relation) */
     void identity(std::vector<bool> dependance);
     void identity(std::list<int> identities);   // levels staying identity
     // Variable Func
     /* For dimention of 1 (Set) */
     void variable(uint16_t lvl);
-    void variable(uint16_t lvl, bool low, bool high);
-    void variable(uint16_t lvl, int low, int high);
-    void variable(uint16_t lvl, long low, long high);
-    void variable(uint16_t lvl, float low, float high);
-    void variable(uint16_t lvl, double low, double high);
-    // ^ wrappers TBD
+    void variable(uint16_t lvl, EdgeValue low, EdgeValue high);
     /* For dimention of 2 (Relation) */
     void variable(uint16_t lvl, bool isPrime);
-    void variable(uint16_t lvl, bool isPrime, bool low, bool high);
-    // ^ wrappers TBD
+    void variable(uint16_t lvl, bool isPrime, EdgeValue low, EdgeValue high);
 
     // Assignment operator
     // Func operator=(Func e);

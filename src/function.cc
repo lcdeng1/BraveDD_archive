@@ -36,26 +36,7 @@ void Func::falseFunc()
     // TBD
 }
 /* For dimention 1 and 2 */
-void Func::constant(bool val)
-{
-    // TBD
-}void Func::constant(int val)
-{
-    // TBD
-}
-void Func::constant(long val)
-{
-    // TBD
-}
-void Func::constant(float val)
-{
-    // TBD
-}
-void Func::constant(double val)
-{
-    // TBD
-}
-void Func::constant(SpecialValue val)
+void Func::constant(EdgeValue val)
 {
     // TBD
 }
@@ -69,11 +50,7 @@ void Func::variable(uint16_t lvl)
 {
     // TBD
 }
-void Func::variable(uint16_t lvl, bool low, bool high)
-{
-    // TBD
-}
-void Func::variable(uint16_t lvl, int low, int high)
+void Func::variable(uint16_t lvl, EdgeValue low, EdgeValue high)
 {
     // TBD
 }
@@ -83,7 +60,7 @@ void Func::variable(uint16_t lvl, bool isPrime)
 {
     // TBD
 }
-void Func::variable(uint16_t lvl, bool isPrime, bool low, bool high)
+void Func::variable(uint16_t lvl, bool isPrime, EdgeValue low, EdgeValue high)
 {
     // TBD
 }

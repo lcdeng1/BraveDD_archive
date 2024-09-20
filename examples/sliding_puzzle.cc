@@ -126,16 +126,16 @@ Func trans(uint16_t from, char direction)  // position FROM and direction
     // position TO is empty: X_to == 0
     for (uint16_t i=0; i<bits; i++) {
         varTo.variable(startTo+i, 0);
-        result &= (varTo & zero) | (!varTo & !zero);    // equivalence
+        result &= (varTo & zero) | (!varTo & !zero);    // equivalence interface for performance TBD
     }
     /* Firing */
     // sliding tile at position FROM to position TO: X'_to = X_from, X'_from = 0
     for (uint16_t i=0; i<bits; i++) {
         varTo.variable(startTo+i, 1);
         varFrom.variable(startFrom+i, 0);
-        result &= (varTo & varFrom) | (!varTo & !varFrom);  // equivalence
+        result &= (varTo & varFrom) | (!varTo & !varFrom);  // equivalence interface for performance TBD
         varFrom.variable(startFrom+i, 1);
-        result &= (varFrom & zero) | (!varFrom & !zero);    // equivalence
+        result &= (varFrom & zero) | (!varFrom & !zero);    // equivalence interface for performance TBD
     }
     /* Identities (dependance) */
     zero.identity(dependance);
@@ -225,7 +225,7 @@ int main(int argc, const char** argv)
     /* Process arguments and initialize BDD forests*/
     if (!processArgs(argc, argv)) return usage(argv[0]);
     std::cout << "Solving " << N << " x " << M << "-sliding puzzle." << std::endl;
-    std::cout << "Set BDD type: " << setType << "\t Relation BDD type: " << relType << std::endl;
+    std::cout << "The [Set] BDD type: " << setType << "\t The [Relation] BDD type: " << relType << std::endl;
     std::cout << "Using " << getLibInfo(0) << std::endl;
     std::cout << "Target configure: " << std::endl;
     /* The vector encoding a tiles configure: 

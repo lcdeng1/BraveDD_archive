@@ -17,6 +17,10 @@ EdgeValue::EdgeValue(int i)
 {
     //
 }
+EdgeValue::EdgeValue(long i)
+{
+    //
+}
 EdgeValue::EdgeValue(double d)
 {
     //

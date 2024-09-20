@@ -170,6 +170,7 @@ class BRAVE_DD::EdgeValue {
     /*-------------------------------------------------------------*/
     EdgeValue();
     EdgeValue(int i);
+    EdgeValue(long i);
     EdgeValue(double d);
     EdgeValue(float f);
 
@@ -177,6 +178,7 @@ class BRAVE_DD::EdgeValue {
     inline void getValueTo(void* p, ValueType type) const {
         switch (type) {
             case VOID:
+                *((SpecialValue*) p) = getSpecialValue();
                 return;
             case INT:
                 *((int*) p) = getIntValue();
@@ -197,7 +199,7 @@ class BRAVE_DD::EdgeValue {
     inline void setValue(const void* p, ValueType type) {
         switch (type) {
             case VOID:
-                setVoid();
+                setSpecial(p);
             case INT:
                 setInt(p);
             case LONG:
@@ -217,7 +219,8 @@ class BRAVE_DD::EdgeValue {
     inline long getLongValue() const { return longValue;}
     inline float getFloatValue() const { return floatValue;}
     inline double getDoubleValue() const { return doubleValue;}
-    inline void setVoid() {valueType = VOID;}
+    inline SpecialValue getSpecialValue() const { return special;}
+    // inline void setVoid() {valueType = VOID;}
     inline void setInt(const void *p) {
         BRAVE_DD_DCASSERT(p);
         valueType = INT;
@@ -238,6 +241,11 @@ class BRAVE_DD::EdgeValue {
         valueType = DOUBLE;
         doubleValue = *((const double*) p);
     }
+    inline void setSpecial(const void *p) {
+        BRAVE_DD_DCASSERT(p);
+        valueType = VOID;
+        special = *((const SpecialValue*) p);
+    }
 
     /*-------------------------------------------------------------*/
     ValueType valueType;
@@ -248,6 +256,7 @@ class BRAVE_DD::EdgeValue {
         float           floatValue;
         double          doubleValue;
     };
+    SpecialValue special;
 };
 // ******************************************************************
 // *                                                                *
