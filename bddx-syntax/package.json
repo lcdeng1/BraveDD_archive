@@ -2,7 +2,7 @@
     "name": "bddx-syntax",
     "displayName": "BDDX Syntax Highlighting",
     "description": "Syntax highlighting for BDDX files",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "engines": {
       "vscode": "^1.50.0"
     },
