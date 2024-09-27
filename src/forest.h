@@ -160,22 +160,24 @@ class BRAVE_DD::Forest {
 
     /************************* Reduction ****************************/
     /**
-     * @brief Normalize the given unpacked node "*P". EdgeLabel "*out" specifies 
+     * @brief Normalize the given unpacked node "P". EdgeLabel "*out" specifies 
      * the incoming edge rule/value and flags, which may be changed by the normalization.
      * 
      * @param P             The given unpacked node waiting for normalization.
      * @param out           Output: edge label (rule/value, flags).
      */
-    void normalizeNode(Node* P, EdgeLabel* out);
+    void normalizeNode(Node& P, EdgeLabel* out);
+    void normalizeNode(Mxnode& P, EdgeLabel* out);
     /**
-     * @brief Reduce the given unpacked node "*P" by checking the forbidden patterns 
+     * @brief Reduce the given unpacked node "P" by checking the forbidden patterns 
      * of nodes. Edge "*out" will be written the long edge that represent unpacked 
      * node "*P".
      * 
      * @param P             The given unpacked node waiting for reduction.
      * @param out           Output: reduced edge (label, target node handle).
      */
-    void reduceNode(Node* P, Edge* out);
+    void reduceNode(Node& P, Edge* out);
+    void reduceNode(Mxnode& P, Edge* out);
     /**
      * @brief Merge the incoming edge with EdgeLabel "label", which is respect of 
      * level "lvl1", target to the node at level "lvl2"; edge "*reduced" represents 
@@ -188,10 +190,10 @@ class BRAVE_DD::Forest {
      * @param reduced       The reduced edge.
      * @param out           Output: merged edge (label, target node handle).
      */
-    void mergeEdge(unsigned lvl1, unsigned lvl2, EdgeLabel label, Edge* reduced, Edge* out);
+    void mergeEdge(uint16_t lvl1, uint16_t lvl2, EdgeLabel label, Edge* reduced, Edge* out);
     /**
      * @brief Reduce the incoming edge with label "label", which is respect of level 
-     * "lvl", target to the unpacked node "*P"; Edge "*out" can not be null, it will 
+     * "lvl", target to the unpacked node "P"; Edge "*out" can not be null, it will 
      * be written the reduced edge.
      * 
      * @param lvl           The represent level of the incoming edge.
@@ -199,7 +201,8 @@ class BRAVE_DD::Forest {
      * @param P             The given target unpacked node of the incoming edge.
      * @param out           Output: reduced edge (label, target node handle).
      */
-    void reduceEdge(unsigned lvl, EdgeLabel label, Node* P, Edge* out);
+    void reduceEdge(uint16_t lvl, EdgeLabel label, Node& P, Edge* out);
+    void reduceEdge(uint16_t lvl, EdgeLabel label, Mxnode& P, Edge* out);
 
 
     /************************* Within Operations ********************/

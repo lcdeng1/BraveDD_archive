@@ -62,3 +62,23 @@ void Forest::importForest(std::istream& in)
 {
     //
 }
+
+void Forest::reduceNode(Node& P, Edge* out)
+{
+    //
+}
+
+void Forest::mergeEdge(uint16_t lvl1, uint16_t lvl2, EdgeLabel label, Edge* reduced, Edge* out)
+{
+    //
+}
+
+void Forest::reduceEdge(uint16_t lvl, EdgeLabel label, Node& P, Edge* out)
+{
+    // check lvl >= P.level, and out is not null
+    // push the flags or value down, TBD
+    Edge reduced;
+    reduceNode(P, &reduced);
+    mergeEdge(lvl, P.level, label, &reduced, out);
+
+}
