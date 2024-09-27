@@ -63,9 +63,9 @@ class BRAVE_DD::Forest {
      *       and return -1 if not.
      * 
      * @param handle        The given EdgeHandle.
-     * @return uint32_t     – Output termianl value.
+     * @return EdgeValue     – Output termianl value wrapper.
      */
-    uint32_t getTerminalValue(EdgeHandle handle);
+    EdgeValue getTerminalValue(EdgeHandle handle);
     /**
      * @brief Make the special NodeHandle for terminal Ω. 
      * This is usually used for edge valued BDDs.
@@ -80,10 +80,7 @@ class BRAVE_DD::Forest {
      * @param val           The given terminal value.
      * @return NodeHandle   – Output terminal node handle.
      */
-    NodeHandle makeTerminal(int val);
-    NodeHandle makeTerminal(long val);
-    NodeHandle makeTerminal(float val);
-    NodeHandle makeTerminal(double val);
+    NodeHandle makeTerminal(EdgeValue val);
 
     /**
      * @brief Get the target node level of a given edge.
@@ -100,13 +97,21 @@ class BRAVE_DD::Forest {
      */
     PackedNode getPackedNode(Edge edge);
     /**
-     * @brief Get the target Node of the given edge.
+     * @brief Get the unpacked target Node of the given edge.
      * 
      * @param edge          The given edge
-     * @return Node*        – Output a new unpacked node.
+     * @return Node         – Output a new unpacked node.
      */
     Node getUnpackNode(EdgeHandle edge);
     Mxnode getUnpackMxnode(EdgeHandle edge);
+    /**
+     * @brief Get the unpacked Node from the given NodeHandle
+     * 
+     * @param handle        The given node handle
+     * @return Node 
+     */
+    Node getUnpackNode(NodeHandle handle);
+    Mxnode getUnpackMxnode(NodeHandle handle);
     /**
      * @brief Get the child Edge of the target node for a given edge with 
      * the index of child.
@@ -231,6 +236,7 @@ class BRAVE_DD::Forest {
     // TBD
 
     /****************************** I/O *****************************/
+    // for transform files
     void exportFunc(std::ostream& out, FuncArray func);
     void exportForest(std::ostream& out);
     FuncArray importFunc(std::istream& in);

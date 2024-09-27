@@ -1,6 +1,29 @@
 #include "node_manager.h"
+#include "forest.h"
+
 
 using namespace BRAVE_DD;
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                       SubManager methods                       *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+NodeManager::SubManager::SubManager(Forest *f):parent(f)
+{
+    sizeIndex = 0;
+    nodes = std::vector<PackedNode>(PRIMES[sizeIndex]);
+    recycled = 0;
+    firstUnalloc = 0;
+    freeList = 0;
+    numFrees = 0;   // do we really need this?
+}
+NodeManager::SubManager::~SubManager()
+{
+    //
+}
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -9,9 +32,10 @@ using namespace BRAVE_DD;
 // *                                                                *
 // ******************************************************************
 
-NodeManager::NodeManager(Forest *f)
+NodeManager::NodeManager(Forest *f):parent(f)
 {
-    //
+    uint16_t lvls = f->getSetting().getNumVars();
+    chunks = std::vector<SubManager>(lvls, SubManager(f));
 }
 NodeManager::~NodeManager()
 {

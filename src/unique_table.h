@@ -39,6 +39,18 @@ class BRAVE_DD::UniqueTable {
         /// Get the total memory used (sum over all variables)
         uint64_t getMemUsed() const;
 
+        /**
+         * Add a NodeHandle to the unique table.
+         * If unique, returns the same handle;
+         * otherwise, returns the handle of the duplicate and recycles the given handle (in node manager).
+         * 
+         * In either case, the returned node becomes the front entry of the hash chain.
+         * 
+         * @param h             The given node handle to be inserted
+         * @return NodeHandle 
+         */
+        NodeHandle insert(NodeHandle h);
+
         /** If the table of the given variable level contains key node, return the item 
          * and move it to the front of the list. Otherwise, return 0 and do nothing.
          */
@@ -73,10 +85,10 @@ class BRAVE_DD::UniqueTable {
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-        class subtable {
+        class SubTable {
             public:
-                subtable();
-                ~subtable();
+                SubTable();
+                ~SubTable();
 
                 inline uint64_t getSize() const {
                     return PRIMES[sizeIndex];
@@ -161,11 +173,11 @@ class BRAVE_DD::UniqueTable {
                 uint64_t numEntries;        // The number of nodes at this level
                 unsigned nextExpandSize;    // The size for next expand
                 unsigned nextShrinkSize;    // The size for next shrink
-        }; // class subtable
+        }; // class SubTable
 
         // ========================================================
         Forest*             parent;     // Parent forest
-        subtable*           tables;     // Subtables divided by levels
+        SubTable*           tables;     // Subtables divided by levels
         // int                 maxVar;    // The number of variables
         // int                 minVar;    // 0 for regular BDDs, -max_var for relation BDDs
 };

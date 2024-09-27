@@ -42,7 +42,6 @@ Edge::Edge()
 {
     handle = 0;
     value = 0;
-    display = "<>";
 }
 Edge::Edge(const Edge &e)
 {

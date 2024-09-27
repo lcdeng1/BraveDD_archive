@@ -5,24 +5,10 @@ using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                    UniqueTable methods                         *
+// *                        SubTable methods                        *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
-
-UniqueTable::UniqueTable()
-{
-    //
-}
-UniqueTable::UniqueTable(Forest* f)
-{
-    //
-}
-UniqueTable::~UniqueTable()
-{
-    //
-}
-
 /** If table contains key, move it to the front of the list.
     Otherwise, do nothing.
     Returns the item if found, 0 otherwise.
@@ -32,7 +18,7 @@ UniqueTable::~UniqueTable()
         bool equals(int p): return true iff this item equals node p.
 */
 template <typename T> 
-NodeHandle UniqueTable::subtable::find(const T &key) const
+NodeHandle UniqueTable::SubTable::find(const T &key) const
 {
     unsigned h = key.hash() % PRIMES[sizeIndex];
     // CHECK_RANGE(__FILE__, __LINE__, 0u, h, PRIMES[sizeIndex]);
@@ -58,3 +44,24 @@ NodeHandle UniqueTable::subtable::find(const T &key) const
 
     return 0;
 }
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                      UniqueTable methods                       *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+UniqueTable::UniqueTable()
+{
+    //
+}
+UniqueTable::UniqueTable(Forest* f)
+{
+    //
+}
+UniqueTable::~UniqueTable()
+{
+    //
+}
+

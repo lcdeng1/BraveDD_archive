@@ -287,7 +287,7 @@ class BRAVE_DD::Edge {
         EdgeHandle      handle;     // Rule, flags, taget node and level.
         EdgeValue       value;      // Edge value.
 
-        std::string     display;    // for displaying if needed in the future
+        // std::string     display;    // for displaying if needed in the future
 };
 
 #endif

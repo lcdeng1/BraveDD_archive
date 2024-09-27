@@ -30,24 +30,15 @@ class BRAVE_DD::NodeManager {
      *  This is either a recycled one or
      *  the next one in the available pool
      *  (which will be expanded if necessary).
+     *  Then fill it with the given unpacked node.
      */
-    inline NodeHandle getFreeNodeHandle(int varLvl) {
-        // construct with level
-        return constructHandle(varLvl, chunks[varLvl].getFreeSlot());
-    }
+    NodeHandle getFreeNodeHandle(int varLvl, Node node);
+    NodeHandle getFreeNodeHandle(int varLvl, Mxnode node);
 
     /**
      *  Find the packed node (pointer) corresponding to a node handle
      */
     PackedNode getNodeFromHandle(NodeHandle h);
-
-    /**
-     *  Set the given node handle with a unpacked node.
-     *  This is usually used with method getFreeNodeHandle.
-     */
-    inline void setNodeForHandle(NodeHandle h, Node p) {
-        // 
-    }
 
 
     /**
@@ -71,14 +62,12 @@ class BRAVE_DD::NodeManager {
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-    class submanager {
+    class SubManager {
         public:
-            submanager(Forest *f);
-            ~submanager();
+            SubManager(Forest *f);
+            ~SubManager();
 
-            
-
-            uint64_t getFreeSlot();
+            uint32_t getFreeSlot();
 
             void sweep();
             
@@ -89,13 +78,14 @@ class BRAVE_DD::NodeManager {
             /// Shrink the hash table
             void shrink();
 
-            Forest* parent;             // Parent forest
-            PackedNode* nodes;          // Actual pack node storage
-            int sizeIndex;              // Index of prime number for size
-            uint64_t firstUnalloc;      // Index of first unallocated slot
-            uint64_t freeList;          // Header of the list of unused slots
-            uint64_t numFrees;          // Number of unused slots
-    }; // class submanager
+            Forest* parent;                 // Parent forest
+            std::vector<PackedNode> nodes;  // Actual pack node storage
+            int sizeIndex;                  // Index of prime number for size
+            uint32_t recycled;              // Last recycled node index
+            uint32_t firstUnalloc;          // Index of first unallocated slot
+            uint32_t freeList;              // Header of the list of unused slots
+            uint32_t numFrees;              // Number of unused slots
+    }; // class SubManager
 
     // ======================Helper Methods====================
     inline NodeHandle constructHandle(int lvl, uint64_t index) {
@@ -109,9 +99,9 @@ class BRAVE_DD::NodeManager {
 
 
     // ========================================================
-    Forest* parent;                 // Parent Forest
-    submanager* chunks;             // Chunks by levels
-    int numLevelBits;               // number of level bits in node handle
+    Forest* parent;                     // Parent Forest
+    std::vector<SubManager> chunks;     // Chunks by levels
+    int numLevelBits;                   // number of level bits in node handle
 
 };
 
