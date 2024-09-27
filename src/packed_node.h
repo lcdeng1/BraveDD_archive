@@ -62,22 +62,21 @@ class BRAVE_DD::PackedNode {
     public:
     /*-------------------------------------------------------------*/
     PackedNode() {}
-    PackedNode(Node& node) {
-        info = (uint32_t*)malloc(5 * sizeof(uint32_t));
-        for (int i=0; i<5; i++) {
+    PackedNode(const ForestSetting& s) {
+        bool isRelation = s.isRelation();
+        int infoSize = isRelation ? 8 : 5;
+        info = (uint32_t*)malloc(infoSize * sizeof(uint32_t));
+        for (int i=0; i<infoSize; i++) {
             info[i] = 0;
         }
-        values = 0;
-    }
-    PackedNode(Mxnode& node) {
-        info = (uint32_t*)malloc(8 * sizeof(uint32_t));
-        for (int i=0; i<8; i++) {
-            info[i] = 0;
-        }
-        info[1] |= NODE_TYPE_MASK;
-        values = (uint64_t*)malloc(3 * sizeof(uint64_t));
-        for (int i=0; i<3; i++) {
-            values[i] = 0;
+        if (isRelation) {
+            info[1] |= NODE_TYPE_MASK;
+            values = (uint64_t*)malloc(3 * sizeof(uint64_t));
+            for (int i=0; i<3; i++) {
+                values[i] = 0;
+            }
+        } else {
+            values = 0;
         }
     }
     ~PackedNode() {
@@ -211,6 +210,20 @@ class BRAVE_DD::PackedNode {
     }
 
     /**
+     * Unpack and get the child edge's label
+     * 
+     * @param child the index of the child edge: 0 ... 3
+     * @return EdgeLabel 
+     */
+    inline EdgeLabel unpackEdgeLabel(char child) const {
+        EdgeLabel label = 0;
+        packRule(label, this->unpackEdgeRule(child));
+        packComp(label, this->unpackEdgeComp(child));
+        packSwap(label, this->unpackEdgeSwap(child, 0));
+        packSwapTo(label, this->unpackEdgeSwap(child, 1));
+        return label;
+    }
+    /**
      * Unpack and get the unpacked node
      * 
      * @return Node 
@@ -218,7 +231,22 @@ class BRAVE_DD::PackedNode {
     inline Node unpackNode() const {
         //
         Node unpacked;
-        //
+        // edge0, value TBD
+        packRule(unpacked.child0.handle, this->unpackEdgeRule(0));
+        packLevel(unpacked.child0.handle, this->unpackNodeLevel(0));
+        packTarget(unpacked.child0.handle, this->unpackNodeHandle(0));
+        packComp(unpacked.child0.handle, this->unpackEdgeComp(0));
+        packSwap(unpacked.child0.handle, this->unpackEdgeSwap(0, 0));
+        packSwapTo(unpacked.child0.handle, this->unpackEdgeSwap(0, 1));
+        // edge1, value TBD
+        packRule(unpacked.child1.handle, this->unpackEdgeRule(1));
+        packLevel(unpacked.child1.handle, this->unpackNodeLevel(1));
+        packTarget(unpacked.child1.handle, this->unpackNodeHandle(1));
+        packComp(unpacked.child1.handle, this->unpackEdgeComp(1));
+        packSwap(unpacked.child1.handle, this->unpackEdgeSwap(1, 0));
+        packSwapTo(unpacked.child1.handle, this->unpackEdgeSwap(1, 1));
+
+
         return unpacked;
     }
     /**
@@ -239,6 +267,7 @@ class BRAVE_DD::PackedNode {
      */
     inline void packNode(Node& P) {
         //
+
     }
     inline void packNode(Mxnode& P) {
         //
@@ -272,7 +301,7 @@ class BRAVE_DD::PackedNode {
      * @return true 
      * @return false 
      */
-    inline bool operator==(PackedNode& node) const {
+    inline bool operator==(const PackedNode& node) const {
         // labels
         uint32_t LABEL_MASK = (0x01 << 28) >> 4;
         if (((info[1] & LABEL_MASK) != (node.info[1] & LABEL_MASK))) return 0;
