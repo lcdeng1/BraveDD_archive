@@ -170,7 +170,7 @@ class BRAVE_DD::EdgeValue {
     /*-------------------------------------------------------------*/
     EdgeValue();
     EdgeValue(int i);
-    EdgeValue(long i);
+    EdgeValue(long l);
     EdgeValue(double d);
     EdgeValue(float f);
 
@@ -212,6 +212,17 @@ class BRAVE_DD::EdgeValue {
                 throw error(BRAVE_DD::ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
             }
     }
+    inline EdgeValue& operator=(const EdgeValue& val) {
+        if (equals(val)) return *this;
+        init(val);
+        return *this;
+    }
+    inline bool operator==(const EdgeValue& val) const {
+        return equals(val);
+    }
+    inline bool operator!=(const EdgeValue& val) const {
+        return !equals(val);
+    }
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
@@ -246,6 +257,42 @@ class BRAVE_DD::EdgeValue {
         valueType = VOID;
         special = *((const SpecialValue*) p);
     }
+    inline bool equals(const EdgeValue& val) const {
+        bool isEqual = 1;
+        if (valueType != val.valueType) return !isEqual;
+        switch (valueType) {
+            case VOID:
+                return isEqual = special == val.special;
+            case INT:
+                return isEqual = intValue == val.intValue;
+            case LONG:
+                return isEqual = longValue == val.longValue;
+            case FLOAT:
+                return isEqual = floatValue == val.floatValue;      // Precision? TBD
+            case DOUBLE:
+                return isEqual = doubleValue == val.doubleValue;    // Precision? TBD
+            default:
+                throw error(BRAVE_DD::ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
+        }
+        return isEqual;
+    }
+    inline void init(const EdgeValue& val) {
+        valueType = val.valueType;
+        switch (valueType) {
+            case VOID:
+                special = val.special;
+            case INT:
+                intValue = val.intValue;
+            case LONG:
+                longValue = val.longValue;
+            case FLOAT:
+                floatValue = val.floatValue;
+            case DOUBLE:
+                doubleValue = val.doubleValue;
+            default:
+                throw error(BRAVE_DD::ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
+        }
+    }
 
     /*-------------------------------------------------------------*/
     ValueType valueType;
@@ -270,18 +317,40 @@ class BRAVE_DD::Edge {
     public:
     /*-------------------------------------------------------------*/
         Edge();
-        Edge(uint16_t level, NodeHandle target);
         // / Copy Constructor.
         Edge(const Edge &e);
+        Edge(const EdgeHandle h, EdgeValue val);
         /// Destructor.
         ~Edge();
 
+        inline Edge& operator=(const Edge& e) {
+            if (equals(e)) return *this;
+            init(e);
+            return *this;
+        }
+
+        inline bool operator==(const Edge& e) const {
+            return equals(e);
+        }
+        inline bool operator!=(const Edge& e) const {
+            return !equals(e);
+        }
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
+        inline void init(const Edge& e) {
+            handle = e.handle;
+            value = e.value;
+        }
+        inline bool equals(const Edge e) const {
+            return (handle == e.handle) && (value == e.value);
+        }
         /* Getters and Setters under Forest */
         friend class Forest;
         friend class Func;
+        friend class Node;
+        friend class Mxnode;
+        friend class PackedNode;
 
         /* Actual edge information */
         EdgeHandle      handle;     // Rule, flags, taget node and level.
