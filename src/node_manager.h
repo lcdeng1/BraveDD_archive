@@ -32,13 +32,13 @@ class BRAVE_DD::NodeManager {
      *  (which will be expanded if necessary).
      *  Then fill it with the given unpacked node.
      */
-    NodeHandle getFreeNodeHandle(int varLvl, Node node);
-    NodeHandle getFreeNodeHandle(int varLvl, Mxnode node);
+    NodeHandle getFreeNodeHandle(Node node);
+    NodeHandle getFreeNodeHandle(Mxnode node);
 
     /**
      *  Find the packed node (pointer) corresponding to a node handle
      */
-    PackedNode getNodeFromHandle(NodeHandle h);
+    PackedNode getNodeFromHandle(uint16_t lvl, NodeHandle h);
 
 
     /**
@@ -47,7 +47,7 @@ class BRAVE_DD::NodeManager {
      *  reused when returned by a call to
      *  getFreeNodeHandle().
      */
-    void recycleNodeHandle(NodeHandle h);
+    void recycleNodeHandle(uint16_t lvl, NodeHandle h);
 
     /**
      *  Sweep a manager.
