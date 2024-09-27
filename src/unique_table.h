@@ -40,16 +40,16 @@ class BRAVE_DD::UniqueTable {
         uint64_t getMemUsed() const;
 
         /**
-         * Add a NodeHandle to the unique table.
-         * If unique, returns the same handle;
-         * otherwise, returns the handle of the duplicate and recycles the given handle (in node manager).
+         * Add a Node to the unique table.
+         * If unique, returns the same handle; otherwise, returns the handle of the duplicate.
          * 
-         * In either case, the returned node becomes the front entry of the hash chain.
+         * In either case, the returned node handle becomes the front entry of the hash chain.
          * 
-         * @param h             The given node handle to be inserted
+         * @param node             The given node to be inserted
          * @return NodeHandle 
          */
-        NodeHandle insert(NodeHandle h);
+        NodeHandle insert(Node& node);
+        NodeHandle insert(Mxnode& node);
 
         /** If the table of the given variable level contains key node, return the item 
          * and move it to the front of the list. Otherwise, return 0 and do nothing.
