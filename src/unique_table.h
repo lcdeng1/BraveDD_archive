@@ -49,7 +49,6 @@ class BRAVE_DD::UniqueTable {
          * @return NodeHandle 
          */
         NodeHandle insert(Node& node);
-        NodeHandle insert(Mxnode& node);
 
         /** If the table of the given variable level contains key node, return the item 
          * and move it to the front of the list. Otherwise, return 0 and do nothing.

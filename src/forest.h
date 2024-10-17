@@ -3,10 +3,9 @@
 
 #include "defines.h"
 #include "setting.h"
-#include "node.h"
 #include "edge.h"
+#include "node.h"
 #include "function.h"
-#include "packed_node.h"
 #include "node_manager.h"
 #include "unique_table.h"
 #include "statistics.h"
@@ -90,20 +89,19 @@ class BRAVE_DD::Forest {
      */
     inline uint16_t getNodeLevel(Edge edge) {return unpackLevel(edge.handle);};
     /**
-     * @brief Get the target PackedNode in the NodeManager for the given edge.
+     * @brief Get the target Node in the NodeManager for the given edge.
      * 
      * @param edge          The given edge.
-     * @return PackedNode
+     * @return Node
      */
-    PackedNode getPackedNode(Edge edge);
+    Node getNode(Edge edge);
     /**
      * @brief Get the unpacked target Node of the given edge.
      * 
      * @param edge          The given edge
      * @return Node         – Output a new unpacked node.
      */
-    Node getUnpackNode(EdgeHandle edge);
-    Mxnode getUnpackMxnode(EdgeHandle edge);
+    Node getNode(EdgeHandle edge);
     /**
      * @brief Get the unpacked Node from the given NodeHandle
      * 
@@ -111,7 +109,6 @@ class BRAVE_DD::Forest {
      * @return Node 
      */
     Node getUnpackNode(NodeHandle handle);
-    Mxnode getUnpackMxnode(NodeHandle handle);
     /**
      * @brief Get the child Edge of the target node for a given edge with 
      * the index of child.
@@ -156,28 +153,27 @@ class BRAVE_DD::Forest {
      * @return false 
      */
     bool areDuplicates(uint16_t level, NodeHandle handle, Node node);
-    bool areDuplicates(uint16_t level, NodeHandle handle, Mxnode node);
 
     /************************* Reduction ****************************/
     /**
      * @brief Normalize the given unpacked node "P". EdgeLabel "*out" specifies 
      * the incoming edge rule/value and flags, which may be changed by the normalization.
      * 
+     * @param lvl           The given node level.
      * @param P             The given unpacked node waiting for normalization.
      * @param out           Output: edge label (rule/value, flags).
      */
-    void normalizeNode(Node& P, EdgeLabel* out);
-    void normalizeNode(Mxnode& P, EdgeLabel* out);
+    void normalizeNode(uint16_t lvl, Node& P, EdgeLabel* out);
     /**
      * @brief Reduce the given unpacked node "P" by checking the forbidden patterns 
      * of nodes. Edge "*out" will be written the long edge that represent unpacked 
      * node "*P".
      * 
+     * @param lvl           The given node level.
      * @param P             The given unpacked node waiting for reduction.
      * @param out           Output: reduced edge (label, target node handle).
      */
-    void reduceNode(Node& P, Edge* out);
-    void reduceNode(Mxnode& P, Edge* out);
+    void reduceNode(uint16_t lvl, Node& P, Edge* out);
     /**
      * @brief Merge the incoming edge with EdgeLabel "label", which is respect of 
      * level "lvl1", target to the node at level "lvl2"; edge "*reduced" represents 
@@ -202,7 +198,6 @@ class BRAVE_DD::Forest {
      * @param out           Output: reduced edge (label, target node handle).
      */
     void reduceEdge(uint16_t lvl, EdgeLabel label, Node& P, Edge* out);
-    void reduceEdge(uint16_t lvl, EdgeLabel label, Mxnode& P, Edge* out);
 
 
     /************************* Within Operations ********************/

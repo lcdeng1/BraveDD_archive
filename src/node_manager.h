@@ -3,7 +3,6 @@
 
 #include "defines.h"
 #include "node.h"
-#include "packed_node.h"
 
 namespace BRAVE_DD {
     class Forest;
@@ -33,12 +32,11 @@ class BRAVE_DD::NodeManager {
      *  Then fill it with the given unpacked node.
      */
     NodeHandle getFreeNodeHandle(Node node);
-    NodeHandle getFreeNodeHandle(Mxnode node);
 
     /**
      *  Find the packed node (pointer) corresponding to a node handle
      */
-    PackedNode getNodeFromHandle(uint16_t lvl, NodeHandle h);
+    Node getNodeFromHandle(uint16_t lvl, NodeHandle h);
 
 
     /**
@@ -79,7 +77,7 @@ class BRAVE_DD::NodeManager {
             void shrink();
 
             Forest* parent;                 // Parent forest
-            std::vector<PackedNode> nodes;  // Actual pack node storage
+            std::vector<Node> nodes;  // Actual pack node storage
             int sizeIndex;                  // Index of prime number for size
             uint32_t recycled;              // Last recycled node index
             uint32_t firstUnalloc;          // Index of first unallocated slot

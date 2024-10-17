@@ -14,7 +14,7 @@ using namespace BRAVE_DD;
 NodeManager::SubManager::SubManager(Forest *f):parent(f)
 {
     sizeIndex = 0;
-    nodes = std::vector<PackedNode>(PRIMES[sizeIndex], PackedNode(f->getSetting()));
+    nodes = std::vector<Node>(PRIMES[sizeIndex], Node(f->getSetting()));
     recycled = 0;
     firstUnalloc = 0;
     freeList = 0;

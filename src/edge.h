@@ -295,7 +295,6 @@ class BRAVE_DD::EdgeValue {
     }
 
     /*-------------------------------------------------------------*/
-    ValueType valueType;
     /// Values
     union {
         int             intValue;
@@ -303,6 +302,7 @@ class BRAVE_DD::EdgeValue {
         float           floatValue;
         double          doubleValue;
     };
+    ValueType valueType;
     SpecialValue special;
 };
 // ******************************************************************
@@ -349,8 +349,6 @@ class BRAVE_DD::Edge {
         friend class Forest;
         friend class Func;
         friend class Node;
-        friend class Mxnode;
-        friend class PackedNode;
 
         /* Actual edge information */
         EdgeHandle      handle;     // Rule, flags, taget node and level.
