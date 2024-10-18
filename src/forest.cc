@@ -82,3 +82,18 @@ void Forest::reduceEdge(uint16_t lvl, EdgeLabel label, Node& P, Edge* out)
     // mergeEdge(lvl, P.level, label, &reduced, out);
 
 }
+
+/* Expert function for evaluate TBD */
+bool Forest::evaluateRecursive(uint16_t n, Func func, std::vector<bool> assignment)
+{
+    //
+    bool final = 0;
+
+    return final;
+}
+/* Expert function for union assignments TBD */
+Func Forest::unionAssignmentRecursive(uint16_t lvl, Func& func, std::vector<bool> assignment, uint64_t outcome)
+{
+    //
+    return func;
+}

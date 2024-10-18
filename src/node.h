@@ -8,18 +8,20 @@
 
 namespace BRAVE_DD {
     static const uint32_t NODE_TYPE_MASK = (uint32_t)(0x01<<4);
+    static const uint32_t NODE_LABEL_MASK = (uint32_t)((0x01<<27)-1)<<5;
     static const uint32_t MARK_MASK = (uint32_t)((0x01<<4)-1);
     class Node;
 }
 
 // ******************************************************************
 // *                                                                *
-// *                     Packed Node class                          *
+// *                         Node class                             *
 // *                                                                *
 // ******************************************************************
-/** Packed node storage mechanism in a forest.
+/** Node storage mechanism in a forest.
  *
  *  Every active node is stored in the following format:
+ *  For 'Next' in unique table, 'Labels' of child edges, and 'Handles' of child nodes:
  *  Node has 5 uint32 info slots; Mxnode has 8 uint32 info slots.
  *      Common  --{ info[0]: Next node handle in the unique table.
  *      Labels  --{ info[1]: Bit 31 (MSB) ... Bit 28: child edge 0's rule.
@@ -52,7 +54,10 @@ namespace BRAVE_DD {
  *                           Bit 15       ... Bit 0 : child node 01's level.
  *                { info[7]: Bit 31 (MSB) ... Bit 16: child node 10's level.
  *                           Bit 15       ... Bit 0 : child node 11's level.
- *  Node has 1 uint64 value slot; Mxnode has 3 uint64 value slots.
+ * 
+ *  For 'Values' of child edges if needed:
+ *  Node has 1 (or 2 for LONG and DOUBLE) more slot for value if needed;
+ *  Mxnode has 3 (or 6 for LONG and DOUBLE) more slots for values if needed.
  * 
  *  The construction can depend on the forest setting to further compress?
  * 
@@ -78,63 +83,65 @@ class BRAVE_DD::Node {
             infoSize = isRelation ? 8 : 5;
         }
         info = (uint32_t*)malloc(infoSize * sizeof(uint32_t));
-        for (int i=0; i<infoSize; i++) {
-            info[i] = 0;
-        }
+        for (int i=0; i<infoSize; i++) info[i] = 0;
         if (isRelation) info[1] |= NODE_TYPE_MASK;
     }
     ~Node() {
         for (int i=0; info[i]; i++) info[i] = 0;
         free(info);
-        for (int i=0; values[i]; i++) values[i] = 0;
-        free(values);
     }
 
     /// Methods =====================================================
     /**
      *  Get the next in unique table
      */
-    inline NodeHandle getPackedNext() const {return (NodeHandle)info[0];}
+    inline NodeHandle getNext() const {return (NodeHandle)info[0];}
 
     /**
-     *  Set the next for this packed node in unique table
+     *  Set the next for this node in unique table
      */
-    inline void setPackedNext(NodeHandle nxt) {info[0] = (uint32_t)nxt;}
+    inline void setNext(NodeHandle nxt) {info[0] = (uint32_t)nxt;}
 
+    /**
+     *  Check if this node is a matrix node for relation
+     * 
+     * @return true 
+     * @return false 
+     */
     inline bool isMxd() const { return info[1] & NODE_TYPE_MASK; }
 
     /**
-     *  For this packed node, is it marked?
+     *  For this node, check if it is marked
      *  Marked if the mark counting greater than the given value
      * 
      */
-    inline bool isPackedMarked(uint16_t val) const {
+    inline bool isMarked(uint16_t val) const {
         return (bool)((uint16_t)(info[1] & MARK_MASK) > val);
     }
 
     /**
-     *  Get the mark count for this packed node
+     *  Get the mark count for this node
      * 
      */
-    inline uint16_t getPackedMarks() const {
+    inline uint16_t getMarks() const {
         return (uint16_t)(info[1] & MARK_MASK);
     }
 
     /**
-     *  Mark and increase 1 the count for this packed node
+     *  Mark and increase 1 the count for this node
      *  Counting unchange if reach the max
      */
-    inline void markPacked() {
-        if (getPackedMarks() < MARK_MASK) info[1]++;
+    inline void mark() {
+        if (getMarks() < MARK_MASK) info[1]++;
     }
 
     /**
-     *  Unmark this packed node
+     *  Unmark this node
      *  Decrease 1 the count if given flag 1, otherwise clear count
      *  Counting unchange if 0
      */
-    inline void unmarkPacked(bool f) {
-        if (getPackedMarks() > 0) info[1]--;
+    inline void unmark(bool f) {
+        if (getMarks() > 0) info[1]--;
     }
 
     /**
@@ -143,7 +150,7 @@ class BRAVE_DD::Node {
      * @param child the index of the child edges: 0 ... 3
      * @return ReductionRule 
      */
-    inline ReductionRule unpackEdgeRule(char child) const {
+    inline ReductionRule edgeRule(char child) const {
         if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
@@ -158,7 +165,7 @@ class BRAVE_DD::Node {
      * @param child the index of the child node: 0 ... 3
      * @return NodeHandle 
      */
-    inline NodeHandle unpackNodeHandle(char child) const {
+    inline NodeHandle childNodeHandle(char child) const {
         if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
@@ -172,7 +179,7 @@ class BRAVE_DD::Node {
      * @param child the index of the child node: 0 ... 3
      * @return uint16_t 
      */
-    inline uint16_t unpackNodeLevel(char child) const {
+    inline uint16_t childNodeLevel(char child) const {
         if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
@@ -189,7 +196,7 @@ class BRAVE_DD::Node {
      * @return true 
      * @return false 
      */
-    inline bool unpackEdgeComp(char child) const {
+    inline bool edgeComp(char child) const {
         if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
@@ -206,7 +213,7 @@ class BRAVE_DD::Node {
      * @return true 
      * @return false 
      */
-    inline bool unpackEdgeSwap(char child, bool swap) const {
+    inline bool edgeSwap(char child, bool swap) const {
         if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
@@ -221,38 +228,55 @@ class BRAVE_DD::Node {
      * @param child the index of the child edge: 0 ... 3
      * @return EdgeLabel 
      */
-    inline EdgeLabel unpackEdgeLabel(char child) const {
+    inline EdgeLabel edgeLabel(char child) const {
         EdgeLabel label = 0;
-        packRule(label, this->unpackEdgeRule(child));
-        packComp(label, this->unpackEdgeComp(child));
-        packSwap(label, this->unpackEdgeSwap(child, 0));
-        packSwapTo(label, this->unpackEdgeSwap(child, 1));
+        packRule(label, this->edgeRule(child));
+        packComp(label, this->edgeComp(child));
+        packSwap(label, this->edgeSwap(child, 0));
+        packSwapTo(label, this->edgeSwap(child, 1));
         return label;
     }
 
     /**
-     * Hash a packed node
+     * Unpack and get the child edge's value, fill it into 32 bits
+     * 
+     * @param child 
+     * @return uint32_t 
+     */
+    inline uint32_t edgeValue32(char child) const {
+        uint32_t val = 0;
+        // TBD
+        return val;
+    }
+
+    /**
+     * Unpack and get the child edge's value, fill it into 64 bits
+     * 
+     * @param child 
+     * @return uint64_t 
+     */
+    inline uint64_t edgeValue64(char child) const {
+        uint64_t val = 0;
+        // TBD
+        return val;
+    }
+
+    /**
+     * Hash this node
      * 
      * @return uint64_t 
      */
     inline uint64_t hash() const {
         hash_stream hs;
         hs.start(0);
-        bool isMx = info[1] & NODE_TYPE_MASK;
         // push info
-        int n = (isMx) ? 8 : 5;
         hs.push(info[1] >> 4);
-        for (int i=2; i<n; i++) hs.push(info[i]);
-        if (isMx) {
-            for (int i=0; i<3; i++) hs.push(values[i], (std::size_t)sizeof(uint64_t));
-        } else {
-            hs.push(values, (std::size_t)sizeof(uint64_t));
-        }
+        for (uint32_t* p=info+2; *p; p++) hs.push(*p);  // <==== caution: 0 element may stop it early
         return (uint64_t)hs.finish64();
     }
 
     /**
-     * Check if this equals to the given packed node
+     * Check if this equals to the given node
      * 
      * @param node
      * @return true 
@@ -260,22 +284,16 @@ class BRAVE_DD::Node {
      */
     inline bool operator==(const Node& node) const {
         // labels
-        uint32_t LABEL_MASK = (0x01 << 28) >> 4;
-        if (((info[1] & LABEL_MASK) != (node.info[1] & LABEL_MASK))) return 0;
+        if (((info[1] & NODE_LABEL_MASK) != (node.info[1] & NODE_LABEL_MASK))) return 0;
         // node handles and levels
-        bool isMx = info[1] & NODE_TYPE_MASK;
-        int n = (isMx) ? 8 : 5;
-        for (int i=2 ; i<n; i++) {
-            if (info[i] != node.info[i]) return 0;
+        int n=2;
+        for (uint32_t* p=info+2; *p; p++) {
+            if (!node.info[n]) return 0;
+            if (*p != node.info[n]) return 0;
+            n++;
         }
-        // values
-        if (isMx) {
-            for (int i=0; i<3; i++) {
-                if (values[i] != node.values[i]) return 0;
-            }
-        } else {
-            return values == node.values;
-        }
+        // equal here, does given node have more slots?
+        if (!node.info[n]) return 0;
         return 1;
     }
 
@@ -284,7 +302,6 @@ class BRAVE_DD::Node {
     /*-------------------------------------------------------------*/
     /// ============================================================
     uint32_t* info;         // Next pointer, edge rules, edge flags, node handles, and levels
-    uint64_t* values;       // Edge values
 };
 
 

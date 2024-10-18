@@ -201,8 +201,29 @@ class BRAVE_DD::Forest {
 
 
     /************************* Within Operations ********************/
-    bool evaluate(Func Func, bool* aFrom, bool* aTo); // return type
-    // TBD
+    inline bool evaluate(Func func, std::vector<bool> assignment) {
+        // check based on setting TBD
+        return evaluateRecursive(setting.getNumVars(), func, assignment);
+    }
+    inline bool evaluate(Func func, bool* assignment) {
+        // check based on setting TBD
+        std::vector<bool> asmt(assignment, assignment + setting.getNumVars());
+        return evaluate(func, asmt);
+    }
+    uint32_t evaluate32(Func func, std::vector<bool> assignment);
+    uint32_t evaluate32(Func func, bool* assignment);
+    uint64_t evaluate64(Func func, std::vector<bool> assignment);
+    uint64_t evaluate64(Func func, bool* assignment);
+    bool evaluate(Func func, std::vector<bool> aFrom, std::vector<bool> aTo);
+    bool evaluate(Func func, bool* aFrom, bool* aTo);
+    
+    inline void unionAssignment(Func& func, std::vector<bool> assignment, uint64_t outcome) {
+        // check based on setting TBD
+        func = unionAssignmentRecursive(setting.getNumVars(), func, assignment, outcome);
+    }
+    void unionAssignments(Func& func, std::vector<uint64_t> outcomes, std::vector<uint64_t> indexes); // for total variable number less than 64
+    void unionAssignments(Func& func, std::vector<uint64_t> outcomes, std::vector<std::vector<bool> > assignments); // for any number of variables
+    
 
     /***************************** Cardinality **********************/
     uint64_t countNodes();   // all Funcs
@@ -279,6 +300,12 @@ class BRAVE_DD::Forest {
      * 
      */
     void markAllFuncs();
+
+    /* Expert function for evaluate TBD */
+    bool evaluateRecursive(uint16_t n, Func func, std::vector<bool> assignment);
+    /* Expert function for union assignments TBD */
+    Func unionAssignmentRecursive(uint16_t lvl, Func& func, std::vector<bool> assignment, uint64_t outcome);
+
 
 
     /// =============================================================
