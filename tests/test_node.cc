@@ -1,0 +1,117 @@
+#include "node.h"
+
+#include <random>
+#include <iostream>
+#include <cstdint>
+
+const unsigned TESTS=1000000;
+const unsigned SEED=123456;
+
+
+std::mt19937 gen(SEED);     // Seed the Mersenne Twister engine with the fixed seed
+std::uniform_int_distribution<> distrRule(0, 10);
+std::uniform_int_distribution<> distrBool(0, 1);
+std::uniform_int_distribution<> distrMarks(0, 15);
+std::uniform_int_distribution<uint16_t> distr16(0, UINT16_MAX);
+std::uniform_int_distribution<uint32_t> distr32(0, UINT32_MAX);
+std::uniform_int_distribution<uint64_t> distr64(0, UINT64_MAX);
+
+using namespace BRAVE_DD;
+
+int main()
+{
+    std::cout << "Node test.\n\n";
+    std::cout << "Size of Node: " << sizeof(Node) << " bytes\n";
+    ForestSetting setting(10);
+
+    Node node(setting);
+    
+    for (unsigned i=0; i<TESTS; i++) {
+        // next
+        NodeHandle nxt = (NodeHandle)distr32(gen);
+        node.setNext(nxt);
+        if (node.getNext() != nxt) {
+            std::cout << "[Next] error at i:" << i << std::endl;
+            std::cout << "set Next: " << nxt << "; get Next: " << node.getNext() << std::endl;
+            exit(1);
+        }
+        // mark
+        const uint32_t marks = distrMarks(gen);
+        for (uint32_t k=0; k<marks; k++) {
+            node.mark();
+        }
+        if (node.getMarks() != marks) {
+            std::cout << "[Marks] error at i:" << i << std::endl;
+            std::cout << "set Marks: " << marks << "; get Marks: " << node.getMarks() << std::endl;
+            exit(1);
+        }
+        if (distrBool(gen)) {
+            node.mark();
+            if (marks < MARK_MASK) {
+                if (node.getMarks() != marks + 1) {
+                    std::cout << "[Marks] error at i:" << i << std::endl;
+                    std::cout << "old Marks: " << marks << "; inc Marks: " << node.getMarks() << std::endl;
+                    exit(1);
+                }
+            } else {
+                if (node.getMarks() != MARK_MASK) {
+                    std::cout << "[Marks] error at i:" << i << std::endl;
+                    std::cout << "old Marks: " << marks << "; inc Marks: " << node.getMarks() << std::endl;
+                    exit(1);
+                }
+            }
+        } else {
+            node.unmark();
+            if (node.getMarks() != 0) {
+                std::cout << "[Marks] error at i:" << i << std::endl;
+                std::cout << "old Marks: " << marks << ";  Unmarks: " << node.getMarks() << std::endl;
+                exit(1);
+            }
+        }
+        node.unmark();
+        // rule
+        ReductionRule rule = (ReductionRule)distrRule(gen);
+        node.setEdgeRule(i%2, rule);
+        if (node.edgeRule(i%2) != rule) {
+            std::cout << "[Rule] error at i:" << i << std::endl;
+            std::cout << "set rule: " << rule << "; get rule: " << node.edgeRule(i%2) << std::endl;
+            exit(1);
+        }
+        // handle
+        NodeHandle handle = (NodeHandle)distr32(gen);
+        node.setChildNodeHandle(i%2, handle);
+        if (node.childNodeHandle(i%2) != handle) {
+            std::cout << "[Handle] error at i:" << i << std::endl;
+            std::cout << "set handle: " << handle << "; get handle: " << node.childNodeHandle(i%2) << std::endl;
+            exit(1);
+        }
+        // level
+        uint16_t lvl = (uint16_t)distr16(gen);
+        node.setChildNodeLevel(i%2, lvl);
+        if (node.childNodeLevel(i%2) != lvl) {
+            std::cout << "[Level] error at i:" << i << std::endl;
+            std::cout << "set level: " << lvl << "; get lvl: " << node.childNodeLevel(i%2) << std::endl;
+            exit(1);
+        }
+        // complement
+        bool comp = (bool)distrBool(gen);
+        node.setEdgeComp(1, comp);
+        if (node.edgeComp(1) != comp) {
+            std::cout << "[Complement] error at i:" << i << std::endl;
+            std::cout << "set comp: " << comp << "; get comp: " << node.edgeComp(1) << std::endl;
+            exit(1);
+        }
+        // swap
+        bool swap = (bool)distrBool(gen);
+        node.setEdgeSwap(i%2, 0, swap);
+        if (node.edgeSwap(i%2, 0) != swap) {
+            std::cout << "[Swap] error at i:" << i << std::endl;
+            std::cout << "set swap: " << swap << "; get swap: " << node.edgeSwap(i%2, 0) << std::endl;
+            exit(1);
+        }
+    }
+
+
+    std::cout << TESTS << " tests passed!" << std::endl;
+    return 0;
+}

@@ -37,6 +37,7 @@ namespace BRAVE_DD {
  *                           Bit 6        ... Bit 5 : child edge 11's swap bits.
  *                           Bit 4                  : 0: for Node; 1: for Mxnode.
  *                           Bit 3        ... Bit 0 : mark bits.
+ *      ^ for unused nodes, this is the next pointer in the free list. ^
  *    For Node:
  *      Child node
  *      handles --{ info[2]: child node 0's handle.
@@ -140,8 +141,12 @@ class BRAVE_DD::Node {
      *  Decrease 1 the count if given flag 1, otherwise clear count
      *  Counting unchange if 0
      */
-    inline void unmark(bool f) {
+    inline void decMark() {
         if (getMarks() > 0) info[1]--;
+    }
+
+    inline void unmark() {
+        info[1] &= ~MARK_MASK;
     }
 
     /**
@@ -156,7 +161,17 @@ class BRAVE_DD::Node {
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
         uint32_t EDGE_RULE_MASK = ((0x01 << 4) - 1) << (16 + 4 * (3 - child));
-        return (ReductionRule)(info[1] & EDGE_RULE_MASK);
+        return (ReductionRule)((info[1] & EDGE_RULE_MASK) >> (16 + 4 * (3 - child)));
+    }
+
+    inline void setEdgeRule(char child, ReductionRule rule) {
+        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+            // child index is out of the valid range, returns a value but throw error.
+            throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+        }
+        uint32_t EDGE_RULE_MASK = ((0x01 << 4) - 1) << (16 + 4 * (3 - child));
+        info[1] &= ~EDGE_RULE_MASK;
+        info[1] |= (uint32_t)rule << (16 + 4 * (3 - child));
     }
 
     /**
@@ -171,6 +186,14 @@ class BRAVE_DD::Node {
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
         return (NodeHandle)info[2 + child];
+    }
+
+    inline void setChildNodeHandle(char child, NodeHandle handle) {
+        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+            // child index is out of the valid range, returns a value but throw error.
+            throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+        }
+        info[2 + child] = handle;
     }
 
     /**
@@ -189,6 +212,21 @@ class BRAVE_DD::Node {
                             & NODE_LEVEL_MASK) >> (16 * (1 - (child % 2))));
     }
 
+    inline void setChildNodeLevel(char child, uint16_t lvl) {
+        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+            // child index is out of the valid range, returns a value but throw error.
+            throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+        }
+        uint32_t NODE_LEVEL_MASK = ((0x01 << 16) - 1) << (16 * (1 - (child % 2)));
+        if (isMxd()) {
+            info[6 + (child / 2)] &= ~NODE_LEVEL_MASK;
+            info[6 + (child / 2)] |= (uint32_t)lvl << (16 * (1 - (child % 2)));
+        } else {
+            info[4] &= ~NODE_LEVEL_MASK;
+            info[4] |= (uint32_t)lvl << (16 * (1 - (child % 2)));
+        }
+    }
+
     /**
      * Unpack and get the child edge's complement flag
      * 
@@ -203,6 +241,15 @@ class BRAVE_DD::Node {
         }
         if (child == 0) return 0;
         return info[1] & (0x01 << (13 + (3 - child)));
+    }
+
+    inline void setEdgeComp(char child, bool comp) {
+        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3 || child == 0) {
+            // child index is out of the valid range, returns a value but throw error.
+            throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+        }
+        info[1] &= ~(0x01 << (13 + (3 - child)));
+        info[1] |= comp << (13 + (3 - child));
     }
 
     /**
@@ -222,6 +269,20 @@ class BRAVE_DD::Node {
         return info[1] & (0x01 << (5 + 2 * (3 - child) + (1 - swap)));
     }
 
+    inline void setEdgeSwap(char child, bool isTo, bool swap) {
+        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+            // child index is out of the valid range, returns a value but throw error.
+            throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+        }
+        if (isMxd()) {
+            info[1] &= ~(0x01 << (5 + 2 * (3 - child) + (1 - isTo)));
+            info[1] |= swap << (5 + 2 * (3 - child) + (1 - isTo));
+        } else {
+            info[1] &= ~(0x01 << (10 + 2 * (1 - (child % 2))));
+            info[1] |= swap << (10 + 2 * (1 - (child % 2)));
+        }
+    }
+
     /**
      * Unpack and get the child edge's label
      * 
@@ -235,6 +296,13 @@ class BRAVE_DD::Node {
         packSwap(label, this->edgeSwap(child, 0));
         packSwapTo(label, this->edgeSwap(child, 1));
         return label;
+    }
+
+    inline void setEdgeLabel(char child, EdgeLabel label) {
+        setEdgeRule(child, unpackRule(label));
+        setEdgeComp(child, unpackComp(label));
+        setEdgeSwap(child, 0, unpackSwap(label));
+        setEdgeSwap(child, 1, unpackSwapTo(label));
     }
 
     /**
@@ -300,6 +368,7 @@ class BRAVE_DD::Node {
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
+    friend class NodeManager;
     /// ============================================================
     uint32_t* info;         // Next pointer, edge rules, edge flags, node handles, and levels
 };
