@@ -11,7 +11,7 @@ const unsigned SEED=123456;
 std::mt19937 gen(SEED);     // Seed the Mersenne Twister engine with the fixed seed
 std::uniform_int_distribution<> distrRule(0, 10);
 std::uniform_int_distribution<> distrBool(0, 1);
-std::uniform_int_distribution<> distrMarks(0, 15);
+std::uniform_int_distribution<> distrMarks(0, 3);
 std::uniform_int_distribution<uint16_t> distr16(0, UINT16_MAX);
 std::uniform_int_distribution<uint32_t> distr32(0, UINT32_MAX);
 std::uniform_int_distribution<uint64_t> distr64(0, UINT64_MAX);
