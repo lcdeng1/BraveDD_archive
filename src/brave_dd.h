@@ -13,7 +13,7 @@
 #include "unique_table.h"
 #include "forest.h"
 #include "lib_manager.h"
-#include "operations_builtin.h"
 #include "operators.h"
+#include "operations/builtin.h"
 
 #endif
