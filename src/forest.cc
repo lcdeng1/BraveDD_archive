@@ -21,16 +21,12 @@ Forest::Forest(const ForestSetting& s):setting(s)
         std::cerr << e.what() << '\n';
         exit(e.getCode());
     }
-
     nodeMan = new NodeManager(this);
     uniqueTable = new UniqueTable(this);
     stats = new Statistics();
-
 }
 Forest::~Forest()
 {
-    //
-    // setting.~ForestSetting();
     delete nodeMan;
     delete uniqueTable;
     delete stats;
@@ -73,7 +69,7 @@ void Forest::mergeEdge(uint16_t lvl1, uint16_t lvl2, EdgeLabel label, Edge* redu
     //
 }
 
-void Forest::reduceEdge(uint16_t lvl, EdgeLabel label, Node& P, Edge* out)
+void Forest::reduceEdge(uint16_t lvl, EdgeLabel label, uint16_t nodeLvl, std::vector<Edge> child, Edge* out)
 {
     // check lvl >= P.level, and out is not null
     // push the flags or value down, TBD
@@ -81,19 +77,4 @@ void Forest::reduceEdge(uint16_t lvl, EdgeLabel label, Node& P, Edge* out)
     // reduceNode(P, &reduced);
     // mergeEdge(lvl, P.level, label, &reduced, out);
 
-}
-
-/* Expert function for evaluate TBD */
-bool Forest::evaluateRecursive(uint16_t n, Func func, std::vector<bool> assignment)
-{
-    //
-    bool final = 0;
-
-    return final;
-}
-/* Expert function for union assignments TBD */
-Func Forest::unionAssignmentRecursive(uint16_t lvl, Func& func, std::vector<bool> assignment, uint64_t outcome)
-{
-    //
-    return func;
 }

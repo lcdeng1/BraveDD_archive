@@ -197,32 +197,12 @@ class BRAVE_DD::Forest {
      * @param P             The given target unpacked node of the incoming edge.
      * @param out           Output: reduced edge (label, target node handle).
      */
-    void reduceEdge(uint16_t lvl, EdgeLabel label, Node& P, Edge* out);
+    void reduceEdge(uint16_t lvl, EdgeLabel label, uint16_t nodeLvl, std::vector<Edge> child, Edge* out);
+
+    inline NodeManager* getNodeMan() {return nodeMan;}
 
 
     /************************* Within Operations ********************/
-    inline bool evaluate(Func func, std::vector<bool> assignment) {
-        // check based on setting TBD
-        return evaluateRecursive(setting.getNumVars(), func, assignment);
-    }
-    inline bool evaluate(Func func, bool* assignment) {
-        // check based on setting TBD
-        std::vector<bool> asmt(assignment, assignment + setting.getNumVars());
-        return evaluate(func, asmt);
-    }
-    uint32_t evaluate32(Func func, std::vector<bool> assignment);
-    uint32_t evaluate32(Func func, bool* assignment);
-    uint64_t evaluate64(Func func, std::vector<bool> assignment);
-    uint64_t evaluate64(Func func, bool* assignment);
-    bool evaluate(Func func, std::vector<bool> aFrom, std::vector<bool> aTo);
-    bool evaluate(Func func, bool* aFrom, bool* aTo);
-    
-    inline void unionAssignment(Func& func, std::vector<bool> assignment, uint64_t outcome) {
-        // check based on setting TBD
-        func = unionAssignmentRecursive(setting.getNumVars(), func, assignment, outcome);
-    }
-    void unionAssignments(Func& func, std::vector<uint64_t> outcomes, std::vector<uint64_t> indexes); // for total variable number less than 64
-    void unionAssignments(Func& func, std::vector<uint64_t> outcomes, std::vector<std::vector<bool> > assignments); // for any number of variables
     
 
     /***************************** Cardinality **********************/
@@ -301,12 +281,6 @@ class BRAVE_DD::Forest {
      */
     void markAllFuncs();
 
-    /* Expert function for evaluate TBD */
-    bool evaluateRecursive(uint16_t n, Func func, std::vector<bool> assignment);
-    /* Expert function for union assignments TBD */
-    Func unionAssignmentRecursive(uint16_t lvl, Func& func, std::vector<bool> assignment, uint64_t outcome);
-
-
 
     /// =============================================================
         ForestSetting       setting;        // Specification setting of this forest.
@@ -315,6 +289,7 @@ class BRAVE_DD::Forest {
         Func*               funcs;          // Registry of Func edges.
         FuncArray*          funcSets;       // Sets of Func used for I/O.
         Statistics*         stats;          // Performance measurement.
+        // int                 numInfo;        // The number of slots required in Node
 
 };
 

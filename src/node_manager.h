@@ -31,12 +31,16 @@ class BRAVE_DD::NodeManager {
      *  (which will be expanded if necessary).
      *  Then fill it with the given unpacked node.
      */
-    NodeHandle getFreeNodeHandle(Node node);
+    inline NodeHandle getFreeNodeHandle(uint16_t lvl, const Node& node) {
+        return chunks[lvl-1].getFreeNodeHandle(node);
+    }
 
     /**
      *  Find the packed node (pointer) corresponding to a node handle
      */
-    Node getNodeFromHandle(uint16_t lvl, NodeHandle h);
+    inline Node& getNodeFromHandle(uint16_t lvl, NodeHandle h) {
+        return chunks[lvl-1].getNodeFromHandle(h);
+    }
 
 
     /**
@@ -53,9 +57,11 @@ class BRAVE_DD::NodeManager {
      *  If marked, the mark bit(s) is cleared.
      *  If unmarked, the node is recycled.
      */
-    void sweep(int varLvl);
+    inline void sweep(uint16_t lvl) { chunks[lvl-1].sweep(); }
     void sweep();
 
+    inline uint32_t numUsed(uint16_t lvl) const { return chunks[lvl-1].numUsed(); }
+    inline uint32_t numAlloc(uint16_t lvl) const { return chunks[lvl-1].numAlloc(); }
 
     /*-------------------------------------------------------------*/
     private:
@@ -65,41 +71,39 @@ class BRAVE_DD::NodeManager {
             SubManager(Forest *f);
             ~SubManager();
 
-            uint32_t getFreeSlot();
+            NodeHandle getFreeNodeHandle(const Node& node);
+
+            Node& getNodeFromHandle(const NodeHandle h);
 
             void sweep();
-            
-        private:
-            /// Expand the hash table (if possible)
-            void expand();
 
-            /// Shrink the hash table
+            inline uint32_t numUsed() const {
+                return PRIMES[sizeIndex] - numFrees;
+            }
+            inline uint32_t numAlloc() const {
+                return firstUnalloc;
+            }
+        private:
+            /// Expand the nodes to next size (if possible)
+            void expand();
+            /// Shrink the nodes to previous size
             void shrink();
 
-            Forest* parent;                 // Parent forest
-            std::vector<Node> nodes;  // Actual pack node storage
-            int sizeIndex;                  // Index of prime number for size
-            uint32_t recycled;              // Last recycled node index
-            uint32_t firstUnalloc;          // Index of first unallocated slot
-            uint32_t freeList;              // Header of the list of unused slots
-            uint32_t numFrees;              // Number of unused slots
+            Forest*     parent;         // Parent forest
+            Node*       nodes;          // Actual node storage
+            int         sizeIndex;      // Index of prime number for size
+            uint32_t    firstUnalloc;   // Index of first unallocated slot
+            uint32_t    freeList;       // Header of the list of unused slots
+            uint32_t    numFrees;       // Number of free/unused slots
+            uint32_t    recycled;       // Last recycled node index
     }; // class SubManager
 
     // ======================Helper Methods====================
-    inline NodeHandle constructHandle(int lvl, uint64_t index) {
-        // check range
-        #ifdef DCASSERTS_ON
-            BRAVE_DD_DCASSERT(lvl <= ((0x01<<numLevelBits)-1) 
-                        && index <= ((0x01<<(HANDLE_LENGTH-numLevelBits))-1));
-        #endif
-        return (lvl<<(HANDLE_LENGTH-numLevelBits)) | index;
-    }
 
 
     // ========================================================
     Forest* parent;                     // Parent Forest
-    std::vector<SubManager> chunks;     // Chunks by levels
-    int numLevelBits;                   // number of level bits in node handle
+    SubManager* chunks;    // Chunks by levels
 
 };
 
