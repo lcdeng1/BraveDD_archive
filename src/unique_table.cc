@@ -9,6 +9,21 @@ using namespace BRAVE_DD;
 // *                                                                *
 // *                                                                *
 // ******************************************************************
+UniqueTable::SubTable::SubTable(Forest* f):parent(f)
+{
+    sizeIndex = 0;
+    table = new NodeHandle[PRIMES[sizeIndex]];
+    for (uint32_t i=0; i<PRIMES[sizeIndex]; i++) {
+        table[i] = 0;
+    }
+    numEntries = 0;
+}
+UniqueTable::SubTable::~SubTable()
+{
+    delete[] table;
+    sizeIndex = 0;
+    numEntries = 0;
+}
 /** If table contains key, move it to the front of the list.
     Otherwise, do nothing.
     Returns the item if found, 0 otherwise.
@@ -52,16 +67,20 @@ NodeHandle UniqueTable::SubTable::find(const T &key) const
 // *                                                                *
 // ******************************************************************
 
-UniqueTable::UniqueTable()
+UniqueTable::UniqueTable(Forest* f):parent(f)
 {
-    //
-}
-UniqueTable::UniqueTable(Forest* f)
-{
-    //
+    uint16_t lvls = f->getSetting().getNumVars();
+    tables = (SubTable*)malloc(lvls * sizeof(SubTable));
+    for (uint16_t i=0; i<lvls; i++) {
+        new (&tables[i]) SubTable(f);
+    }
 }
 UniqueTable::~UniqueTable()
 {
-    //
+    for (uint16_t i=0; i<parent->getSetting().getNumVars(); i++) {
+        tables[i].~SubTable();
+    }
+    free(tables);
+    parent = 0;
 }
 

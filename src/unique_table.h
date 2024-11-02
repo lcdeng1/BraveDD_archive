@@ -48,7 +48,7 @@ class BRAVE_DD::UniqueTable {
          * @param node             The given node to be inserted
          * @return NodeHandle 
          */
-        NodeHandle insert(Node& node);
+        NodeHandle insert(uint16_t lvl, Node& node);
 
         /** If the table of the given variable level contains key node, return the item 
          * and move it to the front of the list. Otherwise, return 0 and do nothing.
@@ -86,7 +86,7 @@ class BRAVE_DD::UniqueTable {
     /*-------------------------------------------------------------*/
         class SubTable {
             public:
-                SubTable();
+                SubTable(Forest* f);
                 ~SubTable();
 
                 inline uint64_t getSize() const {
@@ -165,18 +165,18 @@ class BRAVE_DD::UniqueTable {
                 void shrink();
 
             private:
-                Forest* parent;
-                NodeHandle* table;
-                uint16_t level;
-                int sizeIndex;              // Table size at this level, index of PRIMES
-                uint64_t numEntries;        // The number of nodes at this level
-                unsigned nextExpandSize;    // The size for next expand
-                unsigned nextShrinkSize;    // The size for next shrink
+                Forest*         parent;
+                NodeHandle*     table;
+                uint16_t        level;
+                int             sizeIndex;          // Table size at this level, index of PRIMES
+                uint64_t        numEntries;         // The number of nodes at this level
+                // unsigned nextExpandSize;    // The size for next expand
+                // unsigned nextShrinkSize;    // The size for next shrink
         }; // class SubTable
 
         // ========================================================
-        Forest*             parent;     // Parent forest
-        SubTable*           tables;     // Subtables divided by levels
+        Forest*         parent;     // Parent forest
+        SubTable*       tables;     // Subtables divided by levels
         // int                 maxVar;    // The number of variables
         // int                 minVar;    // 0 for regular BDDs, -max_var for relation BDDs
 };
