@@ -7,8 +7,9 @@
 
 namespace BRAVE_DD {
     class Func;
+    class FuncValue;
     class FuncArray;
-
+    class ExplictFunc;
 };
 
 // ******************************************************************
@@ -60,7 +61,24 @@ class BRAVE_DD::Func {
 
 
     /************************* Within Operations ********************/
-    unsigned evaluate(Func func, bool* a); // goto Func, return type TBD
+    // 0 element not used! Doc!!
+    FuncValue evaluate(const std::vector<bool>& assignment) const;
+    FuncValue evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aTo) const;
+    
+    // /*  outcome can be used by reinterpret_cast or memcpy */
+    // // ExplictFunc including info of assignments, outcomes, 
+    // inline Func minimalAssignment(std::vector<bool> assignment, uint64_t outcome) { // <== FuncValue outcome
+    //     EdgeValue otc(0);
+    //     // check applicability based on setting TBD <== relation? levels?
+    //     if (assignment.size() != parent->getSetting().getNumVars()) {
+    //         throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+    //     }
+    //     // reinterpret_cast or memcpy 'outcome' to 'otc' based on the setting value type
+    //     otc.setValue(&outcome, parent->getSetting().getValType());
+    //     this->edge = unionAssignmentRecursive(parent->getSetting().getNumVars(), this->edge, assignment, otc);
+    // }
+    // void unionAssignments(ExplictFunc& funcs);
+
     uint64_t countNodes(Func func);
 
 
@@ -85,6 +103,22 @@ class BRAVE_DD::Func {
     /* For the Funcs registry in the parent forest */
     Func*       prevFunc;   // Previous Func edge in parent forest
     Func*       nextFunc;   // Next Func edge in parent forest
+};
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                        FuncValue class                         *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+class BRAVE_DD::FuncValue {
+    /*-------------------------------------------------------------*/
+    public:
+    /*-------------------------------------------------------------*/
+
+    /*-------------------------------------------------------------*/
+    private:
+    /*-------------------------------------------------------------*/
 };
 
 // ******************************************************************
@@ -119,6 +153,25 @@ class BRAVE_DD::FuncArray {
     friend class Forest;
     Forest*     parent;     // parent forest
     Func*       set;        // set of the Funcs
+};
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                      ExplictFunc class                         *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+class BRAVE_DD::ExplictFunc {
+    /*-------------------------------------------------------------*/
+    public:
+    /*-------------------------------------------------------------*/
+
+    /*-------------------------------------------------------------*/
+    private:
+    /*-------------------------------------------------------------*/
+    std::vector<std::vector<bool> >     assignments;
+    std::vector<FuncValue>              outcomes;
 };
 
 #endif

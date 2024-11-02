@@ -295,6 +295,7 @@ class BRAVE_DD::EdgeValue {
     }
 
     /*-------------------------------------------------------------*/
+    friend class Func;
     /// Values
     union {
         int             intValue;
@@ -319,6 +320,7 @@ class BRAVE_DD::Edge {
         Edge();
         // / Copy Constructor.
         Edge(const Edge &e);
+        Edge(const ReductionRule rule, EdgeValue val);
         Edge(const EdgeHandle h, EdgeValue val);
         /// Destructor.
         ~Edge();
