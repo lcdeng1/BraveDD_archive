@@ -34,7 +34,7 @@ void random_mark(Forest* forest, uint32_t* marklist, unsigned size)
         marklist[i] = 0;
     }
     uint32_t mlen = 0;
-    for (uint32_t i=0; i<size; i++) {
+    for (uint32_t i=1; i<=size; i++) {
         //
         if (forest->getNodeMan()->getNodeFromHandle(level, i).isInUse()) {
             marklist[mlen] = i+1;

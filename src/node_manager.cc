@@ -14,15 +14,15 @@ using namespace BRAVE_DD;
 NodeManager::SubManager::SubManager(Forest *f):parent(f)
 {
     sizeIndex = 0;
-    nodes = (Node*)malloc(PRIMES[sizeIndex] * sizeof(Node));
+    nodes = (Node*)malloc((PRIMES[sizeIndex] + 1) * sizeof(Node));
     recycled = 0;
-    firstUnalloc = 0;
+    firstUnalloc = 1;
     freeList = 0;
     numFrees = PRIMES[sizeIndex];
 }
 NodeManager::SubManager::~SubManager()
 {
-    for (uint32_t i=0; i<firstUnalloc; i++) {
+    for (uint32_t i=1; i<firstUnalloc; i++) {
         nodes[i].~Node();
     }
     free(nodes);
@@ -32,7 +32,7 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
 {
     /* Re-use the recycled handle, if we have one */
     if (recycled) {
-        const NodeHandle h = recycled - 1;
+        const NodeHandle h = recycled;
         recycled = 0;
         nodes[h] = node;
         return h;
@@ -43,7 +43,7 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
     numFrees--;
     if (freeList) {
         // pull from the free list
-        NodeHandle h = freeList - 1;
+        NodeHandle h = freeList;
         freeList = nodes[h].info[2];
         nodes[h] = node;
         return h;
@@ -56,7 +56,6 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
 
 Node& NodeManager::SubManager::getNodeFromHandle(const NodeHandle h)
 {
-    //
     if (h>=firstUnalloc) {
         std::cout << "[BRAVE_DD] ERROR!\t Invalid handle in node submanager; " 
         << firstUnalloc-1 << "nodes are allocated" << std::endl;
@@ -69,30 +68,27 @@ void NodeManager::SubManager::expand()
 {
     // Check if we can enlarge
     if (PRIMES[sizeIndex] >= UINT32_MAX) {  // MAX of uint32
-        std::cout << "[BRAVE_DD] ERROR!\t Out of nodes in node submanager; " 
-        << PRIMES[sizeIndex] << "nodes are full" << std::endl;
+        std::cout << "[BRAVE_DD] ERROR!\t Unable to enlarge node submanager!" << std::endl;
         exit(0);
     }
     // Enlarge
     sizeIndex++;
     uint32_t newSize = 0;
     if (PRIMES[sizeIndex] > UINT32_MAX) {
-        newSize = UINT32_MAX;
+        newSize = UINT32_MAX + 1;
     } else {
-        newSize = PRIMES[sizeIndex];
+        newSize = PRIMES[sizeIndex] + 1;
     }
     nodes = (Node*)realloc(nodes, newSize * sizeof(Node));
-    numFrees += (newSize - PRIMES[sizeIndex-1]);
-    firstUnalloc = PRIMES[sizeIndex-1];
+    numFrees += (newSize - PRIMES[sizeIndex-1] - 1);
 }
 
 void NodeManager::SubManager::shrink()
 {
-    //
     sizeIndex--;
-    uint32_t newSize = PRIMES[sizeIndex];
+    uint32_t newSize = PRIMES[sizeIndex] + 1;
     nodes = (Node*)realloc(nodes, newSize * sizeof(Node));
-    numFrees -= (PRIMES[sizeIndex+1] - newSize);
+    numFrees -= (PRIMES[sizeIndex+1] + 1 - newSize);
 }
 
 void NodeManager::SubManager::sweep()
@@ -112,14 +108,14 @@ void NodeManager::SubManager::sweep()
     }
     /* Rebuild the free list, by scanning all nodes backwards.
        Unmarked nodes are added to the list. */
-    numFrees = ((PRIMES[sizeIndex]>UINT32_MAX)? UINT32_MAX:PRIMES[sizeIndex]) - firstUnalloc;
+    numFrees = ((PRIMES[sizeIndex]>UINT32_MAX)? UINT32_MAX:PRIMES[sizeIndex]) + 1 - firstUnalloc;
     freeList = 0;
-    for (uint32_t i=firstUnalloc; i; --i) {
+    for (uint32_t i=firstUnalloc; i>1; --i) {
         if (nodes[i-1].isMarked()) {
             nodes[i-1].unmark();
         } else {
             nodes[i-1].recycle(freeList);
-            freeList = i;
+            freeList = i-1;
             numFrees++;
         }
     }

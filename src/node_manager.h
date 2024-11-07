@@ -90,7 +90,7 @@ class BRAVE_DD::NodeManager {
             void shrink();
 
             Forest*     parent;         // Parent forest
-            Node*       nodes;          // Actual node storage
+            Node*       nodes;          // Actual node storage; the 1st slot (nodes[0]) will be used
             int         sizeIndex;      // Index of prime number for size
             uint32_t    firstUnalloc;   // Index of first unallocated slot
             uint32_t    freeList;       // Header of the list of unused slots
