@@ -15,6 +15,10 @@ NodeManager::SubManager::SubManager(Forest *f):parent(f)
 {
     sizeIndex = 0;
     nodes = (Node*)malloc((PRIMES[sizeIndex] + 1) * sizeof(Node));
+    if (!nodes) {
+        std::cout << "[BRAVE_DD] ERROR!\t Malloc fail for submanager!"<< std::endl;
+        exit(0);
+    }
     recycled = 0;
     firstUnalloc = 1;
     freeList = 0;
