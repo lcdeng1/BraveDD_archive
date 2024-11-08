@@ -105,10 +105,18 @@ class BRAVE_DD::Forest {
     /**
      * @brief Get the unpacked Node from the given NodeHandle
      * 
-     * @param handle        The given node handle
+     * @param level         The given node level.
+     * @param handle        The given node handle.
      * @return Node 
      */
-    Node getUnpackNode(NodeHandle handle);
+    inline Node& getNode(const uint16_t level, const NodeHandle handle) const{
+        return nodeMan->getNodeFromHandle(level, handle);
+    }
+
+    inline NodeHandle insertNode(const uint16_t level, const Node& node) {
+        return uniqueTable->insert(level, node);
+    }
+
     /**
      * @brief Get the child Edge of the target node for a given edge with 
      * the index of child.
@@ -122,7 +130,7 @@ class BRAVE_DD::Forest {
      * @brief Get the child EdgeLabel for a given edge with the index of child.
      * 
      * @param handle        The given edge.
-     * @param index         The index of child
+     * @param index         The index of child.
      * @return Edge
      */
     EdgeLabel getChildLabel(NodeHandle handle, int index);
@@ -133,7 +141,9 @@ class BRAVE_DD::Forest {
      * @param handle        The given node handle.
      * @return NodeHandle 
      */
-    NodeHandle getNodeNext(uint16_t level, NodeHandle handle);
+    inline NodeHandle getNodeNext(const uint16_t level, const NodeHandle handle) const {
+        return nodeMan->getNodeFromHandle(level, handle).getNext();
+    }
     /**
      * @brief Set the next NodeHandle in the UniqueTable for a given node handle.
      * 
@@ -141,7 +151,19 @@ class BRAVE_DD::Forest {
      * @param handle        The givien node handle.
      * @param next          The next handle to set.
      */
-    void setNodeNext(uint16_t level, NodeHandle handle, NodeHandle next);
+    inline void setNodeNext(const uint16_t level, const NodeHandle handle, const NodeHandle next) {
+        nodeMan->getNodeFromHandle(level, handle).setNext(next);
+    }
+    /**
+     * @brief Get the Node Hash
+     * 
+     * @param level         The given node level.
+     * @param handle        The given node handle.
+     * @return uint64_t     The hash value.
+     */
+    inline uint64_t getNodeHash(const uint16_t level, const NodeHandle handle) const {
+        return nodeMan->getNodeFromHandle(level, handle).hash();
+    }
     /**
      * @brief Check if the given unpacked node and the node handle are duplicates 
      * (i.e., having the same child labels and target nodes).
