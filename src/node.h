@@ -147,6 +147,11 @@ class BRAVE_DD::Node {
         return (bool)((uint16_t)(info[1] & MARK_MASK) > 0);
     }
     inline bool isMarked(uint16_t val) const {
+        if (val > MARK_MASK) {
+            std::cout << "[BRAVE_DD] ERROR!\t Unable to enlarge node submanager!" << std::endl;
+            throw error(BRAVE_DD::ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            return 0;
+        }
         return (bool)((uint16_t)(info[1] & MARK_MASK) > val);
     }
 
@@ -378,7 +383,7 @@ class BRAVE_DD::Node {
         hash_stream hs;
         hs.start(0);
         // push info
-        hs.push(info[1] >> 4);
+        hs.push(info[1] >> 2);
         int numInfo = getNumInfo();
         for (int i=2; i<numInfo; i++) hs.push(info[i]);
         return (uint64_t)hs.finish64();
@@ -394,6 +399,9 @@ class BRAVE_DD::Node {
     inline bool operator==(const Node& node) const {
         return equals(node);
     }
+    inline bool operator!=(const Node& node) const {
+        return !equals(node);
+    }
 
     inline Node& operator=(const Node& node) {
         // if (equals(node)) return *this;
@@ -404,7 +412,7 @@ class BRAVE_DD::Node {
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-    inline bool equals(const Node node) const {
+    inline bool equals(const Node& node) const {
         // number of info
         if (getNumInfo() != node.getNumInfo()) return 0;
         // labels
