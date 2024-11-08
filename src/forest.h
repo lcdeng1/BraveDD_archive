@@ -222,6 +222,7 @@ class BRAVE_DD::Forest {
     void reduceEdge(uint16_t lvl, EdgeLabel label, uint16_t nodeLvl, std::vector<Edge> child, Edge* out);
 
     inline NodeManager* getNodeMan() {return nodeMan;}
+    inline UniqueTable* getUT() {return uniqueTable;}
 
 
     /************************* Within Operations ********************/
