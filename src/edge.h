@@ -10,6 +10,17 @@ namespace BRAVE_DD {
         NEG_INF,
         UNDEF
     };
+    class EdgeValue;
+    class Edge;
+    class Forest;
+    // file I/O
+    // TBD
+
+    // ******************************************************************
+    // *                                                                *
+    // *                        EdgeLabel type                          *
+    // *                                                                *
+    // ******************************************************************
     /**
      *  Labels for edge rule and flags storage
      *  Each label is constructed as:
@@ -63,6 +74,11 @@ namespace BRAVE_DD {
         label = label | ((uint8_t)swap << 1);
     }
 
+    // ******************************************************************
+    // *                                                                *
+    // *                        EdgeHandle type                         *
+    // *                                                                *
+    // ******************************************************************
     /**
      *  Handles for edges storage
      *  This effectively limits the number of possible nodes per forest.
@@ -148,13 +164,7 @@ namespace BRAVE_DD {
         handle = handle | ((uint64_t)target);
     }
 
-
-    class EdgeValue;
-    class Edge;
-    class Forest;
-    // file I/O
-    // TBD
-};
+}; // end of namespace
 
 
 // ******************************************************************
@@ -259,18 +269,23 @@ class BRAVE_DD::EdgeValue {
     }
     inline bool equals(const EdgeValue& val) const {
         bool isEqual = 1;
-        if (valueType != val.valueType) return !isEqual;
+        if (valueType != val.valueType) return 0;
         switch (valueType) {
             case VOID:
-                return isEqual = special == val.special;
+                isEqual = (special == val.special);
+                break;
             case INT:
-                return isEqual = intValue == val.intValue;
+                isEqual = (intValue == val.intValue);
+                break;
             case LONG:
-                return isEqual = longValue == val.longValue;
+                isEqual = (longValue == val.longValue);
+                break;
             case FLOAT:
-                return isEqual = floatValue == val.floatValue;      // Precision? TBD
+                isEqual = (floatValue == val.floatValue);      // Precision? TBD
+                break;
             case DOUBLE:
-                return isEqual = doubleValue == val.doubleValue;    // Precision? TBD
+                isEqual = (doubleValue == val.doubleValue);    // Precision? TBD
+                break;
             default:
                 throw error(BRAVE_DD::ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
         }
@@ -281,14 +296,19 @@ class BRAVE_DD::EdgeValue {
         switch (valueType) {
             case VOID:
                 special = val.special;
+                break;
             case INT:
                 intValue = val.intValue;
+                break;
             case LONG:
                 longValue = val.longValue;
+                break;
             case FLOAT:
                 floatValue = val.floatValue;
+                break;
             case DOUBLE:
                 doubleValue = val.doubleValue;
+                break;
             default:
                 throw error(BRAVE_DD::ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
         }
@@ -324,6 +344,23 @@ class BRAVE_DD::Edge {
         Edge(const EdgeHandle h, EdgeValue val);
         /// Destructor.
         ~Edge();
+        /**
+         * @brief Get the target node level of a given edge.
+         * 
+         * @return uint16_t
+         */
+        inline uint16_t getNodeLevel() const {return unpackLevel(handle);}
+
+        /**
+         * @brief Get the target node handle.
+         * 
+         * @return NodeHandle 
+         */
+        inline NodeHandle getNodeHandle() const {return unpackNode(handle);}
+
+        inline EdgeValue getValue() const {return value;}
+
+
 
         inline Edge& operator=(const Edge& e) {
             if (equals(e)) return *this;
@@ -344,7 +381,7 @@ class BRAVE_DD::Edge {
             handle = e.handle;
             value = e.value;
         }
-        inline bool equals(const Edge e) const {
+        inline bool equals(const Edge& e) const {
             return (handle == e.handle) && (value == e.value);
         }
         /* Getters and Setters under Forest */

@@ -39,7 +39,7 @@ NodeHandle UniqueTable::SubTable::insert(const Node& node)
     // Special, and hopefully common, case: empty chain. Which means the node is new.
     if (!table[index]) {
         numEntries++;
-        table[index] = parent->getNodeMan()->getFreeNodeHandle(level, node);
+        table[index] = parent->obtainFreeNodeHandle(level, node);
         return table[index];
     }
     // Non-empty chain. Check the chain for duplicates.
@@ -55,7 +55,7 @@ NodeHandle UniqueTable::SubTable::insert(const Node& node)
     // No duplicates in the chain. 
     // Get a new node handle, and add the new node to the front.
     numEntries++;
-    NodeHandle handle = parent->getNodeMan()->getFreeNodeHandle(level, node);
+    NodeHandle handle = parent->obtainFreeNodeHandle(level, node);
     parent->setNodeNext(level, handle, table[index]);
     table[index] = handle;
     return handle;

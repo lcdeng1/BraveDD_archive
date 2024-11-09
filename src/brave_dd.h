@@ -9,6 +9,8 @@
 #include "defines.h"
 #include "setting.h"
 #include "node.h"
+#include "edge.h"
+#include "function.h"
 #include "node_manager.h"
 #include "unique_table.h"
 #include "forest.h"

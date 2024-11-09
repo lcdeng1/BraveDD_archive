@@ -50,7 +50,8 @@ Edge::Edge()
 }
 Edge::Edge(const Edge &e)
 {
-    //
+    handle = e.handle;
+    value = e.value;
 }
 Edge::Edge(const EdgeHandle h, EdgeValue val):value(val)
 {
