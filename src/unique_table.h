@@ -25,12 +25,12 @@ class BRAVE_DD::UniqueTable {
         ~UniqueTable();
 
         /// Get the unique table size for a given level
-        inline uint64_t getSize(int varLvl) const {return tables[varLvl-1].getSize();}
+        inline uint32_t getSize(int varLvl) const {return tables[varLvl-1].getSize();}
         /// Get the total size (sum over all levels)
         uint64_t getSize() const;
 
         /// Get the number of unique nodes at a given level
-        inline uint64_t getNumEntries(int varLvl) const {return tables[varLvl-1].getNumEntries();}
+        inline uint32_t getNumEntries(int varLvl) const {return tables[varLvl-1].getNumEntries();}
         /// Get the total number of unique nodes (sum over all levels)
         uint64_t getNumEntries() const;
 
@@ -93,10 +93,10 @@ class BRAVE_DD::UniqueTable {
                 SubTable(uint16_t lvl, Forest* f);
                 ~SubTable();
 
-                inline uint64_t getSize() const {
-                    return PRIMES[sizeIndex];
+                inline uint32_t getSize() const {
+                    return PRIMES[sizeIndex]>=UINT32_MAX?UINT32_MAX:PRIMES[sizeIndex];
                 }
-                inline uint64_t getNumEntries() const {
+                inline uint32_t getNumEntries() const {
                     return numEntries;
                 }
                 inline uint64_t getMemUsed() const {

@@ -47,12 +47,12 @@ int main()
         } else {
             count++;
         }
-        if (forest->getUT()->getNumEntries(10) + count != i+1) {
+        if (forest->getUTEntriesNum(10) + count != i+1) {
             std::cout << "[Brave_DD] Test Error! Some nodes are missing!" << std::endl;
             return 1;
         }
     }
-    std::cout<<"UT entries number: \t" << forest->getUT()->getNumEntries(10) 
+    std::cout<<"UT entries number: \t" << forest->getUTEntriesNum(10) 
     << " / " << TESTS << std::endl;
     std::cout<<"Duplicates detected: \t" << count << std::endl;
 

@@ -35,7 +35,7 @@ NodeHandle UniqueTable::SubTable::insert(const Node& node)
     /* Check if we should enlarge */
     if (numEntries >= PRIMES[sizeIndex+1]) expand();
     /* Determine the hash index for the node */
-    uint32_t index = node.hash() % PRIMES[sizeIndex];
+    uint32_t index = node.hash() % getSize();
     // Special, and hopefully common, case: empty chain. Which means the node is new.
     if (!table[index]) {
         numEntries++;

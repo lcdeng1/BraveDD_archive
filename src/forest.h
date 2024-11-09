@@ -111,19 +111,20 @@ class BRAVE_DD::Forest {
         return nodeMan->getNodeFromHandle(level, handle).hash();
     }
 
+    /**
+     * @brief Store a node in NodeManager and return its node handle, by giving the node's level and itself.
+     * Note: This does not guarantee that the node is uniquely stored.
+     * 
+     * @param level 
+     * @param node 
+     * @return NodeHandle 
+     */
     inline NodeHandle obtainFreeNodeHandle(const uint16_t level, const Node& node) {
         return nodeMan->getFreeNodeHandle(level, node);
     }
-
-    inline uint32_t getNodeManUsed(const uint16_t level) const {
-        return nodeMan->numUsed(level);
-    }
-    inline uint32_t getNodeManAlloc(const uint16_t level) const {
-        return nodeMan->numAlloc(level);
-    }
     
     /**
-     * @brief Insert a node as unique and get its node handle by giving its level and itself.
+     * @brief Uniquely store a node and get its node handle by giving its level and itself.
      * 
      * @param level         The level of the node.
      * @param node          The node to insert.
@@ -159,17 +160,16 @@ class BRAVE_DD::Forest {
         return res;
     }
 
-    inline UniqueTable* getUT() {return uniqueTable;}
     /************************* Reduction ****************************/
     /**
-     * @brief Reduce and return an edge pointing to a reduced node as unique stored in NodeManager, by giving the beginning level 
+     * @brief Reduce and return an edge pointing to a unique reduced node stored in NodeManager, by giving the beginning level 
      * of an unreduced incoming edge, its unreduced edge label, and unreduced target node (its level, child edges).
      * 
      * @param beginLevel    The beginning level of the unreduced incoming edge.
      * @param label         The unreduced incoming edge label.
      * @param nodeLevel     The level of the unreduced target node.
      * @param child         The vector of child edges of the unreduced target node.
-     * @return Edge         - Output: the reduced edge pointing to a reduced node as unique stored.
+     * @return Edge         - Output: the reduced edge pointing to a reduced node uniquely stored.
      */
     Edge reduceEdge(uint16_t beginLevel, EdgeLabel label, uint16_t nodeLevel, std::vector<Edge> child);
 
@@ -204,6 +204,15 @@ class BRAVE_DD::Forest {
     // TBD
 
     /************************* Statistics Information ***************/
+    inline uint32_t getNodeManUsed(const uint16_t level) const {
+        return nodeMan->numUsed(level);
+    }
+    inline uint32_t getNodeManAlloc(const uint16_t level) const {
+        return nodeMan->numAlloc(level);
+    }
+    inline uint32_t getUTEntriesNum(const uint16_t level) const {
+        return uniqueTable->getNumEntries(level);
+    }
     uint64_t getPeakNodes();    // largest result of getCurrentNodes(), since the last call to resetPeakNodes()
     uint64_t getCurrentNodes(); // number of nodes in UT, including disconnected
     void resetPeakNodes();
