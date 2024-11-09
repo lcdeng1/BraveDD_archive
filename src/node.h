@@ -185,7 +185,8 @@ class BRAVE_DD::Node {
     }
 
     inline bool isInUse() {
-        return info[1] != 0;
+        // be careful! this may not detect all in-use node cases
+        return info[1] || info[2] || info[3];
     }
     inline void recycle(uint32_t nextFree) {
         for (uint32_t* p=info; *p; p++) {

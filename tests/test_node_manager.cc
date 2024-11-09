@@ -8,9 +8,21 @@ const unsigned SEED=123456;
 
 
 std::mt19937 gen(SEED);     // Seed the Mersenne Twister engine with the fixed seed
+std::uniform_int_distribution<> distrRule(0, 10);
+std::uniform_int_distribution<> distrBool(0, 1);
+std::uniform_int_distribution<uint16_t> distr16(0, UINT16_MAX);
 std::uniform_int_distribution<uint32_t> distr32(0, UINT32_MAX);
 
 using namespace BRAVE_DD;
+
+void fill_node(Node& node)
+{
+    node.setEdgeRule(0, (ReductionRule)distrRule(gen));
+    node.setEdgeRule(1, (ReductionRule)distrRule(gen));
+    node.setChildNodeHandle(0, (NodeHandle)distr16(gen));
+    node.setChildNodeHandle(1, (NodeHandle)distr16(gen));
+    node.setEdgeComp(1,distrBool(gen));
+}
 
 double uniform()
 {
@@ -35,8 +47,7 @@ void random_mark(Forest* forest, uint32_t* marklist, unsigned size)
     }
     uint32_t mlen = 0;
     for (uint32_t i=1; i<=size; i++) {
-        //
-        if (forest->getNodeMan()->getNodeFromHandle(level, i).isInUse()) {
+        if (forest->getNode(level, i).isInUse()) {
             marklist[mlen] = i+1;
             mlen++;
         }
@@ -63,19 +74,25 @@ void alloc_mark_sweep(Forest* forest, unsigned num_a, unsigned num_m, uint32_t* 
     uint16_t level = forest->getSetting().getNumVars();
     std::cout << "\tAllocating " << num_a << " nodes at level " << level << std::endl;
     for (unsigned i=num_a; i; i--) {
-        if (i==10) node.setEdgeRule(0, RULE_EL1);   // make a little change
-        forest->getNodeMan()->getFreeNodeHandle(level,node);
+        // if (i==10) node.setEdgeRule(0, RULE_EL1);   // make a little change
+        fill_node(node);
+        NodeHandle h = forest->obtainFreeNodeHandle(level,node);
+        if (forest->getNode(level, h) != node) {
+            std::cout<<"[BRAVE_DD] Test Error!"<<std::endl;
+            exit(0);
+        }
+
     }
-    std::cout << "\t\t" << forest->getNodeMan()->numUsed(level) << " nodes used" << std::endl;
+    std::cout << "\t\t" << forest->getNodeManUsed(level) << " nodes used" << std::endl;
 
     /* Randomly mark */
     std::cout << "\tMarking " << num_m << " nodes" << std::endl;
     random_mark(forest, marklist, size);
     for (uint32_t i=0; i<num_m; i++) {
         if (!marklist[i]) continue;
-        forest->getNodeMan()->getNodeFromHandle(level, marklist[i]-1).mark();
+        forest->getNode(level, marklist[i]-1).mark();
     }
-    forest->getNodeMan()->sweep(level);
+    forest->sweepNodeMan(level);
 }
 
 unsigned max_marked_plus1(unsigned slots, uint32_t* marklist)
@@ -121,8 +138,8 @@ int main()
         if (i>0) marklistSize = allox[i] + marks[i-1];
         uint32_t* marklist = (uint32_t*)malloc(marklistSize * sizeof(uint32_t));
         alloc_mark_sweep(forest, allox[i], marks[i], marklist, marklistSize);
-        check_equal("used nodes", marks[i], forest->getNodeMan()->numUsed(level));
-        check_equal("first unalloc", max_marked_plus1(marks[i], marklist), forest->getNodeMan()->numAlloc(level));
+        check_equal("used nodes", marks[i], forest->getNodeManUsed(level));
+        check_equal("first unalloc", max_marked_plus1(marks[i], marklist), forest->getNodeManAlloc(level));
         free(marklist);
     }
 

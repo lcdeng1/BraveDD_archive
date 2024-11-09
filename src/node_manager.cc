@@ -106,13 +106,13 @@ void NodeManager::SubManager::sweep()
         (nodes+firstUnalloc-1)->~Node();
         firstUnalloc--;
     }
+    numFrees = ((PRIMES[sizeIndex]>UINT32_MAX)? UINT32_MAX:PRIMES[sizeIndex]) + 1 - firstUnalloc;
     /* Check if we can shrink */
     if (firstUnalloc < PRIMES[sizeIndex-1]) {
         shrink();
     }
     /* Rebuild the free list, by scanning all nodes backwards.
        Unmarked nodes are added to the list. */
-    numFrees = ((PRIMES[sizeIndex]>UINT32_MAX)? UINT32_MAX:PRIMES[sizeIndex]) + 1 - firstUnalloc;
     freeList = 0;
     for (uint32_t i=firstUnalloc; i>1; --i) {
         if (nodes[i-1].isMarked()) {
