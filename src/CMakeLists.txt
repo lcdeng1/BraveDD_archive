@@ -15,5 +15,5 @@ add_library(BraveDD ${SRC_FILES})
 # Add include directories
 target_include_directories(BraveDD
     PUBLIC
-    ${HEADER_FILES}
+    ${PROJECT_SOURCE_DIR}/src
 )
