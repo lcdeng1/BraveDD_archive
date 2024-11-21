@@ -84,11 +84,14 @@ class BRAVE_DD::NodeManager {
                 return firstUnalloc;
             }
         private:
+        // ======================Helper Methods====================
             /// Expand the nodes to next size (if possible)
             void expand();
             /// Shrink the nodes to previous size
             void shrink();
 
+        // ========================================================
+            friend class NodeManager;
             Forest*     parent;         // Parent forest
             Node*       nodes;          // Actual node storage; the 1st slot (nodes[0]) will be used
             int         sizeIndex;      // Index of prime number for size
@@ -96,13 +99,14 @@ class BRAVE_DD::NodeManager {
             uint32_t    freeList;       // Header of the list of unused slots
             uint32_t    numFrees;       // Number of free/unused slots
             uint32_t    recycled;       // Last recycled node index
+
     }; // class SubManager
 
     // ======================Helper Methods====================
 
 
     // ========================================================
-    Forest* parent;                     // Parent Forest
+    Forest* parent;        // Parent Forest
     SubManager* chunks;    // Chunks by levels
 
 };

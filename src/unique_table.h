@@ -153,6 +153,7 @@ class BRAVE_DD::UniqueTable {
                 /// Shrink the hash table
                 void shrink();
             // ========================================================
+                friend class UniqueTable;
                 Forest*         parent;
                 NodeHandle*     table;
                 uint16_t        level;              // The level of stored nodes

@@ -9,9 +9,9 @@
 namespace BRAVE_DD {
     static const uint32_t NODE_TYPE_MASK = (uint32_t)(0x01<<4);
     static const uint32_t NODE_LABEL_MASK = (uint32_t)((0x01<<27)-1)<<5;
-    static const uint32_t BIT32_VALUE_MASK = (uint32_t)(0x01<<2);
-    static const uint32_t BIT64_VALUE_MASK = (uint32_t)(0x01<<3);
-    static const uint32_t MARK_MASK = (uint32_t)((0x01<<2)-1);
+    static const uint32_t LOW_TERMINAL_MASK = (uint32_t)((0x01<<2)-1)<<3;
+    static const uint32_t HIGH_TERMINAL_MASK = (uint32_t)((0x01<<2)-1)<<1;
+    static const uint32_t MARK_MASK = (uint32_t)(0x01);
     class Node;
 }
 
@@ -28,22 +28,22 @@ namespace BRAVE_DD {
  *      Common  --{ info[0]: Next node handle in the unique table.
  *      Labels  --{ info[1]: Bit 31 (MSB) ... Bit 28: child edge 0's rule.
  *                           Bit 27       ... Bit 24: child edge 1's rule.
- *                           Bit 23       ... Bit 20: child edge 10's rule (for Mxnode).
- *                           Bit 19       ... Bit 16: child edge 11's rule (for Mxnode).
+ *                           Bit 23       ... Bit 20: child edge 2's rule (for Mxnode).
+ *                           Bit 19       ... Bit 16: child edge 3's rule (for Mxnode).
  *                           Bit 15                 : child edge 1's complement.
- *                           Bit 14                 : child edge 10's complement.
- *                           Bit 13                 : child edge 11's complement.
+ *                           Bit 14                 : child edge 2's complement.
+ *                           Bit 13                 : child edge 3's complement.
  *                           Bit 12       ... Bit 11: child edge 0's swap bits (from and to).
  *                           Bit 10       ... Bit 9 : child edge 1's swap bits (from and to).
- *                           Bit 8        ... Bit 7 : child edge 10's swap bits.
- *                           Bit 6        ... Bit 5 : child edge 11's swap bits.
- *                           Bit 4                  : 0: for Node; 1: for Mxnode.
- *                           Bit 3        ... Bit 2 : 00: for void value; 01: for 32-bit value; 10: for 64-bit value.
- *                           Bit 1        ... Bit 0 : mark bits.
- *      ^ for unused nodes, this is the next pointer in the free list. ^
+ *                           Bit 8        ... Bit 7 : child edge 2's swap bits.
+ *                           Bit 6        ... Bit 5 : child edge 3's swap bits.
+ *                           Bit 4        ... Bit 3 : 00:
+ *                           Bit 2        ... Bit 1 : 00:
+ *                           Bit 0                  : mark bit.
+ *
  *    For Node:
  *      Child node
- *      handles --{ info[2]: child node 0's handle.
+ *      handles --{ info[2]: child node 0's handle.     <---- for unused nodes, this is the next pointer in the free list.
  *                { info[3]: child node 1's handle.
  *      levels  --{ info[4]: Bit 31 (MSB) ... Bit 16: child node 0's level.
  *                           Bit 15       ... Bit 0 : child node 1's level.
@@ -72,35 +72,15 @@ class BRAVE_DD::Node {
     /*-------------------------------------------------------------*/
     // construction by the forest setting
     Node(const ForestSetting& s) {
-        bool isRelation = s.isRelation();
-        int valSize = 0;
-        int infoSize = 0;
-        /* slots for values.
-            Note: for finite range, only logN bits needed: further compress TBD.
-        */
-        ValueType valType = s.getValType();
-        if (valType==LONG || valType==DOUBLE) {
-            infoSize = isRelation ? 8+3*2 : 5+2;
-            valSize = 2;
-        } else if (valType==INT || valType==FLOAT) {
-            infoSize = isRelation ? 8+3 : 5+1;
-            valSize = 1;
-        } else {
-            infoSize = isRelation ? 8 : 5;
-        }
+        int infoSize = s.nodeSize();
         info = (uint32_t*)malloc(infoSize * sizeof(uint32_t));
         for (int i=0; i<infoSize; i++) info[i] = 0;
-        // number of slots hidden in info[1]
-        if (isRelation) info[1] |= NODE_TYPE_MASK;
-        if (valSize == 1) {
-            info[1] |= BIT32_VALUE_MASK;
-        } else if (valSize == 2) {
-            info[1] |= BIT64_VALUE_MASK;
-        }
+    }
+    Node(const int size) {
+        info = (uint32_t*)malloc(size * sizeof(uint32_t));
+        for (int i=0; i<size; i++) info[i] = 0;
     }
     ~Node() {
-        int numInfo = getNumInfo();
-        for (int i=0; i<numInfo; i++) info[0] = 0;
         free(info);
     }
 
@@ -124,43 +104,17 @@ class BRAVE_DD::Node {
     inline bool isMxd() const { return info[1] & NODE_TYPE_MASK; }
 
     /**
-     * Compute the size of info array
-     * 
-     * @return int 
-     */
-    inline int getNumInfo() const {
-        int valType = 0;
-        if (info[1] & BIT32_VALUE_MASK) {
-            valType = 1;
-        } else if (info[1] & BIT64_VALUE_MASK) {
-            valType = 2;
-        }
-        return (isMxd())?8+3*valType : 5+valType;
-    }
-
-    /**
      *  For this node, check if it is marked
-     *  Marked if the mark counting greater than the given value
-     * 
      */
     inline bool isMarked() const {
-        return (bool)((uint16_t)(info[1] & MARK_MASK) > 0);
-    }
-    inline bool isMarked(uint16_t val) const {
-        if (val > MARK_MASK) {
-            std::cout << "[BRAVE_DD] ERROR!\t Unable to enlarge node submanager!" << std::endl;
-            throw error(BRAVE_DD::ErrCode::INVALID_BOUND, __FILE__, __LINE__);
-            return 0;
-        }
-        return (bool)((uint16_t)(info[1] & MARK_MASK) > val);
+        return (bool)(info[1] & MARK_MASK);
     }
 
     /**
-     *  Get the mark count for this node
-     * 
+     *  For this node, get the marks counting
      */
-    inline uint16_t getMarks() const {
-        return (uint16_t)(info[1] & MARK_MASK);
+    inline int getMarks() const {
+        return (info[1] & MARK_MASK);
     }
 
     /**
@@ -168,31 +122,30 @@ class BRAVE_DD::Node {
      *  Counting unchange if reach the max
      */
     inline void mark() {
-        if (getMarks() < MARK_MASK) info[1]++;
+        if ((uint32_t)getMarks()<MARK_MASK) info[1]++;
     }
 
     /**
-     *  Unmark this node
-     *  Decrease 1 the count if given flag 1, otherwise clear count
-     *  Counting unchange if 0
+     *  Unmark and decrease 1 the count for this node
+     *  Counting unchange if reach 0
      */
-    inline void decMark() {
-        if (getMarks() > 0) info[1]--;
-    }
-
     inline void unmark() {
-        info[1] &= ~MARK_MASK;
+        if (isMarked()) info[1]--;
     }
 
+    /**
+     *  Check if node is in use
+     */
     inline bool isInUse() {
         // be careful! this may not detect all in-use node cases
         return info[1] || info[2] || info[3];
     }
     inline void recycle(uint32_t nextFree) {
-        for (uint32_t* p=info; *p; p++) {
-            *p = 0;
-        }
+        for (int i=0; i<4; i++) info[i] = 0;
         info[2] = nextFree;
+    }
+    inline NodeHandle nextFree() const {
+        return (NodeHandle)info[2];
     }
 
     /**
@@ -329,6 +282,12 @@ class BRAVE_DD::Node {
         }
     }
 
+    inline bool isEdgeTerminal(char child) const {
+        if (childNodeLevel(child)>0) {
+            //
+        }
+    }
+
     /**
      * Unpack and get the child edge's label
      * 
@@ -380,59 +339,36 @@ class BRAVE_DD::Node {
      * 
      * @return uint64_t 
      */
-    inline uint64_t hash() const {
+    inline uint64_t hash(int size) const {
         hash_stream hs;
         hs.start(0);
         // push info
         hs.push(info[1] >> 2);
-        int numInfo = getNumInfo();
-        for (int i=2; i<numInfo; i++) hs.push(info[i]);
+        for (int i=2; i<size; i++) hs.push(info[i]);
         return (uint64_t)hs.finish64();
     }
 
-    /**
-     * Check if this equals to the given node
-     * 
-     * @param node
-     * @return true 
-     * @return false 
-     */
-    inline bool operator==(const Node& node) const {
-        return equals(node);
-    }
-    inline bool operator!=(const Node& node) const {
-        return !equals(node);
+    inline void assign(const Node& node, int size) {
+        for (int i=0; i<size; i++) {
+            info[i] = node.info[i];
+        }
     }
 
-    inline Node& operator=(const Node& node) {
-        // if (equals(node)) return *this;
-        init(node);
-        return *this;
+    inline bool isEqual(const Node& node, int size) const {
+        // labels
+        if (((info[1] & NODE_LABEL_MASK) != (node.info[1] & NODE_LABEL_MASK))) return 0;
+        // node handles and levels
+        for (int i=2; i<size; i++) {
+            if (info[i] != node.info[i]) return 0;
+        }
+        return 1;
     }
 
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-    inline bool equals(const Node& node) const {
-        // number of info
-        if (getNumInfo() != node.getNumInfo()) return 0;
-        // labels
-        if (((info[1] & NODE_LABEL_MASK) != (node.info[1] & NODE_LABEL_MASK))) return 0;
-        // node handles and levels
-        int numInfo = getNumInfo();
-        for (int i=2; i<numInfo; i++) {
-            if (info[i] != node.info[i]) return 0;
-        }
-        return 1;
-    }
-    inline void init(const Node& node) {
-        int numInfo = getNumInfo();
-        for (int i=0; i<numInfo; i++) {
-            info[i] = node.info[i];
-        }
-    }
-    friend class NodeManager;
     /// ============================================================
+    friend class NodeManager;
     uint32_t* info;         // Next pointer, edge rules, edge flags, node handles, and levels
 };
 

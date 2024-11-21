@@ -38,7 +38,7 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
     if (recycled) {
         const NodeHandle h = recycled;
         recycled = 0;
-        nodes[h] = node;
+        nodes[h].assign(node, parent->nodeSize);
         return h;
     }
     /* Enlarge if there is no free/unused slots */
@@ -49,12 +49,12 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
         // pull from the free list
         NodeHandle h = freeList;
         freeList = nodes[h].info[2];
-        nodes[h] = node;
+        nodes[h].assign(node, parent->nodeSize);
         return h;
     }
     /* Free list is empty, so pull from the unallocated end portion */
-    new (&nodes[firstUnalloc]) Node(parent->getSetting());
-    nodes[firstUnalloc] = node;
+    new (&nodes[firstUnalloc]) Node(parent->nodeSize);
+    nodes[firstUnalloc].assign(node, parent->nodeSize);
     return firstUnalloc++;
 }
 
