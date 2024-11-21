@@ -64,7 +64,8 @@ void random_mark(Forest* forest, uint32_t* marklist, unsigned size)
 
 void alloc_mark_sweep(Forest* forest, unsigned num_a, unsigned num_m, uint32_t* marklist, unsigned size)
 {
-    Node node(forest->getSetting());
+    int nodeSize = forest->getSetting().nodeSize();
+    Node node(nodeSize);
     node.setChildNodeHandle(0, num_a);
     node.setChildNodeHandle(1, num_m);
     node.setEdgeRule(0, RULE_AH0);
@@ -77,7 +78,7 @@ void alloc_mark_sweep(Forest* forest, unsigned num_a, unsigned num_m, uint32_t* 
         // if (i==10) node.setEdgeRule(0, RULE_EL1);   // make a little change
         fill_node(node);
         NodeHandle h = forest->obtainFreeNodeHandle(level,node);
-        if (forest->getNode(level, h) != node) {
+        if (!forest->getNode(level, h).isEqual(node, nodeSize)) {
             std::cout<<"[BRAVE_DD] Test Error!"<<std::endl;
             exit(0);
         }
