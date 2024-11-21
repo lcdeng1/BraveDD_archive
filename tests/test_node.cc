@@ -36,37 +36,12 @@ int main()
             exit(1);
         }
         // mark
-        const uint32_t marks = distrMarks(gen);
-        for (uint32_t k=0; k<marks; k++) {
-            node.mark();
-        }
-        if (node.getMarks() != marks) {
+        const uint32_t mark = distrBool(gen);
+        if (mark) node.mark();
+        if (node.isMarked() != mark) {
             std::cout << "[Marks] error at i:" << i << std::endl;
-            std::cout << "set Marks: " << marks << "; get Marks: " << node.getMarks() << std::endl;
+            std::cout << "set Marks: " << mark << "; get Marks: " << node.isMarked() << std::endl;
             exit(1);
-        }
-        if (distrBool(gen)) {
-            node.mark();
-            if (marks < MARK_MASK) {
-                if (node.getMarks() != marks + 1) {
-                    std::cout << "[Marks] error at i:" << i << std::endl;
-                    std::cout << "old Marks: " << marks << "; inc Marks: " << node.getMarks() << std::endl;
-                    exit(1);
-                }
-            } else {
-                if (node.getMarks() != MARK_MASK) {
-                    std::cout << "[Marks] error at i:" << i << std::endl;
-                    std::cout << "old Marks: " << marks << "; inc Marks: " << node.getMarks() << std::endl;
-                    exit(1);
-                }
-            }
-        } else {
-            node.unmark();
-            if (node.getMarks() != 0) {
-                std::cout << "[Marks] error at i:" << i << std::endl;
-                std::cout << "old Marks: " << marks << ";  Unmarks: " << node.getMarks() << std::endl;
-                exit(1);
-            }
         }
         node.unmark();
         // rule
