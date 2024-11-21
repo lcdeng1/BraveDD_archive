@@ -14,7 +14,7 @@ namespace BRAVE_DD {
     /// Value type
     //      Note: used only for EVBDDs different value range and precision
     enum ValueType{
-        VOID,               //  Locally for ForestSetting, without values on edges; for EdgeValue, special value
+        VOID,               //  Locally for ForestSetting, without values on edges; for Value, special value
         INT,                //  Integer
         // ^ For finite range, only logN bits needed.
         LONG,               //  Long
