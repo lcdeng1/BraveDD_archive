@@ -4,32 +4,32 @@ using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                      EdgeValue  methods                        *
+// *                      Value  methods                        *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
-EdgeValue::EdgeValue()
+Value::Value()
 {
     valueType = INT;
     intValue = 0;
 }
-EdgeValue::EdgeValue(int i)
+Value::Value(int i)
 {
     valueType = INT;
     intValue = i;
 }
-EdgeValue::EdgeValue(long l)
+Value::Value(long l)
 {
     valueType = LONG;
     longValue = l;
 }
-EdgeValue::EdgeValue(double d)
+Value::Value(double d)
 {
     valueType = DOUBLE;
     doubleValue = d;
 }
-EdgeValue::EdgeValue(float f)
+Value::Value(float f)
 {
     valueType = FLOAT;
     floatValue = f;
@@ -46,14 +46,14 @@ EdgeValue::EdgeValue(float f)
 Edge::Edge()
 {
     handle = 0;
-    value = EdgeValue(0);
+    value = Value(0);
 }
 Edge::Edge(const Edge &e)
 {
     handle = e.handle;
     value = e.value;
 }
-Edge::Edge(const EdgeHandle h, EdgeValue val):value(val)
+Edge::Edge(const EdgeHandle h, Value val):value(val)
 {
     //
     handle = h;

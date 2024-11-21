@@ -6,11 +6,12 @@
 
 namespace BRAVE_DD {
     enum class SpecialValue {
+        OMEGA,
         POS_INF,
         NEG_INF,
         UNDEF
     };
-    class EdgeValue;
+    class Value;
     class Edge;
     class Forest;
     // file I/O
@@ -83,9 +84,10 @@ namespace BRAVE_DD {
      *  Handles for edges storage
      *  This effectively limits the number of possible nodes per forest.
      *  Each handle is constructed as:
-     *            [ unused(9 bits) | rule(4 bits) | flags(3 bits) | level(16 bits) | nodeIdx(32 bits) ]
+     *      [ header (3 bits) | unused(9 bits) | rule(4 bits) | flags(3 bits) | level(16 bits) | nodeIdx(32 bits) ]
      *  "nodeIdx" limits the number of nodes per level in node manager.
      *  "flags": swap(_from) swap_to complement
+     *  "header": type of terminal value
      * 
      *  [TBD] v
      *  The number of bits occupied by each part depends on the forest setting:
@@ -95,6 +97,9 @@ namespace BRAVE_DD {
      *      Bits of "nodeIdx" = the remain bits;
      */
     typedef uint64_t EdgeHandle;
+    const uint64_t FLOAT_VALUE_FLAG_MASK = ((uint64_t)0x01<<63);
+    const uint64_t INT_VALUE_FLAG_MASK = ((uint64_t)0x01<<62);
+    const uint64_t SPECIAL_VALUE_FLAG_MASK = ((uint64_t)0x01<<61);
     
     /* Methods of EdgeHandle */
 
@@ -139,27 +144,35 @@ namespace BRAVE_DD {
         return (EdgeLabel)((handle & LABEL_MASK) >> 48);
     }
     /* Packing */
-    static inline void packRule(EdgeHandle handle, ReductionRule rule)
+    static inline void packRule(EdgeHandle& handle, ReductionRule rule)
     {
         handle = handle | ((uint64_t)rule << 51);
     }
-    static inline void packLevel(EdgeHandle handle, uint16_t level)
+    static inline void packLevel(EdgeHandle& handle, uint16_t level)
     {
+        if (((handle & FLOAT_VALUE_FLAG_MASK)
+            || (handle & INT_VALUE_FLAG_MASK)
+            || (handle & SPECIAL_VALUE_FLAG_MASK))
+            && (level>0)) {
+            // terminal node
+            std::cout << "[BRAVE_DD] ERROR!\t Unable to set target terminal node at level "<<level<< std::endl;
+            exit(0);
+        }
         handle = handle | ((uint64_t)level << 32);
     }
-    static inline void packComp(EdgeHandle handle, bool comp)
+    static inline void packComp(EdgeHandle& handle, bool comp)
     {
         handle = handle | ((uint64_t)comp << 48);
     }
-    static inline void packSwap(EdgeHandle handle, bool swap)
+    static inline void packSwap(EdgeHandle& handle, bool swap)
     {
         handle = handle | ((uint64_t)swap << 50);
     }
-    static inline void packSwapTo(EdgeHandle handle, bool swap)
+    static inline void packSwapTo(EdgeHandle& handle, bool swap)
     {
         handle = handle | ((uint64_t)swap << 49);
     }
-    static inline void packTarget(EdgeHandle handle, NodeHandle target)
+    static inline void packTarget(EdgeHandle& handle, NodeHandle target)
     {
         handle = handle | ((uint64_t)target);
     }
@@ -170,19 +183,19 @@ namespace BRAVE_DD {
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *                      EdgeValue class                           *
+// *                          Value class                           *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
-class BRAVE_DD::EdgeValue {
+class BRAVE_DD::Value {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-    EdgeValue();
-    EdgeValue(int i);
-    EdgeValue(long l);
-    EdgeValue(double d);
-    EdgeValue(float f);
+    Value();
+    Value(int i);
+    Value(long l);
+    Value(double d);
+    Value(float f);
 
     ValueType getType() const { return valueType; }
     inline void getValueTo(void* p, ValueType type) const {
@@ -210,27 +223,33 @@ class BRAVE_DD::EdgeValue {
         switch (type) {
             case VOID:
                 setSpecial(p);
+                break;
             case INT:
                 setInt(p);
+                break;
             case LONG:
                 setLong(p);
+                break;
             case FLOAT:
                 setFloat(p);
+                break;
             case DOUBLE:
                 setDouble(p);
+                break;
             default:
                 throw error(BRAVE_DD::ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
             }
     }
-    inline EdgeValue& operator=(const EdgeValue& val) {
+    
+    inline Value& operator=(const Value& val) {
         if (equals(val)) return *this;
         init(val);
         return *this;
     }
-    inline bool operator==(const EdgeValue& val) const {
+    inline bool operator==(const Value& val) const {
         return equals(val);
     }
-    inline bool operator!=(const EdgeValue& val) const {
+    inline bool operator!=(const Value& val) const {
         return !equals(val);
     }
     /*-------------------------------------------------------------*/
@@ -265,9 +284,10 @@ class BRAVE_DD::EdgeValue {
     inline void setSpecial(const void *p) {
         BRAVE_DD_DCASSERT(p);
         valueType = VOID;
+        longValue = 0;
         special = *((const SpecialValue*) p);
     }
-    inline bool equals(const EdgeValue& val) const {
+    inline bool equals(const Value& val) const {
         bool isEqual = 1;
         if (valueType != val.valueType) return 0;
         switch (valueType) {
@@ -291,7 +311,7 @@ class BRAVE_DD::EdgeValue {
         }
         return isEqual;
     }
-    inline void init(const EdgeValue& val) {
+    inline void init(const Value& val) {
         valueType = val.valueType;
         switch (valueType) {
             case VOID:
@@ -340,8 +360,8 @@ class BRAVE_DD::Edge {
         Edge();
         // / Copy Constructor.
         Edge(const Edge &e);
-        Edge(const ReductionRule rule, EdgeValue val);
-        Edge(const EdgeHandle h, EdgeValue val);
+        Edge(const ReductionRule rule, Value val);
+        Edge(const EdgeHandle h, Value val);
         /// Destructor.
         ~Edge();
         /**
@@ -357,8 +377,9 @@ class BRAVE_DD::Edge {
          * @return NodeHandle 
          */
         inline NodeHandle getNodeHandle() const {return unpackNode(handle);}
+        // get rule and flags TBD
 
-        inline EdgeValue getValue() const {return value;}
+        inline Value getValue() const {return value;}
 
 
 
@@ -391,7 +412,7 @@ class BRAVE_DD::Edge {
 
         /* Actual edge information */
         EdgeHandle      handle;     // Rule, flags, taget node and level.
-        EdgeValue       value;      // Edge value.
+        Value           value;      // Edge value.
 
         // std::string     display;    // for displaying if needed in the future
 };
