@@ -44,17 +44,17 @@ class BRAVE_DD::Func {
     void trueFunc();
     // Constant Func
     /* For dimention 1 and 2 */
-    void constant(EdgeValue val);
+    void constant(Value val);
     /* For dimention of 2 (Relation) */
     void identity(std::vector<bool> dependance);
     void identity(std::list<int> identities);   // levels staying identity
     // Variable Func
     /* For dimention of 1 (Set) */
     void variable(uint16_t lvl);
-    void variable(uint16_t lvl, EdgeValue low, EdgeValue high);
+    void variable(uint16_t lvl, Value low, Value high);
     /* For dimention of 2 (Relation) */
     void variable(uint16_t lvl, bool isPrime);
-    void variable(uint16_t lvl, bool isPrime, EdgeValue low, EdgeValue high);
+    void variable(uint16_t lvl, bool isPrime, Value low, Value high);
 
     // Assignment operator
     // Func operator=(Func e);
@@ -68,7 +68,7 @@ class BRAVE_DD::Func {
     // /*  outcome can be used by reinterpret_cast or memcpy */
     // // ExplictFunc including info of assignments, outcomes, 
     // inline Func minimalAssignment(std::vector<bool> assignment, uint64_t outcome) { // <== FuncValue outcome
-    //     EdgeValue otc(0);
+    //     Value otc(0);
     //     // check applicability based on setting TBD <== relation? levels?
     //     if (assignment.size() != parent->getSetting().getNumVars()) {
     //         throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
