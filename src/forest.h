@@ -108,7 +108,7 @@ class BRAVE_DD::Forest {
      * @return uint64_t     - Output the node's hash value.
      */
     inline uint64_t getNodeHash(const uint16_t level, const NodeHandle handle) const {
-        return nodeMan->getNodeFromHandle(level, handle).hash();
+        return nodeMan->getNodeFromHandle(level, handle).hash(nodeSize);
     }
 
     /**
@@ -300,6 +300,9 @@ class BRAVE_DD::Forest {
 
 
     /// =============================================================
+    friend class NodeManager;
+    friend class UniqueTable;
+        int                 nodeSize;       // Number of uint32 slots for one Node storage.
         ForestSetting       setting;        // Specification setting of this forest.
         NodeManager*        nodeMan;        // Node manager.
         UniqueTable*        uniqueTable;    // Unique table.

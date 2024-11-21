@@ -190,7 +190,32 @@ class BRAVE_DD::ForestSetting {
             // TBD
             return 0;
         }
-
+        //******************************************
+        //  Size of Node in NodeManager
+        //******************************************
+        inline int nodeSize() const {
+            bool isRel = isRelation();
+            int reductionSize = getReductionSize();
+            int lvlSlots = 0;
+            int infoSize = 0;
+            /* slots for values.
+                Note: for finite range, only logN bits needed: further compress TBD.
+            */
+            // check if this node needs level info
+            if (reductionSize>0) lvlSlots = isRel ? 2 : 1;
+            // check if this node needs value info; if so, what is the size
+            ValueType valType = getValType();
+            if (valType==LONG || valType==DOUBLE) {
+                infoSize = isRel ? 6+3*2 : 4+2;
+            } else if (valType==INT || valType==FLOAT) {
+                infoSize = isRel ? 6+3 : 4+1;
+            } else {
+                infoSize = isRel ? 6 : 4;
+            }
+            // final size
+            infoSize += lvlSlots;
+            return infoSize;
+        }
         //******************************************
         //  I/O
         //******************************************

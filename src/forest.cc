@@ -21,6 +21,7 @@ Forest::Forest(const ForestSetting& s):setting(s)
         std::cerr << e.what() << '\n';
         exit(e.getCode());
     }
+    nodeSize = setting.nodeSize();
     nodeMan = new NodeManager(this);
     uniqueTable = new UniqueTable(this);
     stats = new Statistics();
