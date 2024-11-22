@@ -115,9 +115,9 @@ class BRAVE_DD::Forest {
      * @brief Store a node in NodeManager and return its node handle, by giving the node's level and itself.
      * Note: This does not guarantee that the node is uniquely stored.
      * 
-     * @param level 
-     * @param node 
-     * @return NodeHandle 
+     * @param level         The level of the node to be stored.
+     * @param node          The node.
+     * @return NodeHandle   - Output the stored node's handle.
      */
     inline NodeHandle obtainFreeNodeHandle(const uint16_t level, const Node& node) {
         return nodeMan->getFreeNodeHandle(level, node);
@@ -135,16 +135,137 @@ class BRAVE_DD::Forest {
     }
 
     /**
+     * @brief Get the level of a child node, by giving its parent node's level, node handle, and child index.
+     * Note: if the child index is out of the valid range, i.e., 3 for a "set" bdd node, it will throw an error
+     *       and exit with the error code.
+     * 
+     * @param level         The level of the parent node.
+     * @param handle        The parent node handle.
+     * @param child         The child index.
+     * @return uint16_t     - Output the level
+     */
+    inline uint16_t getChildLevel(const uint16_t level, const NodeHandle handle, const char child) const {
+        // check if node in this forest skips level
+        if (setting.getReductionSize()==0) return level-1;
+        // node storage must have child level information
+        return getNode(level, handle).childNodeLevel(child, setting.isRelation());
+    }
+
+    /**
+     * @brief Get the node handle for a child node, by giving its parent node's level, node handle, and child index.
+     * 
+     * @param level         The level of the parent node.
+     * @param handle        The parent node handle.
+     * @param child         The child index.
+     * @return NodeHandle   - Output the node handle.
+     */
+    inline NodeHandle getChildNodeHandle(const uint16_t level, const NodeHandle handle, const char child) const {
+        return getNode(level, handle).childNodeHandle(child, setting.isRelation());
+    }
+
+    /**
+     * @brief Get the edge handle for a child edge, by giving its parent node's level, node handle, and child index.
+     * 
+     * @param level         The level of the parent node.
+     * @param handle        The parent node handle.
+     * @param child         The child index.
+     * @return EdgeHandle   - Output the edge handle.
+     */
+    inline EdgeHandle getChildEdgeHandle(const uint16_t level, const NodeHandle handle, const char child) const {
+        // the answer
+        EdgeHandle ans = 0;
+        // find the node
+        Node& node = getNode(level, handle);
+        bool isRel = setting.isRelation();
+        // fill edge rule
+        packRule(ans, node.edgeRule(child,isRel));
+        // fill complement
+        packComp(ans, node.edgeComp(child, isRel));
+        // fill swap
+        packSwap(ans, node.edgeSwap(child, 0, isRel));
+        packSwapTo(ans, node.edgeSwap(child, 1, isRel));
+        // fill level
+        uint16_t childLvl = getChildLevel(level, handle, child);
+        packLevel(ans, childLvl);
+        // fill target
+        if (childLvl == 0) {
+            // terminal, check the terminal type
+            uint32_t data = node.childNodeHandle(child,isRel);
+            packTarget(ans, data);
+            if (node.isChildTerminalSpecial(child)) {
+                // assuming this forest allows the special value
+                // special terminal value, then update the "header"
+                ans |= ((uint64_t)0x01<<61);
+            } else {
+                // terminal value should be INT or FLOAT
+                ValueType valType = setting.getValType();
+                if (valType == INT || valType == LONG) {
+                    ans |= ((uint64_t)0x01<<62);
+                } else {
+                    ans |= ((uint64_t)0x01<<63);
+                }
+            }
+        } else {
+            packTarget(ans, node.childNodeHandle(child, isRel));
+        }
+        return ans;
+    }
+
+    /**
+     * @brief Get the terminal value for a child node, by giving its parent node's level, node handle, and child index.
+     * Note: if the child node at level above 0, which means it's not a terminal node, it will throw error and exit.
+     * 
+     * @param level         The level of the parent node.
+     * @param handle        The parent node handle.
+     * @param child         The child index.
+     * @return Value        - Output the terminal value.
+     */
+    inline Value getChildTerminalValue(const uint16_t level, const NodeHandle handle, const char child) const {
+        if (getChildLevel(level, handle, child)>0) {
+            std::cout << "[BRAVE_DD] ERROR!\t No value for nonterminal node!"<< std::endl;
+            exit(0);
+        }
+        /* Node is already stored, assuming its terminal value is allowed */
+        bool isRel = setting.isRelation();
+        Value val(0);
+        Node& node = getNode(level, handle);
+        NodeHandle data = node.childNodeHandle(child,isRel);
+        if (node.isChildTerminalSpecial(child)) {
+            // special value
+            SpecialValue value = *reinterpret_cast<SpecialValue*>(&data);
+            val.setValue(&value, VOID);
+        } else {
+            // the forest value type
+            ValueType valType = setting.getValType();
+            if (valType == INT) {
+                int value = *reinterpret_cast<int*>(&data);
+                val.setValue(&value, INT);
+            } else if (valType == FLOAT) {
+                float value = *reinterpret_cast<float*>(&data);
+                val.setValue(&value, FLOAT);
+            } else if (valType == LONG) {
+                long value = *reinterpret_cast<long*>(&data);
+                val.setValue(&value, LONG);
+            } else if (valType == DOUBLE) {
+                double value = *reinterpret_cast<double*>(&data);
+                val.setValue(&value, DOUBLE);
+            }
+        }
+        return val;
+    }
+
+    /**
      * @brief Get the child edge label (including information of rules and flags) of a node, by giving the node's 
      * incoming edge handle and the index of child edge.
      * 
-     * @param handle        The incoming edge handle.
-     * @param index         The index of target node's child.
+     * @param level         The level of the parent node.
+     * @param handle        The parent node handle.
+     * @param child         The child index.
      * @return EdgeLabel    - Output the target node's child edge label.
      */
-    inline EdgeLabel getChildLabel(NodeHandle handle, int index) const {
-        // TBD
-        return 0;
+    inline EdgeLabel getChildLabel(const uint16_t level, const NodeHandle handle, const char child) const {
+        bool isRel = setting.isRelation();
+        return getNode(level, handle).edgeLabel(child, isRel);
     }
 
     /**
@@ -302,14 +423,13 @@ class BRAVE_DD::Forest {
     /// =============================================================
     friend class NodeManager;
     friend class UniqueTable;
-        int                 nodeSize;       // Number of uint32 slots for one Node storage.
         ForestSetting       setting;        // Specification setting of this forest.
         NodeManager*        nodeMan;        // Node manager.
         UniqueTable*        uniqueTable;    // Unique table.
         Func*               funcs;          // Registry of Func edges.
         FuncArray*          funcSets;       // Sets of Func used for I/O.
         Statistics*         stats;          // Performance measurement.
-
+        int                 nodeSize;       // Number of uint32 slots for one Node storage.
 };
 
 
