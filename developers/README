@@ -1,0 +1,22 @@
+=============================================== ForestSetting =============================================
+domain          |   * the number of variables
+                |   * variable order (not implemented)
+-----------------------------------------------------------------------------------------------------------
+range           |   * range type: {Boolean, Finite, non-neg Finite, Integer, non-neg Real, Real}
+                |   * value type: {void, int, long, float, double}
+                |   * max range N for range type "Finite"
+                |   * flags of allowing special values: negative infinity, postive infinity, or undefined
+-----------------------------------------------------------------------------------------------------------
+reductions      |   * dimension: 1 or 2
+                |   * predefined type including "user_defined"
+                |   * vector of bool encoding set of reduction rules allowed
+-----------------------------------------------------------------------------------------------------------
+flags           |   * swap flag type
+                |   * complement flag type
+-----------------------------------------------------------------------------------------------------------
+encodingType    |   {TERMINAL, EDGE_PLUS, EDGE_PLUSMOD, EDGE_MULT}
+-----------------------------------------------------------------------------------------------------------
+mergeType       |   {PUSH_UP, PUSH_DOWN, SHORTEN_I, SHORTEN_X} see comments in "setting.h"
+-----------------------------------------------------------------------------------------------------------
+name            |   predefined BDD/MXD type, or user defined name
+===========================================================================================================
