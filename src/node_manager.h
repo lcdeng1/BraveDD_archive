@@ -31,17 +31,16 @@ class BRAVE_DD::NodeManager {
      *  (which will be expanded if necessary).
      *  Then fill it with the given unpacked node.
      */
-    inline NodeHandle getFreeNodeHandle(uint16_t lvl, const Node& node) {
+    inline NodeHandle getFreeNodeHandle(const uint16_t lvl, const Node& node) {
         return chunks[lvl-1].getFreeNodeHandle(node);
     }
 
     /**
-     *  Find the packed node (pointer) corresponding to a node handle
+     *  Find the node corresponding to a node handle
      */
-    inline Node& getNodeFromHandle(uint16_t lvl, NodeHandle h) {
+    inline Node& getNodeFromHandle(const uint16_t lvl, const NodeHandle h) {
         return chunks[lvl-1].getNodeFromHandle(h);
     }
-
 
     /**
      *  Recycle a used node handle.
@@ -60,8 +59,8 @@ class BRAVE_DD::NodeManager {
     inline void sweep(uint16_t lvl) { chunks[lvl-1].sweep(); }
     void sweep();
 
-    inline uint32_t numUsed(uint16_t lvl) const { return chunks[lvl-1].numUsed(); }
-    inline uint32_t numAlloc(uint16_t lvl) const { return chunks[lvl-1].numAlloc(); }
+    inline uint32_t numUsed(uint16_t lvl) const { return PRIMES[chunks[lvl-1].sizeIndex] - chunks[lvl-1].numFrees; }
+    inline uint32_t numAlloc(uint16_t lvl) const { return chunks[lvl-1].firstUnalloc; }
 
     /*-------------------------------------------------------------*/
     private:
@@ -71,20 +70,14 @@ class BRAVE_DD::NodeManager {
             SubManager(Forest *f);
             ~SubManager();
 
-            NodeHandle getFreeNodeHandle(const Node& node);
-
-            Node& getNodeFromHandle(const NodeHandle h);
-
             void sweep();
-
-            inline uint32_t numUsed() const {
-                return PRIMES[sizeIndex] - numFrees;
-            }
-            inline uint32_t numAlloc() const {
-                return firstUnalloc;
-            }
         private:
         // ======================Helper Methods====================
+            /// Get a free NodeHandle and fill it with a given node
+            NodeHandle getFreeNodeHandle(const Node& node);
+            /// Find the node corresponding to a node handle
+            Node& getNodeFromHandle(const NodeHandle h);
+
             /// Expand the nodes to next size (if possible)
             void expand();
             /// Shrink the nodes to previous size

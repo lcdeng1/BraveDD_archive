@@ -48,7 +48,7 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
     if (freeList) {
         // pull from the free list
         NodeHandle h = freeList;
-        freeList = nodes[h].info[2];
+        freeList = nodes[h].nextFree();
         nodes[h].assign(node, parent->nodeSize);
         return h;
     }
