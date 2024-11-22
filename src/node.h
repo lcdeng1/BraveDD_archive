@@ -7,10 +7,7 @@
 #include "edge.h"
 
 namespace BRAVE_DD {
-    static const uint32_t NODE_TYPE_MASK = (uint32_t)(0x01<<4);
     static const uint32_t NODE_LABEL_MASK = (uint32_t)((0x01<<27)-1)<<5;
-    static const uint32_t LOW_TERMINAL_MASK = (uint32_t)((0x01<<2)-1)<<3;
-    static const uint32_t HIGH_TERMINAL_MASK = (uint32_t)((0x01<<2)-1)<<1;
     static const uint32_t MARK_MASK = (uint32_t)(0x01);
     class Node;
 }
@@ -26,20 +23,23 @@ namespace BRAVE_DD {
  *  For 'Next' in unique table, 'Labels' of child edges, and 'Handles' of child nodes:
  *  Node has 5 uint32 info slots; Mxnode has 8 uint32 info slots.
  *      Common  --{ info[0]: Next node handle in the unique table.
- *      Labels  --{ info[1]: Bit 31 (MSB) ... Bit 28: child edge 0's rule.
- *                           Bit 27       ... Bit 24: child edge 1's rule.
- *                           Bit 23       ... Bit 20: child edge 2's rule (for Mxnode).
- *                           Bit 19       ... Bit 16: child edge 3's rule (for Mxnode).
- *                           Bit 15                 : child edge 1's complement.
- *                           Bit 14                 : child edge 2's complement.
- *                           Bit 13                 : child edge 3's complement.
- *                           Bit 12       ... Bit 11: child edge 0's swap bits (from and to).
- *                           Bit 10       ... Bit 9 : child edge 1's swap bits (from and to).
- *                           Bit 8        ... Bit 7 : child edge 2's swap bits.
- *                           Bit 6        ... Bit 5 : child edge 3's swap bits.
- *                           Bit 4        ... Bit 3 : 00:
- *                           Bit 2        ... Bit 1 : 00:
- *                           Bit 0                  : mark bit.
+ *      Labels  --{ info[1]: 
+ *                      Bit 31 (MSB) ... Bit 28: child edge 0's rule.
+ *                      Bit 27       ... Bit 24: child edge 1's rule.
+ *                      Bit 23       ... Bit 20: child edge 2's rule (for Mxnode).
+ *                      Bit 19       ... Bit 16: child edge 3's rule (for Mxnode).
+ *                      Bit 15                 : child edge 1's complement.
+ *                      Bit 14                 : child edge 2's complement.
+ *                      Bit 13                 : child edge 3's complement.
+ *                      Bit 12       ... Bit 11: child edge 0's swap bits (from and to).
+ *                      Bit 10       ... Bit 9 : child edge 1's swap bits (from and to).
+ *                      Bit 8        ... Bit 7 : child edge 2's swap bits.
+ *                      Bit 6        ... Bit 5 : child edge 3's swap bits.
+ *                      Bit 4                  : child 0 terminal: 0: INT or FLOAT; 1: Special value
+ *                      Bit 3                  : child 1 terminal: 0: INT or FLOAT; 1: Special value
+ *                      Bit 2                  : child 2 terminal: 0: INT or FLOAT; 1: Special value
+ *                      Bit 1                  : child 3 terminal: 0: INT or FLOAT; 1: Special value
+ *                      Bit 0                  : mark bit.
  *
  *    For Node:
  *      Child node
@@ -96,14 +96,6 @@ class BRAVE_DD::Node {
     inline void setNext(NodeHandle nxt) {info[0] = (uint32_t)nxt;}
 
     /**
-     *  Check if this node is a matrix node for relation
-     * 
-     * @return true 
-     * @return false 
-     */
-    inline bool isMxd() const { return info[1] & NODE_TYPE_MASK; }
-
-    /**
      *  For this node, check if it is marked
      */
     inline bool isMarked() const {
@@ -140,10 +132,12 @@ class BRAVE_DD::Node {
         // be careful! this may not detect all in-use node cases
         return info[1] || info[2] || info[3];
     }
+
     inline void recycle(uint32_t nextFree) {
         for (int i=0; i<4; i++) info[i] = 0;
         info[2] = nextFree;
     }
+
     inline NodeHandle nextFree() const {
         return (NodeHandle)info[2];
     }
@@ -154,8 +148,8 @@ class BRAVE_DD::Node {
      * @param child the index of the child edges: 0 ... 3
      * @return ReductionRule 
      */
-    inline ReductionRule edgeRule(char child) const {
-        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+    inline ReductionRule edgeRule(char child, bool isMxd) const {
+        if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
@@ -163,8 +157,8 @@ class BRAVE_DD::Node {
         return (ReductionRule)((info[1] & EDGE_RULE_MASK) >> (16 + 4 * (3 - child)));
     }
 
-    inline void setEdgeRule(char child, ReductionRule rule) {
-        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+    inline void setEdgeRule(char child, ReductionRule rule, bool isMxd) {
+        if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
@@ -174,25 +168,29 @@ class BRAVE_DD::Node {
     }
 
     /**
-     * Unpack and get the child node handle
+     * Unpack and get the child node handle any way
      * 
      * @param child the index of the child node: 0 ... 3
      * @return NodeHandle 
      */
-    inline NodeHandle childNodeHandle(char child) const {
-        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+    inline NodeHandle childNodeHandle(char child, bool isMxd) const {
+        if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
         return (NodeHandle)info[2 + child];
     }
 
-    inline void setChildNodeHandle(char child, NodeHandle handle) {
-        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+    inline void setChildNodeHandle(char child, NodeHandle handle, bool isMxd) {
+        if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
         info[2 + child] = handle;
+    }
+
+    inline bool isChildTerminalSpecial(const char child) const {
+        return (bool)(info[1] & (0x01<<(4-child)));
     }
 
     /**
@@ -201,23 +199,23 @@ class BRAVE_DD::Node {
      * @param child the index of the child node: 0 ... 3
      * @return uint16_t 
      */
-    inline uint16_t childNodeLevel(char child) const {
-        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+    inline uint16_t childNodeLevel(char child, bool isMxd) const {
+        if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
         uint32_t NODE_LEVEL_MASK = ((0x01 << 16) - 1) << (16 * (1 - (child % 2)));
-        return (uint16_t)((((info[1] & NODE_TYPE_MASK) ? info[6 + (child / 2)] : info[4]) 
+        return (uint16_t)((((isMxd) ? info[6 + (child / 2)] : info[4]) 
                             & NODE_LEVEL_MASK) >> (16 * (1 - (child % 2))));
     }
 
-    inline void setChildNodeLevel(char child, uint16_t lvl) {
-        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+    inline void setChildNodeLevel(char child, uint16_t lvl, bool isMxd) {
+        if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
         uint32_t NODE_LEVEL_MASK = ((0x01 << 16) - 1) << (16 * (1 - (child % 2)));
-        if (isMxd()) {
+        if (isMxd) {
             info[6 + (child / 2)] &= ~NODE_LEVEL_MASK;
             info[6 + (child / 2)] |= (uint32_t)lvl << (16 * (1 - (child % 2)));
         } else {
@@ -233,8 +231,8 @@ class BRAVE_DD::Node {
      * @return true 
      * @return false 
      */
-    inline bool edgeComp(char child) const {
-        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+    inline bool edgeComp(char child, bool isMxd) const {
+        if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
@@ -242,8 +240,8 @@ class BRAVE_DD::Node {
         return info[1] & (0x01 << (13 + (3 - child)));
     }
 
-    inline void setEdgeComp(char child, bool comp) {
-        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3 || child == 0) {
+    inline void setEdgeComp(char child, bool comp, bool isMxd) {
+        if (((!isMxd) && child > 1) || child > 3 || child == 0) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
@@ -259,21 +257,21 @@ class BRAVE_DD::Node {
      * @return true 
      * @return false 
      */
-    inline bool edgeSwap(char child, bool swap) const {
-        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+    inline bool edgeSwap(char child, bool swap, bool isMxd) const {
+        if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
-        if (!(info[1] & NODE_TYPE_MASK)) return info[1] & (0x01 << (10 + 2 * (1 - (child % 2))));
+        if ((!isMxd)) return info[1] & (0x01 << (10 + 2 * (1 - (child % 2))));
         return info[1] & (0x01 << (5 + 2 * (3 - child) + (1 - swap)));
     }
 
-    inline void setEdgeSwap(char child, bool isTo, bool swap) {
-        if ((!(info[1] & NODE_TYPE_MASK) && child > 1) || child > 3) {
+    inline void setEdgeSwap(char child, bool isTo, bool swap, bool isMxd) {
+        if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
         }
-        if (isMxd()) {
+        if (isMxd) {
             info[1] &= ~(0x01 << (5 + 2 * (3 - child) + (1 - isTo)));
             info[1] |= swap << (5 + 2 * (3 - child) + (1 - isTo));
         } else {
@@ -282,11 +280,11 @@ class BRAVE_DD::Node {
         }
     }
 
-    inline bool isEdgeTerminal(char child) const {
-        if (childNodeLevel(child)>0) {
-            //
-        }
-    }
+    // inline bool isEdgeTerminal(char child) const {
+    //     if (childNodeLevel(child)>0) {
+    //         //
+    //     }
+    // }
 
     /**
      * Unpack and get the child edge's label
@@ -294,20 +292,20 @@ class BRAVE_DD::Node {
      * @param child the index of the child edge: 0 ... 3
      * @return EdgeLabel 
      */
-    inline EdgeLabel edgeLabel(char child) const {
+    inline EdgeLabel edgeLabel(char child, bool isMxd) const {
         EdgeLabel label = 0;
-        packRule(label, this->edgeRule(child));
-        packComp(label, this->edgeComp(child));
-        packSwap(label, this->edgeSwap(child, 0));
-        packSwapTo(label, this->edgeSwap(child, 1));
+        packRule(label, edgeRule(child,isMxd));
+        packComp(label, edgeComp(child,isMxd));
+        packSwap(label, edgeSwap(child, 0,isMxd));
+        packSwapTo(label, edgeSwap(child, 1,isMxd));
         return label;
     }
 
-    inline void setEdgeLabel(char child, EdgeLabel label) {
-        setEdgeRule(child, unpackRule(label));
-        setEdgeComp(child, unpackComp(label));
-        setEdgeSwap(child, 0, unpackSwap(label));
-        setEdgeSwap(child, 1, unpackSwapTo(label));
+    inline void setEdgeLabel(char child, EdgeLabel label, bool isMxd) {
+        setEdgeRule(child, unpackRule(label), isMxd);
+        setEdgeComp(child, unpackComp(label), isMxd);
+        setEdgeSwap(child, 0, unpackSwap(label), isMxd);
+        setEdgeSwap(child, 1, unpackSwapTo(label), isMxd);
     }
 
     /**
@@ -368,7 +366,7 @@ class BRAVE_DD::Node {
     private:
     /*-------------------------------------------------------------*/
     /// ============================================================
-    friend class NodeManager;
+    friend class Forest;
     uint32_t* info;         // Next pointer, edge rules, edge flags, node handles, and levels
 };
 
