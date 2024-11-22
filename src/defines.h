@@ -31,6 +31,7 @@
 #include <vector>
 #include <list>
 #include <algorithm>  // for std::count
+#include <cctype>
 #include <iostream>
 #include "io.h"
 // #include "gmp.h"

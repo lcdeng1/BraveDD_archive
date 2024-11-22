@@ -16,8 +16,10 @@ namespace BRAVE_DD {
     };
     /// Merge type (this will be removed in the future.)
     enum MergeType{
-        PUSH_UP,
-        PUSH_DOWN
+        PUSH_UP,            // both ShortenI and ShortenX only for MXDs with reduction rule I and X
+        PUSH_DOWN,          // neither ShortenI nor ShortenX only for MXDs with reduction rule I and X
+        SHORTEN_I,          // only ShortenI for MXDs with reduction rule I and X
+        SHORTEN_X           // only ShortenX for MXDs with reduction rule I and X
     };
     /// Domain and ordering of variables
     class VarDomain;

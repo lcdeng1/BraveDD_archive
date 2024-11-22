@@ -41,13 +41,17 @@ ForestSetting::ForestSetting(const unsigned numVals)
 ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals)
 :domain(numVals), range(BOOLEAN, VOID), reductions(REX), flags(ONE, COMP)
 {
+    // convert to all lower case
+    std::string bddLower;
+    bddLower.resize(bdd.size());
+    std::transform(bdd.begin(), bdd.end(), bddLower.begin(), ::tolower);
     // BDDs
-    if (std::regex_match(bdd, std::regex("rexbdd", std::regex_constants::icase))) {
+    if (bddLower == "rexbdd") {
         // setting for RexBDD
         encodingType = TERMINAL;
         mergeType = PUSH_UP;
         name = "RexBDD";
-    } else if (std::regex_match(bdd, std::regex("qbdd", std::regex_constants::icase))) {
+    } else if (bddLower == "qbdd") {
         // setting for QBDD
     } else if (std::regex_match(bdd, std::regex("fbdd", std::regex_constants::icase))) {
         // setting for FBDD
