@@ -20,13 +20,13 @@ std::uniform_int_distribution<uint64_t> distr64(0, UINT64_MAX);
 
 using namespace BRAVE_DD;
 
-void fill_node(Node& node)
+void fill_node(Node& node, bool isMxd)
 {
-    node.setEdgeRule(0, (ReductionRule)distrRule(gen));
-    node.setEdgeRule(1, (ReductionRule)distrRule(gen));
-    node.setChildNodeHandle(0, (NodeHandle)distr16(gen));
-    node.setChildNodeHandle(1, (NodeHandle)distr16(gen));
-    node.setEdgeComp(1,distrBool(gen));
+    node.setEdgeRule(0, (ReductionRule)distrRule(gen), isMxd);
+    node.setEdgeRule(1, (ReductionRule)distrRule(gen), isMxd);
+    node.setChildNodeHandle(0, (NodeHandle)distr16(gen), isMxd);
+    node.setChildNodeHandle(1, (NodeHandle)distr16(gen), isMxd);
+    node.setEdgeComp(1,distrBool(gen), isMxd);
 }
 
 int main()
@@ -39,7 +39,7 @@ int main()
 
     unsigned count = 0, maxHandle = 0;
     for (unsigned i=0; i<TESTS; i++) {
-        fill_node(node);
+        fill_node(node, forest->getSetting().isRelation());
         NodeHandle h = forest->insertNode(10, node);
         // TBD
         if (h > maxHandle) {

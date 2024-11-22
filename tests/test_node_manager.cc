@@ -15,13 +15,13 @@ std::uniform_int_distribution<uint32_t> distr32(0, UINT32_MAX);
 
 using namespace BRAVE_DD;
 
-void fill_node(Node& node)
+void fill_node(Node& node, bool isMxd)
 {
-    node.setEdgeRule(0, (ReductionRule)distrRule(gen));
-    node.setEdgeRule(1, (ReductionRule)distrRule(gen));
-    node.setChildNodeHandle(0, (NodeHandle)distr16(gen));
-    node.setChildNodeHandle(1, (NodeHandle)distr16(gen));
-    node.setEdgeComp(1,distrBool(gen));
+    node.setEdgeRule(0, (ReductionRule)distrRule(gen), isMxd);
+    node.setEdgeRule(1, (ReductionRule)distrRule(gen), isMxd);
+    node.setChildNodeHandle(0, (NodeHandle)distr16(gen), isMxd);
+    node.setChildNodeHandle(1, (NodeHandle)distr16(gen), isMxd);
+    node.setEdgeComp(1,distrBool(gen), isMxd);
 }
 
 double uniform()
@@ -65,18 +65,19 @@ void random_mark(Forest* forest, uint32_t* marklist, unsigned size)
 void alloc_mark_sweep(Forest* forest, unsigned num_a, unsigned num_m, uint32_t* marklist, unsigned size)
 {
     int nodeSize = forest->getSetting().nodeSize();
+    bool isRel = forest->getSetting().isRelation();
     Node node(nodeSize);
-    node.setChildNodeHandle(0, num_a);
-    node.setChildNodeHandle(1, num_m);
-    node.setEdgeRule(0, RULE_AH0);
-    node.setEdgeRule(1, RULE_AH1);
+    node.setChildNodeHandle(0, num_a, isRel);
+    node.setChildNodeHandle(1, num_m, isRel);
+    node.setEdgeRule(0, RULE_AH0, isRel);
+    node.setEdgeRule(1, RULE_AH1, isRel);
     /* Allocate nodes */
     // NodeHandle handle = 0;
     uint16_t level = forest->getSetting().getNumVars();
     std::cout << "\tAllocating " << num_a << " nodes at level " << level << std::endl;
     for (unsigned i=num_a; i; i--) {
         // if (i==10) node.setEdgeRule(0, RULE_EL1);   // make a little change
-        fill_node(node);
+        fill_node(node, isRel);
         NodeHandle h = forest->obtainFreeNodeHandle(level,node);
         if (!forest->getNode(level, h).isEqual(node, nodeSize)) {
             std::cout<<"[BRAVE_DD] Test Error!"<<std::endl;

@@ -25,6 +25,7 @@ int main()
     ForestSetting setting(10);
 
     Node node(setting);
+    bool isMxd = setting.isRelation();
     
     for (unsigned i=0; i<TESTS; i++) {
         // next
@@ -46,42 +47,42 @@ int main()
         node.unmark();
         // rule
         ReductionRule rule = (ReductionRule)distrRule(gen);
-        node.setEdgeRule(i%2, rule);
-        if (node.edgeRule(i%2) != rule) {
+        node.setEdgeRule(i%2, rule, isMxd);
+        if (node.edgeRule(i%2, isMxd) != rule) {
             std::cout << "[Rule] error at i:" << i << std::endl;
-            std::cout << "set rule: " << rule << "; get rule: " << node.edgeRule(i%2) << std::endl;
+            std::cout << "set rule: " << rule << "; get rule: " << node.edgeRule(i%2, isMxd) << std::endl;
             exit(1);
         }
         // handle
         NodeHandle handle = (NodeHandle)distr32(gen);
-        node.setChildNodeHandle(i%2, handle);
-        if (node.childNodeHandle(i%2) != handle) {
+        node.setChildNodeHandle(i%2, handle, isMxd);
+        if (node.childNodeHandle(i%2, isMxd) != handle) {
             std::cout << "[Handle] error at i:" << i << std::endl;
-            std::cout << "set handle: " << handle << "; get handle: " << node.childNodeHandle(i%2) << std::endl;
+            std::cout << "set handle: " << handle << "; get handle: " << node.childNodeHandle(i%2, isMxd) << std::endl;
             exit(1);
         }
         // level
         uint16_t lvl = (uint16_t)distr16(gen);
-        node.setChildNodeLevel(i%2, lvl);
-        if (node.childNodeLevel(i%2) != lvl) {
+        node.setChildNodeLevel(i%2, lvl, isMxd);
+        if (node.childNodeLevel(i%2, isMxd) != lvl) {
             std::cout << "[Level] error at i:" << i << std::endl;
-            std::cout << "set level: " << lvl << "; get lvl: " << node.childNodeLevel(i%2) << std::endl;
+            std::cout << "set level: " << lvl << "; get lvl: " << node.childNodeLevel(i%2, isMxd) << std::endl;
             exit(1);
         }
         // complement
         bool comp = (bool)distrBool(gen);
-        node.setEdgeComp(1, comp);
-        if (node.edgeComp(1) != comp) {
+        node.setEdgeComp(1, comp, isMxd);
+        if (node.edgeComp(1, isMxd) != comp) {
             std::cout << "[Complement] error at i:" << i << std::endl;
-            std::cout << "set comp: " << comp << "; get comp: " << node.edgeComp(1) << std::endl;
+            std::cout << "set comp: " << comp << "; get comp: " << node.edgeComp(1, isMxd) << std::endl;
             exit(1);
         }
         // swap
         bool swap = (bool)distrBool(gen);
-        node.setEdgeSwap(i%2, 0, swap);
-        if (node.edgeSwap(i%2, 0) != swap) {
+        node.setEdgeSwap(i%2, 0, swap, isMxd);
+        if (node.edgeSwap(i%2, 0, isMxd) != swap) {
             std::cout << "[Swap] error at i:" << i << std::endl;
-            std::cout << "set swap: " << swap << "; get swap: " << node.edgeSwap(i%2, 0) << std::endl;
+            std::cout << "set swap: " << swap << "; get swap: " << node.edgeSwap(i%2, 0, isMxd) << std::endl;
             exit(1);
         }
     }
