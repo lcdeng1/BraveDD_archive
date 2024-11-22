@@ -133,9 +133,9 @@ class BRAVE_DD::Node {
         return info[1] || info[2] || info[3];
     }
 
-    inline void recycle(uint32_t nextFree) {
+    inline void recycle(uint32_t nextF) {
         for (int i=0; i<4; i++) info[i] = 0;
-        info[2] = nextFree;
+        info[2] = nextF;
     }
 
     inline NodeHandle nextFree() const {
@@ -152,6 +152,7 @@ class BRAVE_DD::Node {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            exit(ErrCode::INVALID_BOUND);
         }
         uint32_t EDGE_RULE_MASK = ((0x01 << 4) - 1) << (16 + 4 * (3 - child));
         return (ReductionRule)((info[1] & EDGE_RULE_MASK) >> (16 + 4 * (3 - child)));
@@ -161,6 +162,7 @@ class BRAVE_DD::Node {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            exit(ErrCode::INVALID_BOUND);
         }
         uint32_t EDGE_RULE_MASK = ((0x01 << 4) - 1) << (16 + 4 * (3 - child));
         info[1] &= ~EDGE_RULE_MASK;
@@ -177,6 +179,7 @@ class BRAVE_DD::Node {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            exit(ErrCode::INVALID_BOUND);
         }
         return (NodeHandle)info[2 + child];
     }
@@ -185,6 +188,7 @@ class BRAVE_DD::Node {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            exit(ErrCode::INVALID_BOUND);
         }
         info[2 + child] = handle;
     }
@@ -203,6 +207,7 @@ class BRAVE_DD::Node {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            exit(ErrCode::INVALID_BOUND);
         }
         uint32_t NODE_LEVEL_MASK = ((0x01 << 16) - 1) << (16 * (1 - (child % 2)));
         return (uint16_t)((((isMxd) ? info[6 + (child / 2)] : info[4]) 
@@ -213,6 +218,7 @@ class BRAVE_DD::Node {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            exit(ErrCode::INVALID_BOUND);
         }
         uint32_t NODE_LEVEL_MASK = ((0x01 << 16) - 1) << (16 * (1 - (child % 2)));
         if (isMxd) {
@@ -235,6 +241,7 @@ class BRAVE_DD::Node {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            exit(ErrCode::INVALID_BOUND);
         }
         if (child == 0) return 0;
         return info[1] & (0x01 << (13 + (3 - child)));
@@ -244,6 +251,7 @@ class BRAVE_DD::Node {
         if (((!isMxd) && child > 1) || child > 3 || child == 0) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            exit(ErrCode::INVALID_BOUND);
         }
         info[1] &= ~(0x01 << (13 + (3 - child)));
         info[1] |= comp << (13 + (3 - child));
@@ -261,6 +269,7 @@ class BRAVE_DD::Node {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            exit(ErrCode::INVALID_BOUND);
         }
         if ((!isMxd)) return info[1] & (0x01 << (10 + 2 * (1 - (child % 2))));
         return info[1] & (0x01 << (5 + 2 * (3 - child) + (1 - swap)));
@@ -270,6 +279,7 @@ class BRAVE_DD::Node {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
+            exit(ErrCode::INVALID_BOUND);
         }
         if (isMxd) {
             info[1] &= ~(0x01 << (5 + 2 * (3 - child) + (1 - isTo)));
