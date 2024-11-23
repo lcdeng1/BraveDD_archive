@@ -29,7 +29,7 @@ VarDomain::~VarDomain()
 // ******************************************************************
 
 ForestSetting::ForestSetting(const unsigned numVals)
-:domain(numVals), range(BOOLEAN, INT), reductions(REX), flags(ONE, COMP)
+:domain(numVals), range(BOOLEAN, INT), flags(ONE, COMP)
 {
     // User defined number of variables
     // default settings: RexBDD
@@ -39,7 +39,7 @@ ForestSetting::ForestSetting(const unsigned numVals)
 }
 
 ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals)
-:domain(numVals), range(BOOLEAN, INT), reductions(REX), flags(ONE, COMP)
+:domain(numVals), range(BOOLEAN, INT), flags(ONE, COMP)
 {
     // convert to all lower case
     std::string bddLower;
@@ -48,15 +48,23 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals)
     // BDDs
     if (bddLower == "rexbdd") {
         // setting for RexBDD
+        reductions = Reductions(REX);
         encodingType = TERMINAL;
         mergeType = PUSH_UP;
         name = "RexBDD";
     } else if (bddLower == "qbdd") {
         // setting for QBDD
+        reductions = Reductions(QUASI);
+        name = "QBDD";
+
     } else if (bddLower == "fbdd") {
         // setting for FBDD
+        reductions = Reductions(FULLY);
+        name = "FBDD";
     } else if (bddLower == "mtbdd") {
         // setting for MTBDD
+        reductions = Reductions(FULLY);
+        name = "MTBDD";
     } else if (bddLower == "evbdd" || bddLower == "ev+bdd") {
         // setting for EV+BDD
     } else if (bddLower == "ev%bdd" || bddLower == "evmodbdd") {
@@ -65,6 +73,19 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals)
         // setting for EV*BDD
     }
     // MxDs
+    else if (bddLower == "fbmxd") {
+        // setting for FBMxD
+        reductions = Reductions(FULLY_FULLY);
+        name = "FBMxD";
+    } else if (bddLower == "ibmxd") {
+        // setting for IBMxD
+        reductions = Reductions(IDENTITY_IDENTITY);
+        name = "IBMxD";
+    } else if (bddLower == "esrbmxd") {
+        // setting for ESRBMxD
+        reductions = Reductions(FULLY_IDENTITY);
+        name = "ESRBMxD";
+    }
     else if (bddLower == "mtbmxd") {
         // setting for MTBMxD
     } else if (bddLower == "evbmxd" || bddLower == "ev+bmxd") {
@@ -85,7 +106,7 @@ ForestSetting::~ForestSetting()
     //
 }
 
-void ForestSetting::exportSetting(std::ostream& out)
+void ForestSetting::exportSetting(std::ostream& out) const
 {
     // name 
     out<<"============================== Settings ============================"<<std::endl;
@@ -94,6 +115,10 @@ void ForestSetting::exportSetting(std::ostream& out)
     out<<"\tNumber of variables:\t"<<getNumVars()<<std::endl;
     // relation or set
     std::string isRel = isRelation()?"Relation":"Set";
+    if (isRelation()) {
+        isRel += ", dimension = ";
+        isRel += std::to_string(reductions.getDim());
+    }
     out<<"\tEncoding purpose:\t"<<isRel<<std::endl;
     // range type
     RangeType rt = getRangeType();

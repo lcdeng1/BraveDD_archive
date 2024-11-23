@@ -2,8 +2,11 @@
 
 using namespace BRAVE_DD;
 
-int main() {
+int main(int argc, char** argv) {
     printInfo();
+    std::string bdd;
+    if (argc == 1) bdd = "rexbdd";
+    else bdd = argv[1];
 
     // basic test case
     unsigned numVals = 10;
@@ -20,7 +23,7 @@ int main() {
     // CompSet CompSet = NO_COMP;
 
     // default setting
-    ForestSetting setting1(numVals);
+    ForestSetting setting1(bdd, numVals);
 
     // build forest
     Forest forest1(setting1);
@@ -36,11 +39,15 @@ int main() {
     setting1.setEncodeMechanism(EDGE_PLUS);    // Encoding mechanism
     setting1.setDim(2);                        // Dimension
     setting1.setReductionType(FULLY);          // Reudction type
+    setting1.addReductionRule(RULE_I0);
+    setting1.addReductionRule(RULE_I1);
     // ^ may add or delete rules here          // Add/delete reduction rules
     setting1.setSwapType(NO_SWAP);             // Swap flag
     setting1.setCompType(NO_COMP);             // Complement flag
     setting1.setMergeType(PUSH_DOWN);          // Merge type (this will be removed)
     setting1.setName("v5f6-EVBDD");            // Name
+    setting1.exportSetting(std::cout);
+    forest1.getSetting().exportSetting(std::cout);
 
     if (forest1.getSetting().getNumVars() == setting1.getNumVars()) {
         std::cout<< "Error!" << std::endl;

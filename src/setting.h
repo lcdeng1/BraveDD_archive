@@ -193,13 +193,9 @@ class BRAVE_DD::ForestSetting {
         /// Set the reduction type
         inline void setReductionType(const ReductionType type) {reductions.setType(type);}
         /// Add reduction rule
-        inline void addReductionRule(const ReductionRule rule) {
-            // TBD
-        }
+        inline void addReductionRule(const ReductionRule rule) {reductions.addRule(rule);}
         /// Delete reduction rule
-        inline void delReductionRule(const ReductionRule rule) {
-            // TBD
-        }
+        inline void delReductionRule(const ReductionRule rule) {reductions.delRule(rule);}
         /* Swap */
         /// Set the type of swap flag
         inline void setSwapType(const SwapSet type) {flags.setSwapType(type);}
@@ -251,7 +247,7 @@ class BRAVE_DD::ForestSetting {
         //******************************************
         //  I/O
         //******************************************
-        void exportSetting(std::ostream& out);
+        void exportSetting(std::ostream& out) const;
         void importSetting(std::istream& in);
 
     /*-------------------------------------------------------------*/

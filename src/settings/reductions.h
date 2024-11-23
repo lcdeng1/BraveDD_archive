@@ -13,6 +13,7 @@ namespace BRAVE_DD {
         USER_DEFINED,       //        only if dimension is 1: user-defined combinations of reductions
         QUASI_QUASI,        // -+
         FULLY_FULLY,        //  +---- only applicable if variable dimension is 2
+        IDENTITY_IDENTITY,  //  |
         FULLY_IDENTITY      // -+
     };
     static inline std::string reductionType2String(ReductionType rdt) {
@@ -29,6 +30,8 @@ namespace BRAVE_DD {
             redType = "Quasi-Quasi";
         } else if (rdt == FULLY_FULLY) {
             redType = "Fully-Fully";
+        } else if (rdt == IDENTITY_IDENTITY) {
+            redType = "Identity-Identity";
         } else if (rdt == FULLY_IDENTITY) {
             redType = "Fully-Identity";
         } else {
@@ -103,6 +106,7 @@ class BRAVE_DD::Reductions {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
+        Reductions();
         Reductions(const ReductionType reductionType);
         Reductions(const std::vector<bool>& ruleSet);
         ~Reductions();
@@ -116,28 +120,98 @@ class BRAVE_DD::Reductions {
         inline ReductionType getType() const {return type;}
         /// Get the size of reduction rules set
         inline int getNumRules() const {return std::count(rules.begin(),rules.end(), 1);}
+        inline std::vector<bool> getRules() const {return rules; }
         /// Check if the given ReductionRule has been set
-        inline bool hasRule(ReductionRule rule) const {
-            if (type == QUASI || type == QUASI_QUASI) return 0;
-            if (type == FULLY || type == FULLY_FULLY) return rule == RULE_X;
-            if (type == REX) return (RULE_EL0<=rule && rule<=RULE_AH1) || rule == RULE_X;
-            if (type == FULLY_IDENTITY) return RULE_I0<=rule && rule<=((getNumRules()==2)?RULE_X:RULE_I1);
-            if (type == USER_DEFINED) return rules[rule];
-            return 0;
-        };
+        inline bool hasRule(const ReductionRule rule) const {return rules[rule];}
+        inline ReductionType rules2Type(const std::vector<bool>& ruleSet) const {
+            ReductionType ans = USER_DEFINED;
+            int numOnes = std::count(ruleSet.begin(),ruleSet.end(), 1);
+            if (numOnes == 0) {
+                // QUASI or QUASI_QUASI
+                ans = (dimension>1)?QUASI_QUASI:QUASI;
+            } else if (numOnes == 1 && ruleSet[RULE_X]) {
+                // FULLY or FULLY_FULLY
+                ans = (dimension>1)?FULLY_FULLY:FULLY;
+            } else if (numOnes == 2 && ruleSet[RULE_I0] && ruleSet[RULE_I1]) {
+                // IDENTITY_IDENTITY
+                ans = IDENTITY_IDENTITY;
+            } else if (numOnes == 3 && ruleSet[RULE_X] && ruleSet[RULE_I0] && ruleSet[RULE_I1]) {
+                // FULLY_IDENTITY
+                ans = FULLY_IDENTITY;
+            } else if (numOnes == 9 && !ruleSet[RULE_I0] && !ruleSet[RULE_I1]) {
+                // REX
+                ans = REX;
+            }
+            return ans;
+        }
         // more checkers? TBD
         //******************************************
         //  Setters
         //******************************************
-        inline void setDim(const int dim) {dimension = dim;}
-        inline void setType(const ReductionType reductionType) {type = reductionType;}
-        inline void setRules(const std::vector<bool>& ruleSet) {
-            if (type == USER_DEFINED) {
-                // the rules can only be changed if the type is USER_DEFINED.
-                rules = ruleSet;
-            } else {
-                throw error(BRAVE_DD::ErrCode::ALREADY_INITIALIZED, __FILE__, __LINE__);
+        inline void setDim(const int dim) {
+            if (dim > 2) {
+                throw error(ErrCode::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                std::cout << "[BRAVE_DD] Warning!\t Dimension "<<dim
+                <<" not supported (not implemented yet)! Allowed: 1-2."<< std::endl;
             }
+            dimension = dim;
+        }
+        inline void setType(const ReductionType reductionType) {
+            dimension = 1;
+            type = reductionType;
+            // init all 0
+            rules = std::vector<bool>(11,0);
+            if (type == QUASI){
+                // not change
+            } else if (type == FULLY) {
+                // Only apply reduction rule X
+                rules[RULE_X] = 1;
+            } else if (type == REX) {
+                // Apply all 9 rex reduction rules
+                for (int i=0; i<11; i++) {
+                    if ((ReductionRule)i != RULE_I0 && (ReductionRule)i != RULE_I1) rules[i] = 1;
+                }
+            } else if (type == QUASI_QUASI) {
+                dimension = 2;
+            } else if (type == FULLY_FULLY) {
+                dimension = 2;
+                // Only apply reduction rule X
+                rules[RULE_X] = 1;
+            } else if (type == IDENTITY_IDENTITY) {
+                dimension = 2;
+                rules[RULE_I0] = 1;
+                rules[RULE_I1] = 1;
+            } else if (type == FULLY_IDENTITY) {
+                dimension = 2;
+                // Apply reduction rules: I0 (0), X (1)
+                rules[RULE_X] = 1;
+                rules[RULE_I0] = 1;
+                rules[RULE_I1] = 1;
+            } else if (type == USER_DEFINED) {
+                // not change for user defined, it should be initialized later
+            } else {
+                // Error for Unknown
+                type = USER_DEFINED;
+                std::cout << "[BRAVE_DD] Warning!\t Unknown reduction type, switched to User-defined type!"
+                <<" Please check your input or add preferred rules by calling \"addReductionRule([PREFERRED RULE])\""<< std::endl;
+                throw error(ErrCode::UNINITIALIZED, __FILE__, __LINE__);
+            }
+        }
+        inline void addRule(const ReductionRule rule) {
+            // This will automatically switch the type to USER_DEFINED, if rule is not allowed before
+            if (rules[rule]) return;
+            rules[rule] = 1;
+            type = rules2Type(rules);   // update type
+        }
+        inline void delRule(const ReductionRule rule) {
+            // This will automatically switch the type to USER_DEFINED, if rule is allowed before
+            if (!rules[rule]) return;
+            rules[rule] = 0;
+            type = rules2Type(rules);   // update type
+        }
+        inline void setRules(const std::vector<bool>& ruleSet) {
+            type = rules2Type(ruleSet);
+            rules = ruleSet;
         }
         
     /*-------------------------------------------------------------*/
