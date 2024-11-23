@@ -1,6 +1,8 @@
 #ifndef BRAVE_DD_EDGE_FLAGS_H
 #define BRAVE_DD_EDGE_FLAGS_H
 
+#include "../defines.h"
+
 namespace BRAVE_DD {
     /// Swap flag type
     typedef enum {
@@ -11,12 +13,30 @@ namespace BRAVE_DD {
         TO,                 // Swap flags are applied only for primed variables
         FROM_TO             // Swap flags are applied for both unprimed and primed
     } SwapSet;
+    static inline std::string swapSet2String(SwapSet st) {
+        std::string swapType;
+        if (st == NO_SWAP) swapType = "No swap";
+        else if (st == ONE) swapType = "Swap-one";
+        else if (st == ALL) swapType = "Swap-all";
+        else if (st == FROM) swapType = "Swap-from";
+        else if (st == TO) swapType = "Swap-to";
+        else if (st == FROM_TO) swapType = "Swap-from_to";
+        else swapType = "Unknown";
+        return swapType;
+    }
     /// Complement flag type
     typedef enum {
         NO_COMP,            // No complement flags are used
         COMP                // Complement flags are used
         // ^ For FINITE range, N - value; for INTEGER and REAL, -value; for NNINTEGER/NNREAL, TBD.
     } CompSet;
+    static inline std::string compSet2String(CompSet ct) {
+        std::string compType;
+        if (ct==NO_COMP) compType = "No";
+        else if (ct==COMP) compType = "YES";
+        else compType = "Unknown";
+        return compType;
+    }
     /// Edge flags type
     class Flags;
 }

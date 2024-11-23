@@ -1,8 +1,7 @@
 #ifndef BRAVE_DD_REDUCTIONS_H
 #define BRAVE_DD_REDUCTIONS_H
 
-#include <vector>
-#include <algorithm>  // for std::count
+#include "../defines.h"
 #include "../error.h"
 
 namespace BRAVE_DD {
@@ -16,6 +15,27 @@ namespace BRAVE_DD {
         FULLY_FULLY,        //  +---- only applicable if variable dimension is 2
         FULLY_IDENTITY      // -+
     };
+    static inline std::string reductionType2String(ReductionType rdt) {
+        std::string redType;
+        if (rdt == QUASI) {
+            redType = "Quasi";
+        } else if (rdt == FULLY) {
+            redType = "Fully";
+        } else if (rdt == REX) {
+            redType = "Rex";
+        } else if (rdt == USER_DEFINED) {
+            redType = "User-Defined";
+        } else if (rdt == QUASI_QUASI) {
+            redType = "Quasi-Quasi";
+        } else if (rdt == FULLY_FULLY) {
+            redType = "Fully-Fully";
+        } else if (rdt == FULLY_IDENTITY) {
+            redType = "Fully-Identity";
+        } else {
+            redType = "Unknown";
+        }
+        return redType;
+    }
     //--------------------------+---------------------------+-----------------|
     // EL0    AL0 |  EL1    AL1 |  EH0    AH0 |  EH1    AH1 |  I0    X    I1
     //------------+-------------+-------------+-------------+-----------------|
@@ -52,6 +72,22 @@ namespace BRAVE_DD {
         RULE_X   = 9,
         RULE_I1  = 10
     } ReductionRule;
+    static inline std::string rule2String(ReductionRule rule) {
+        switch (rule) {
+            case RULE_EL0: return "EL0";
+            case RULE_AL0: return "AL0";
+            case RULE_EL1: return "EL1";
+            case RULE_AL1: return "AL1";
+            case RULE_EH0: return "EH0";
+            case RULE_AH0: return "AH0";
+            case RULE_EH1: return "EH1";
+            case RULE_AH1: return "AH1";
+            case RULE_I0:  return "I0";
+            case RULE_X:   return "X";
+            case RULE_I1:  return "I1";
+            default: return "UNKNOWN_RULE";
+        }
+    }
     /// Reduction type and set of rules
     class Reductions;
 }

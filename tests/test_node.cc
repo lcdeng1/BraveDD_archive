@@ -22,7 +22,7 @@ int main()
 {
     std::cout << "Node test.\n\n";
     std::cout << "Size of Node: " << sizeof(Node) << " bytes\n";
-    ForestSetting setting(10);
+    ForestSetting setting("rexbdd", 10);
 
     Node node(setting);
     bool isMxd = setting.isRelation();

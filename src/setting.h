@@ -14,6 +14,21 @@ namespace BRAVE_DD {
         EDGE_PLUSMOD,       // only if range type is FINITE*:       EV%BDDs
         EDGE_MULT           // only if range type is *REAL*:        EV*BDDs
     };
+    static inline std::string encodeMechanism2String(EncodeMechanism em) {
+        std::string emType;
+        if (em == TERMINAL) {
+            emType = "Terminal";
+        } else if (em == EDGE_PLUS) {
+            emType = "Edge plus (EV+)";
+        } else if (em == EDGE_PLUSMOD) {
+            emType = "Edge plus mod (EV%)";
+        } else if (em == EDGE_MULT) {
+            emType = "Edge multiply (EV*)";
+        } else {
+            emType = "Unknown";
+        }
+        return emType;
+    }
     /// Merge type (this will be removed in the future.)
     enum MergeType{
         PUSH_UP,            // both ShortenI and ShortenX only for MXDs with reduction rule I and X
@@ -21,6 +36,21 @@ namespace BRAVE_DD {
         SHORTEN_I,          // only ShortenI for MXDs with reduction rule I and X
         SHORTEN_X           // only ShortenX for MXDs with reduction rule I and X
     };
+    static inline std::string mergeType2String(MergeType mt, bool isRel) {
+        std::string mType;
+        if (mt == PUSH_UP) {
+            mType = (isRel)?"ShortenX: true; ShortenI: true":"Push up";
+        } else if (mt == PUSH_DOWN) {
+            mType = (isRel)?"ShortenX: false; ShortenI: false":"Push down";
+        } else if (mt == SHORTEN_I) {
+            mType = (isRel)?"ShortenX: false; ShortenI: true":"Unknown";
+        } else if (mt == SHORTEN_X) {
+            mType = (isRel)?"ShortenX: true; ShortenI: false":"Unknown";
+        } else {
+            mType = "Unknown";
+        }
+        return mType;
+    }
     /// Domain and ordering of variables
     class VarDomain;
     /// Settings for forest

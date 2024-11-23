@@ -1,6 +1,8 @@
 #ifndef BRAVE_DD_RANGE_H
 #define BRAVE_DD_RANGE_H
 
+#include "../defines.h"
+
 namespace BRAVE_DD {
     ///  Range type
     enum RangeType {
@@ -11,6 +13,25 @@ namespace BRAVE_DD {
         NNREAL,             // [0, +∞)
         REAL                // (-∞, +∞)
     };
+    static inline std::string rangeType2String(RangeType rt) {
+        std::string rangeType;
+        if (rt == BOOLEAN) {
+            rangeType = "Boolean";
+        } else if (rt == FINITE) {
+            rangeType = "Finite";
+        } else if (rt == NNINTEGER) {
+            rangeType = "Non-negative Integer";
+        } else if (rt == INTEGER) {
+            rangeType = "Integer";
+        } else if (rt == NNREAL) {
+            rangeType = "Non-negative Real";
+        } else if (rt == REAL) {
+            rangeType = "Real";
+        } else {
+            rangeType = "Unknown";
+        }
+        return rangeType;
+    }
     /// Value type
     //      Note: used only for EVBDDs different value range and precision
     enum ValueType{
@@ -21,6 +42,21 @@ namespace BRAVE_DD {
         FLOAT,              //  Float
         DOUBLE              //  Double
     };
+    static inline std::string valueType2String(ValueType vt) {
+        std::string valueType;
+        if (vt == INT) {
+            valueType = "int";
+        } else if (vt == LONG) {
+            valueType = "long";
+        } else if (vt == FLOAT) {
+            valueType = "float";
+        } else if (vt == DOUBLE) {
+            valueType = "double";
+        } else {
+            valueType = "Unknown";
+        }
+        return valueType;
+    }
     /// Range type and range size if FINITE*
     class Range;
 }
