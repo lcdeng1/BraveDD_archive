@@ -221,8 +221,8 @@ class BRAVE_DD::ForestSetting {
         //******************************************
         //  I/O
         //******************************************
-        void exportSetting(std::ostream& out); // goto settings
-        void importSetting(std::istream& in); // goto settings
+        void exportSetting(std::ostream& out);
+        void importSetting(std::istream& in);
 
     /*-------------------------------------------------------------*/
     private:
