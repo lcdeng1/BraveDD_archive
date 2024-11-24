@@ -31,6 +31,7 @@ namespace BRAVE_DD {
     }
     /// Merge type (this will be removed in the future.)
     enum MergeType{
+        NO_MERGE,           // for quasi type bdd/bmxd
         PUSH_UP,            // both ShortenI and ShortenX only for MXDs with reduction rule I and X
         PUSH_DOWN,          // neither ShortenI nor ShortenX only for MXDs with reduction rule I and X
         SHORTEN_I,          // only ShortenI for MXDs with reduction rule I and X
@@ -46,6 +47,8 @@ namespace BRAVE_DD {
             mType = (isRel)?"ShortenX: false; ShortenI: true":"Unknown";
         } else if (mt == SHORTEN_X) {
             mType = (isRel)?"ShortenX: true; ShortenI: false":"Unknown";
+        } else if (mt == NO_MERGE) {
+            mType = "No needed";
         } else {
             mType = "Unknown";
         }
@@ -213,11 +216,10 @@ class BRAVE_DD::ForestSetting {
         //******************************************
         /** Check the consistency of specifications, find and report conflicts.
          *  This is usually used before constructing Forest with this setting.
+         *  Return 1: pass; 0: failed
          */
-        inline bool checkConsistency() const {
-            // TBD
-            return 0;
-        }
+        bool checkConsistency() const;
+
         //******************************************
         //  Size of Node in NodeManager
         //******************************************

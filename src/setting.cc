@@ -33,14 +33,18 @@ ForestSetting::ForestSetting(const unsigned numVals)
 {
     // User defined number of variables
     // default settings: RexBDD
+    reductions = Reductions(REX);
     encodingType = TERMINAL;
     mergeType = PUSH_UP;
     name = "RexBDD";
 }
 
 ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals)
-:domain(numVals), range(BOOLEAN, INT), flags(ONE, COMP)
+:domain(numVals), range(BOOLEAN, INT), flags(NO_SWAP, NO_COMP)
 {
+    // default setting
+    encodingType = TERMINAL;
+    mergeType = NO_MERGE;
     // convert to all lower case
     std::string bddLower;
     bddLower.resize(bdd.size());
@@ -49,22 +53,22 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals)
     if (bddLower == "rexbdd") {
         // setting for RexBDD
         reductions = Reductions(REX);
-        encodingType = TERMINAL;
+        flags.setSwapType(ONE);
+        flags.setCompType(COMP);
         mergeType = PUSH_UP;
         name = "RexBDD";
     } else if (bddLower == "qbdd") {
         // setting for QBDD
         reductions = Reductions(QUASI);
         name = "QBDD";
-
     } else if (bddLower == "fbdd") {
         // setting for FBDD
         reductions = Reductions(FULLY);
         name = "FBDD";
-    } else if (bddLower == "mtbdd") {
+    } else if (bddLower == "zbdd") {
         // setting for MTBDD
-        reductions = Reductions(FULLY);
-        name = "MTBDD";
+        reductions = Reductions(ZERO_SUP);
+        name = "ZBDD";
     } else if (bddLower == "evbdd" || bddLower == "ev+bdd") {
         // setting for EV+BDD
     } else if (bddLower == "ev%bdd" || bddLower == "evmodbdd") {
@@ -84,6 +88,7 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals)
     } else if (bddLower == "esrbmxd") {
         // setting for ESRBMxD
         reductions = Reductions(FULLY_IDENTITY);
+        mergeType = PUSH_UP;
         name = "ESRBMxD";
     }
     else if (bddLower == "mtbmxd") {
@@ -106,10 +111,17 @@ ForestSetting::~ForestSetting()
     //
 }
 
+bool ForestSetting::checkConsistency() const
+{
+    bool ans = 1;
+    // TBD
+    return ans;
+}
+
 void ForestSetting::exportSetting(std::ostream& out) const
 {
     // name 
-    out<<"============================== Settings ============================"<<std::endl;
+    out<<"============================== Settings ============================="<<std::endl;
     out<<"\tName:\t\t\t"<<name<<std::endl;
     // number of variables
     out<<"\tNumber of variables:\t"<<getNumVars()<<std::endl;

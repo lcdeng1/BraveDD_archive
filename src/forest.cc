@@ -11,15 +11,11 @@ using namespace BRAVE_DD;
 
 Forest::Forest(const ForestSetting& s):setting(s)
 {
-    try
-    {
-        /* Check consistency */
-        s.checkConsistency();
-    }
-    catch(const error& e)
-    {
-        std::cerr << e.what() << '\n';
-        exit(e.getCode());
+    /* Check consistency */
+    if (!s.checkConsistency()) {
+        std::cout << "[BRAVE_DD] Error!\t The ForestSetting consistency check failed!"<< std::endl;
+        setting.exportSetting(std::cerr);
+        exit(1);
     }
     nodeSize = setting.nodeSize();
     nodeMan = new NodeManager(this);
