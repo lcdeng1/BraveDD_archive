@@ -15,12 +15,12 @@ namespace BRAVE_DD {
     } SwapSet;
     static inline std::string swapSet2String(SwapSet st) {
         std::string swapType;
-        if (st == NO_SWAP) swapType = "No swap";
-        else if (st == ONE) swapType = "Swap-one";
-        else if (st == ALL) swapType = "Swap-all";
-        else if (st == FROM) swapType = "Swap-from";
-        else if (st == TO) swapType = "Swap-to";
-        else if (st == FROM_TO) swapType = "Swap-from_to";
+        if (st == NO_SWAP) swapType = "No";
+        else if (st == ONE) swapType = "Yes: Swap-one";
+        else if (st == ALL) swapType = "Yes: Swap-all";
+        else if (st == FROM) swapType = "Yes: Swap-from";
+        else if (st == TO) swapType = "Yes: Swap-to";
+        else if (st == FROM_TO) swapType = "Yes: Swap-from_to";
         else swapType = "Unknown";
         return swapType;
     }
