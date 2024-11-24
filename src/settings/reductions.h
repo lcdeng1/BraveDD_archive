@@ -9,6 +9,7 @@ namespace BRAVE_DD {
     enum ReductionType{
         QUASI,              // -+
         FULLY,              //  +---- only applicable if variable dimension is 1
+        ZERO_SUP,           //  |
         REX,                // -+
         USER_DEFINED,       //        only if dimension is 1: user-defined combinations of reductions
         QUASI_QUASI,        // -+
@@ -22,6 +23,8 @@ namespace BRAVE_DD {
             redType = "Quasi";
         } else if (rdt == FULLY) {
             redType = "Fully";
+        } else if (rdt == ZERO_SUP) {
+            redType = "Zero-Suppressed";
         } else if (rdt == REX) {
             redType = "Rex";
         } else if (rdt == USER_DEFINED) {
@@ -132,6 +135,9 @@ class BRAVE_DD::Reductions {
             } else if (numOnes == 1 && ruleSet[RULE_X]) {
                 // FULLY or FULLY_FULLY
                 ans = (dimension>1)?FULLY_FULLY:FULLY;
+            } else if (numOnes == 1 && ruleSet[RULE_EH0]) {
+                // ZERO_SUP
+                ans = ZERO_SUP;
             } else if (numOnes == 2 && ruleSet[RULE_I0] && ruleSet[RULE_I1]) {
                 // IDENTITY_IDENTITY
                 ans = IDENTITY_IDENTITY;
@@ -166,6 +172,8 @@ class BRAVE_DD::Reductions {
             } else if (type == FULLY) {
                 // Only apply reduction rule X
                 rules[RULE_X] = 1;
+            } else if (type == ZERO_SUP) {
+                rules[RULE_EH0] = 1;
             } else if (type == REX) {
                 // Apply all 9 rex reduction rules
                 for (int i=0; i<11; i++) {
