@@ -40,15 +40,15 @@ namespace BRAVE_DD {
         if (handle & FLOAT_VALUE_FLAG_MASK) {
             // float value
             float value = *reinterpret_cast<float*>(&data);
-            val.setValue(&value, FLOAT);
+            val.setValue(value, FLOAT);
         } else if (handle & INT_VALUE_FLAG_MASK) {
             // int value
             int value = *reinterpret_cast<int*>(&data);
-            val.setValue(&value, INT);
+            val.setValue(value, INT);
         } else if (handle & SPECIAL_VALUE_FLAG_MASK) {
             // special value
             SpecialValue value = *reinterpret_cast<SpecialValue*>(&data);
-            val.setValue(&value, VOID);
+            val.setValue(value, VOID);
         } else {
             // unknown value
             std::cout << "[BRAVE_DD] ERROR!\t Unknown value for terminal node!"<< std::endl;
