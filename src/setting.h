@@ -137,7 +137,7 @@ class BRAVE_DD::ForestSetting {
         /// Get the ValueType 
         inline ValueType getValType() const {return range.getValType();}
         /// Get the max range limit that has been set
-        inline unsigned getMaxRange() const {return range.getMaxRange();}
+        inline unsigned long getMaxRange() const {return range.getMaxRange();}
         /// Check if the negative infinity has been set
         inline bool hasNegInf() const {return range.hasNegInf();}
         /// Check if the positive infinity has been set
@@ -235,10 +235,12 @@ class BRAVE_DD::ForestSetting {
             if (reductionSize>0) lvlSlots = isRel ? 2 : 1;
             // check if this node needs value info; if so, what is the size
             ValueType valType = getValType();
-            if (valType==LONG || valType==DOUBLE) {
-                infoSize = isRel ? 6+3*2 : 4+2;
-            } else if (valType==INT || valType==FLOAT) {
-                infoSize = isRel ? 6+3 : 4+1;
+            if (encodingType != TERMINAL) {
+                if (valType==LONG || valType==DOUBLE) {
+                    infoSize = isRel ? 6+3*2 : 4+2;
+                } else if (valType==INT || valType==FLOAT) {
+                    infoSize = isRel ? 6+3 : 4+1;
+                }
             } else {
                 infoSize = isRel ? 6 : 4;
             }
