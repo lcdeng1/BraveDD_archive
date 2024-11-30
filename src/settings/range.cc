@@ -14,7 +14,7 @@ Range::Range(const RangeType range, const ValueType val)
     //
     rangeType = range;
     valueType = val;
-    // Check the consistency
+    maxRange = 1;   // default for boolean; used for complement
 
 }
 Range::Range(unsigned long size)

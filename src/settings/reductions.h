@@ -78,6 +78,42 @@ namespace BRAVE_DD {
         RULE_X   = 9,
         RULE_I1  = 10
     } ReductionRule;
+    static inline ReductionRule compRule(ReductionRule rule) {
+        switch (rule) {
+            case RULE_EL0: return RULE_EL1;
+            case RULE_AL0: return RULE_AL1;
+            case RULE_EL1: return RULE_EL0;
+            case RULE_AL1: return RULE_AL0;
+            case RULE_EH0: return RULE_EH1;
+            case RULE_AH0: return RULE_AH1;
+            case RULE_EH1: return RULE_EH0;
+            case RULE_AH1: return RULE_AH0;
+            case RULE_I0:  return RULE_I1;
+            case RULE_X:   return RULE_X;
+            case RULE_I1:  return RULE_I0;
+            default: 
+                std::cout << "[BRAVE_DD] ERROR!\t Complement unknown reduction rule!" << std::endl;
+                exit(0);
+        }
+    }
+    static inline ReductionRule swapRule(ReductionRule rule) {
+        switch (rule) {
+            case RULE_EL0: return RULE_EH0;
+            case RULE_AL0: return RULE_AH0;
+            case RULE_EL1: return RULE_EH1;
+            case RULE_AL1: return RULE_AH1;
+            case RULE_EH0: return RULE_EL0;
+            case RULE_AH0: return RULE_AL0;
+            case RULE_EH1: return RULE_EL1;
+            case RULE_AH1: return RULE_AL1;
+            case RULE_I0:  return RULE_I0;  // swap-from_to
+            case RULE_X:   return RULE_X;
+            case RULE_I1:  return RULE_I1;  // swap-from_to
+            default: 
+                std::cout << "[BRAVE_DD] ERROR!\t Complement unknown reduction rule!" << std::endl;
+                exit(0);
+        }
+    }
     static inline std::string rule2String(ReductionRule rule) {
         switch (rule) {
             case RULE_EL0: return "EL0";

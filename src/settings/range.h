@@ -100,7 +100,7 @@ class BRAVE_DD::Range {
     /*-------------------------------------------------------------*/
         RangeType       rangeType;
         ValueType       valueType;
-        unsigned long   maxRange;       // the max range limit N if type is FINITE
+        unsigned long   maxRange;       // the max range limit N if type is FINITE; the modulo if EV%
         bool            negInf;         // 1 if -∞ is allowed
         bool            posInf;         // 1 if +∞ is allowed
         bool            unDef;          // 1 if UnDef is allowed
