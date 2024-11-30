@@ -31,48 +31,53 @@ namespace BRAVE_DD {
      *  
      */
     typedef uint8_t EdgeLabel;
+    /* Masks */
+    const uint8_t LABEL_RULE_MASK = (uint8_t)((0x01<<4) - 1) << 3;
+    const uint8_t LABEL_COMP_MASK = (uint8_t)0x01;
+    const uint8_t LABEL_SWAP_MASK = (uint8_t)(0x01 << 2);
+    const uint8_t LABEL_SWAP_TO_MASK = (uint8_t)(0x01 << 1);
 
     /* Methods of EdgeLabel */
 
     /* Get the reduction rule from the given EdgeLabel */
-    static inline ReductionRule unpackRule(const EdgeLabel label)
+    static inline ReductionRule unpackRule(const EdgeLabel& label)
     {
-        uint8_t RULE_MASK = (uint8_t)((0x01<<4) - 1) << 3;
-        return (ReductionRule)((label & RULE_MASK) >> 3);
+        return (ReductionRule)((label & LABEL_RULE_MASK) >> 3);
     }
     /* Get the complement flag from the given EdgeLabel */
-    static inline bool unpackComp(const EdgeLabel label)
+    static inline bool unpackComp(const EdgeLabel& label)
     {
-        uint8_t COMP_MASK = (uint8_t)0x01;
-        return label & COMP_MASK;
+        return label & LABEL_COMP_MASK;
     }
     /* Get the swap flag from the given EdgeLabel */
-    static inline bool unpackSwap(const EdgeLabel label)
+    static inline bool unpackSwap(const EdgeLabel& label)
     {
-        uint64_t SWAP_MASK = (uint64_t)(0x01 << 2);
-        return label & SWAP_MASK;
+        return label & LABEL_SWAP_MASK;
     }
-    static inline bool unpackSwapTo(const EdgeLabel label)
+    static inline bool unpackSwapTo(const EdgeLabel& label)
     {
-        uint64_t SWAP_MASK = (uint64_t)(0x01 << 1);
-        return label & SWAP_MASK;
+        return label & LABEL_SWAP_TO_MASK;
     }
     /* Packing */
-    static inline void packRule(EdgeLabel label, ReductionRule rule)
+    static inline void packRule(EdgeLabel& label, ReductionRule rule)
     {
-        label = label | ((uint8_t)(rule) << 3);
+        label &= ~LABEL_RULE_MASK;
+        label |= ((uint8_t)(rule) << 3);
     }
-    static inline void packComp(EdgeLabel label, bool comp)
+    static inline void packComp(EdgeLabel& label, bool comp)
     {
-        label = label | ((uint8_t)comp);
+        label &= ~LABEL_COMP_MASK;
+        label |= ((uint8_t)comp);
     }
-    static inline void packSwap(EdgeLabel label, bool swap)
+    static inline void packSwap(EdgeLabel& label, bool swap)
     {
-        label = label | ((uint8_t)swap << 2);
+        label &= ~LABEL_SWAP_MASK;
+        label |= ((uint8_t)swap << 2);
     }
-    static inline void packSwapTo(EdgeLabel label, bool swap)
+    static inline void packSwapTo(EdgeLabel& label, bool swap)
     {
-        label = label | ((uint8_t)swap << 1);
+        label &= ~LABEL_SWAP_TO_MASK;
+        label |= ((uint8_t)swap << 1);
     }
 
     // ******************************************************************
@@ -97,56 +102,59 @@ namespace BRAVE_DD {
      *      Bits of "nodeIdx" = the remain bits;
      */
     typedef uint64_t EdgeHandle;
+    /* Masks */
     const uint64_t FLOAT_VALUE_FLAG_MASK = ((uint64_t)0x01<<63);
     const uint64_t INT_VALUE_FLAG_MASK = ((uint64_t)0x01<<62);
     const uint64_t SPECIAL_VALUE_FLAG_MASK = ((uint64_t)0x01<<61);
+    const uint64_t RULE_MASK = (uint64_t)((0x01<<4) - 1) << 51;
+    const uint64_t LEVEL_MASK = (uint64_t)((0x01<<16) - 1) << 32;
+    const uint64_t COMP_MASK = (uint64_t)(0x01) << 48;
+    const uint64_t SWAP_MASK = (uint64_t)(0x01) << 50;
+    const uint64_t SWAP_TO_MASK = (uint64_t)(0x01) << 49;
+    const uint64_t NODE_MASK = ((uint64_t)(0x01)<<32) - 1;
+    const uint64_t LABEL_MASK = (uint64_t)((0x01<<8) - 1) << 48;
+
     
     /* Methods of EdgeHandle */
 
     /* Get the reduction rule from the given EdgeHandle */
-    static inline ReductionRule unpackRule(const EdgeHandle handle)
+    static inline ReductionRule unpackRule(const EdgeHandle& handle)
     {
-        uint64_t RULE_MASK = (uint64_t)((0x01<<4) - 1) << 51;
         return (ReductionRule)((handle & RULE_MASK) >> 51);
     }
     /* Get the level of the target node from the given EdgeHandle */
-    static inline uint16_t unpackLevel(const EdgeHandle handle)
+    static inline uint16_t unpackLevel(const EdgeHandle& handle)
     {
-        uint64_t LEVEL_MASK = (uint64_t)((0x01<<16) - 1) << 32;
         return (uint16_t)((handle & LEVEL_MASK) >> 32);
     }
     /* Get the complement flag from the given EdgeHandle */
-    static inline bool unpackComp(const EdgeHandle handle)
+    static inline bool unpackComp(const EdgeHandle& handle)
     {
-        uint64_t COMP_MASK = (uint64_t)(0x01) << 48;
         return handle & COMP_MASK;
     }
     /* Get the swap flag from the given EdgeHandle */
-    static inline bool unpackSwap(const EdgeHandle handle)
+    static inline bool unpackSwap(const EdgeHandle& handle)
     {
-        uint64_t SWAP_MASK = (uint64_t)(0x01) << 50;
         return handle & SWAP_MASK;
     }
-    static inline bool unpackSwapTo(const EdgeHandle handle)
+    static inline bool unpackSwapTo(const EdgeHandle& handle)
     {
-        uint64_t SWAP_MASK = (uint64_t)(0x01) << 49;
-        return handle & SWAP_MASK;
+        return handle & SWAP_TO_MASK;
     }
     /* Get the target node index from the given EdgeHandle */
-    static inline NodeHandle unpackNode(const EdgeHandle handle)
+    static inline NodeHandle unpackNode(const EdgeHandle& handle)
     {
-        uint64_t NODE_MASK = ((uint64_t)(0x01)<<32) - 1;
         return (NodeHandle)(handle & NODE_MASK);
     }
-    static inline EdgeLabel unpackLabel(const EdgeHandle handle)
+    static inline EdgeLabel unpackLabel(const EdgeHandle& handle)
     {
-        uint64_t LABEL_MASK = (uint64_t)((0x01<<8) - 1) << 48;
         return (EdgeLabel)((handle & LABEL_MASK) >> 48);
     }
     /* Packing */
     static inline void packRule(EdgeHandle& handle, ReductionRule rule)
     {
-        handle = handle | ((uint64_t)rule << 51);
+        handle &= ~RULE_MASK;
+        handle |= ((uint64_t)rule << 51);
     }
     static inline void packLevel(EdgeHandle& handle, uint16_t level)
     {
@@ -158,23 +166,28 @@ namespace BRAVE_DD {
             std::cout << "[BRAVE_DD] ERROR!\t Unable to set target terminal node at level "<<level<< std::endl;
             exit(0);
         }
-        handle = handle | ((uint64_t)level << 32);
+        handle &= LEVEL_MASK;
+        handle |= ((uint64_t)level << 32);
     }
     static inline void packComp(EdgeHandle& handle, bool comp)
     {
-        handle = handle | ((uint64_t)comp << 48);
+        handle &= ~COMP_MASK;
+        handle |= ((uint64_t)comp << 48);
     }
     static inline void packSwap(EdgeHandle& handle, bool swap)
     {
-        handle = handle | ((uint64_t)swap << 50);
+        handle &= ~SWAP_MASK;
+        handle |= ((uint64_t)swap << 50);
     }
     static inline void packSwapTo(EdgeHandle& handle, bool swap)
     {
-        handle = handle | ((uint64_t)swap << 49);
+        handle &= ~SWAP_TO_MASK;
+        handle |= ((uint64_t)swap << 49);
     }
     static inline void packTarget(EdgeHandle& handle, NodeHandle target)
     {
-        handle = handle | ((uint64_t)target);
+        handle &= ~NODE_MASK;
+        handle |= ((uint64_t)target);
     }
 
 }; // end of namespace
@@ -219,7 +232,7 @@ class BRAVE_DD::Value {
                 throw error(BRAVE_DD::ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
         }
     }
-    inline void setValue(const void* p, ValueType type) {
+    inline void setValue(const void* p, const ValueType type) {
         switch (type) {
             case VOID:
                 setSpecial(p);
@@ -240,7 +253,10 @@ class BRAVE_DD::Value {
                 throw error(BRAVE_DD::ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
             }
     }
-    
+    template <typename T>
+    inline void setValue(const T& value, const ValueType type) {
+        setValue(static_cast<const void*>(&value), type);
+    }
     inline Value& operator=(const Value& val) {
         if (equals(val)) return *this;
         init(val);
@@ -252,6 +268,7 @@ class BRAVE_DD::Value {
     inline bool operator!=(const Value& val) const {
         return !equals(val);
     }
+    void print(std::ostream& out, int format) const;
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
@@ -378,10 +395,23 @@ class BRAVE_DD::Edge {
          */
         inline NodeHandle getNodeHandle() const {return unpackNode(handle);}
         // get rule and flags TBD
+        inline ReductionRule getRule() const {return unpackRule(handle);}
+        inline bool getComp() const {return unpackComp(handle);}
+        inline bool getSwap(bool isTo) const {return (isTo)?unpackSwapTo(handle):unpackSwap(handle);}
 
         inline Value getValue() const {return value;}
 
-
+        inline void complement() {
+            // complement the reduction rule and flip the complement bit, when complement allowed
+            packRule(handle, compRule(unpackRule(handle)));
+            packComp(handle, !unpackComp(handle));
+            // value? TBD
+        }
+        inline void swap() {
+            // swap the reduction rule and flip the swap bit, when swap-all allowed
+            packRule(handle, swapRule(unpackRule(handle)));
+            packSwap(handle, !unpackSwap(handle));
+        }
 
         inline Edge& operator=(const Edge& e) {
             if (equals(e)) return *this;
@@ -395,6 +425,8 @@ class BRAVE_DD::Edge {
         inline bool operator!=(const Edge& e) const {
             return !equals(e);
         }
+
+        void print(std::ostream& out, int format) const;
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/

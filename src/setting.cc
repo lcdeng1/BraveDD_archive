@@ -135,7 +135,7 @@ void ForestSetting::exportSetting(std::ostream& out) const
     // range type
     RangeType rt = getRangeType();
     std::string rangeType = rangeType2String(rt);
-    if (rt == FINITE) {
+    if (rt == FINITE || rt == BOOLEAN) {
         rangeType += ": N = ";
         rangeType += std::to_string(getMaxRange());
     }
@@ -169,7 +169,9 @@ void ForestSetting::exportSetting(std::ostream& out) const
     out<<"\tSwap type:\t\t"<<swapSet2String(getSwapType())<<std::endl;
     out<<"\tComplement allowed:\t"<<compSet2String(getCompType())<<std::endl;
     // encoding type
-    out<<"\tEncoding Mechanism:\t"<<encodeMechanism2String(getEncodeMechanism())<<std::endl;
+    out<<"\tEncoding Mechanism:\t"<<encodeMechanism2String(getEncodeMechanism());
+    if (getEncodeMechanism()==EDGE_PLUSMOD) out<<": mod = "<<getMaxRange();
+    out<<std::endl;
     // merge type
     out<<"\tMege type:\t\t"<<mergeType2String(getMergeType(), isRelation())<<std::endl;
     out<<"============================ Settings End ==========================="<<std::endl;
