@@ -195,19 +195,30 @@ class BRAVE_DD::Forest {
             if (node.isChildTerminalSpecial(child)) {
                 // assuming this forest allows the special value
                 // special terminal value, then update the "header"
-                ans |= ((uint64_t)0x01<<61);
+                ans |= SPECIAL_VALUE_FLAG_MASK;
             } else {
                 // terminal value should be INT or FLOAT
                 ValueType valType = setting.getValType();
                 if (valType == INT || valType == LONG) {
-                    ans |= ((uint64_t)0x01<<62);
+                    ans |= INT_VALUE_FLAG_MASK;
                 } else {
-                    ans |= ((uint64_t)0x01<<63);
+                    ans |= FLOAT_VALUE_FLAG_MASK;
                 }
             }
         } else {
             packTarget(ans, node.childNodeHandle(child, isRel));
         }
+        return ans;
+    }
+
+    inline Edge getChildEdge(const uint16_t level, const NodeHandle handle, const char child) const {
+        Edge ans;
+        ans.handle = getChildEdgeHandle(level, handle, child);
+        if (setting.getEncodeMechanism() != TERMINAL && unpackLevel(ans.handle) != 0) {
+            // get the valid value, TBD
+            // Node& node = getNode(level, handle);
+        }
+
         return ans;
     }
 
@@ -292,7 +303,7 @@ class BRAVE_DD::Forest {
      * @param child         The vector of child edges of the unreduced target node.
      * @return Edge         - Output: the reduced edge pointing to a reduced node uniquely stored.
      */
-    Edge reduceEdge(uint16_t beginLevel, EdgeLabel label, uint16_t nodeLevel, std::vector<Edge> child);
+    Edge reduceEdge(uint16_t beginLevel, EdgeLabel label, uint16_t nodeLevel, std::vector<Edge>& child);
 
 
 
@@ -374,16 +385,9 @@ class BRAVE_DD::Forest {
      * @param out           Output: edge label (rule/value, flags).
      */
     void normalizeNode(uint16_t lvl, Node& P, EdgeLabel& out);
-    /**
-     * @brief Reduce the given node "P" by checking the forbidden patterns 
-     * of nodes. Edge "*out" will be written the long edge that represent 
-     * node "*P".
-     * 
-     * @param lvl           The given node level.
-     * @param P             The given node waiting for reduction.
-     * @param out           Output: reduced edge (label, target node handle).
-     */
-    void reduceNode(uint16_t lvl, Node& P, Edge& out);
+    
+    Edge reduceNode(uint16_t nodeLevel, std::vector<Edge>& child);
+
     /**
      * @brief Merge the incoming edge having EdgeLabel "label", which is respect of 
      * level "lvl1", target to the node at level "lvl2"; edge "*reduced" represents 

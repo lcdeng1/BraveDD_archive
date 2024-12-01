@@ -65,8 +65,8 @@ namespace BRAVE_DD {
      * @return EdgeHandle 
      */
     static inline EdgeHandle makeTerminal(const ValueType type, const void* value) {
-        if (type == DOUBLE || type == LONG) {
-            std::cout << "[BRAVE_DD] ERROR!\t Unsupported data type! It can only be INT/FLOAT."<< std::endl;
+        if (type != INT && type != FLOAT && type != VOID) {
+            std::cout << "[BRAVE_DD] ERROR!\t Unsupported data type! It can only be INT, FLOAT, or VOID."<< std::endl;
             exit(0);
         }
         EdgeHandle handle = 0;
@@ -79,7 +79,7 @@ namespace BRAVE_DD {
             handle |= FLOAT_VALUE_FLAG_MASK;
             float target = *((float*) value);
             node = *reinterpret_cast<NodeHandle*>(&target);
-        } else {
+        } else if (type == VOID){
             handle |= SPECIAL_VALUE_FLAG_MASK;
             SpecialValue target = *((SpecialValue*) value);
             node = *reinterpret_cast<NodeHandle*>(&target);

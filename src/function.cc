@@ -16,12 +16,18 @@ Func::Func()
 }
 Func::Func(Forest* f)
 {
-    //
+    parent = f;
+    label = "";
+    prevFunc = 0;
+    nextFunc = 0;
 }
 Func::Func(Forest* f, const Edge& e)
 :edge(e)
 {
-    //
+    parent = f;
+    label = "";
+    prevFunc = 0;
+    nextFunc = 0;
 }
 Func::~Func()
 {
@@ -68,13 +74,103 @@ void Func::variable(uint16_t lvl, bool isPrime, Value low, Value high)
 }
 
 // 0 element not used! Doc!!
-// FuncValue Func::evaluate(const std::vector<bool>& assignment) const {
-//     // check applicability based on setting TBD
-//     // TBD
-// }
-// FuncValue Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aTo) const {
-//     // TBD
-// }
+Value Func::evaluate(const std::vector<bool>& assignment) const
+{
+    /* check the level */
+    if (parent->getSetting().getNumVars() != (assignment.size()-1)) {
+        std::cout << "[BRAVE_DD] ERROR!\t Variable number check failed in evaluation! It was "<<assignment.size()-1
+        <<", it should be "<<parent->getSetting().getNumVars() << std::endl;
+        exit(0);
+    }
+    /* final answer */
+    Value ans(0);
+    /* encode mechanism */
+    EncodeMechanism encode = parent->getSetting().getEncodeMechanism();
+    /* edge flags type */
+    SwapSet st = parent->getSetting().getSwapType();
+    CompSet ct = parent->getSetting().getCompType();
+
+    /* tmp store edge info for "for" loop */
+    Edge current = edge;
+    /* get target node info */
+    NodeHandle targetHandle = current.getNodeHandle();
+    uint16_t targetLvl = current.getNodeLevel();
+    /* info to determine next child edge */
+    bool isComp = 0, isSwap = 0;
+    /* flags for reduction rules */
+    bool allOne = 1, existOne = 0;
+    /* evaluation starting from the target node level */
+    for (uint16_t k=assignment.size()-1; k>0; k--) {
+        
+        /* if incoming edge skips levels */
+        if (targetLvl < k) {
+            // determine flags of all-ones and exist-ones
+            for (uint16_t i=k; i>targetLvl; i--) {
+                allOne &= assignment[i];
+                existOne |= assignment[i];
+            }
+            /* check the incoming edge's reduction rule for terminal cases */
+            ReductionRule incoming = current.getRule();
+            if (encode == TERMINAL) {
+                // terminal value, don't care the Value on edge
+                if (allOne && (incoming == RULE_AH0 || incoming == RULE_AH1)) {
+                    ans.setValue((incoming == RULE_AH0)?0:1, INT);
+                    return ans;
+                } else if ((!allOne) && (incoming == RULE_EL0 || incoming == RULE_EL1)) {
+                    ans.setValue((incoming == RULE_EL0)?0:1, INT);
+                    return ans;
+                } else if (existOne && (incoming == RULE_EH0 || incoming == RULE_EH1)) {
+                    ans.setValue((incoming == RULE_EH0)?0:1, INT);
+                    return ans;
+                } else if ((!existOne) && (incoming == RULE_AL0 || incoming == RULE_AL1)) {
+                    ans.setValue((incoming == RULE_AL0)?0:1, INT);
+                    return ans;
+                } else if (targetLvl == 0) {
+                    // value type INT, FLOAT, or VOID (special value)
+                    ans = getTerminalValue(current.handle);
+                    if (current.getComp()) {
+                        if (ans.valueType == INT) {
+                            int terminalVal = *reinterpret_cast<int*>(&targetHandle);
+                            terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
+                            ans.setValue(terminalVal, INT);
+                        } else if (ans.valueType == FLOAT) {
+                            float terminalVal = *reinterpret_cast<float*>(&targetHandle);
+                            terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
+                            ans.setValue(terminalVal, FLOAT);
+                        } else if (ans.valueType == VOID) {
+                            // special value: NegInf => PosInf?
+                        }
+                    }
+                    return ans;
+                }
+            } else if (encode == EDGE_PLUS) {
+                // edge values plus
+                // TBD
+            } else if (encode == EDGE_PLUSMOD) {
+                // edge values plus and modulo
+                // TBD
+            } else if (encode == EDGE_MULT) {
+                // edge values multiply
+                // TBD
+            }
+        } // end long edge's terminal cases
+
+        /* short incoming edge, or long incoming edge but skips */
+        k = targetLvl;
+        isSwap = (st==ONE || st==ALL) ? current.getSwap(0) : 0;
+        // get swap/comp bit only when it's allowed, since user may insert illegal nodes into nodemanager (which is allowed)
+        isComp = (ct==COMP) ? current.getComp() : 0;
+        current = parent->getChildEdge(k, targetHandle, isSwap^assignment[k]);
+        if (isComp) current.complement();
+        if (isSwap && st==ALL) current.swap();  // for swap-all
+        /* update varibles */
+        allOne = 1;
+        existOne = 0;
+        targetHandle = current.getNodeHandle();
+        targetLvl = current.getNodeLevel();
+    }
+    return ans;
+}
 
 void Func::unionAssignments(const ExplictFunc& assignments) {
     // check applicability based on setting TBD <== relation? levels?

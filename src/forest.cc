@@ -55,11 +55,35 @@ void Forest::importForest(std::istream& in)
 {
     //
 }
-
-Edge Forest::reduceEdge(uint16_t beginLevel, EdgeLabel label, uint16_t nodeLevel, std::vector<Edge> child)
+/************************* Reduction ****************************/
+Edge Forest::reduceNode(uint16_t nodeLevel, std::vector<Edge>& child)
 {
-    // check lvl >= P.level, and out is not null
-    // push the flags or value down, TBD
+    //
+}
+
+Edge Forest::reduceEdge(uint16_t beginLevel, EdgeLabel label, uint16_t nodeLevel, std::vector<Edge>& child)
+{
+    /* check level */
+    if (beginLevel < nodeLevel) {
+        std::cout << "[BRAVE_DD] ERROR!\t Invalid level for incoming edge or target node!" << std::endl;
+        exit(0);
+    }
+    /* check number of child */
+    if ((setting.isRelation() && child.size() != 4) || (!setting.isRelation() && child.size() != 2)) {
+        std::cout << "[BRAVE_DD] ERROR!\t Incorrect number of child edges!" << std::endl;
+        exit(0);
+    }
+    /* push the flags or value down */
+    SwapSet st = setting.getSwapType();
+    if (st == ONE) {
+        // swap-one
+    } else if (st == ALL) {
+        //
+    }
+
+
+    // the reduced node
+    
     // Edge reduced;
     // reduceNode(P, &reduced);
     // mergeEdge(lvl, P.level, label, &reduced, out);

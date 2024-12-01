@@ -33,6 +33,7 @@
 #include <algorithm>  // for std::count
 #include <cctype>
 #include <iostream>
+#include <fstream>
 #include "io.h"
 // #include "gmp.h"
 

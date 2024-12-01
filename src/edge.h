@@ -32,7 +32,7 @@ namespace BRAVE_DD {
      */
     typedef uint8_t EdgeLabel;
     /* Masks */
-    const uint8_t LABEL_RULE_MASK = (uint8_t)((0x01<<4) - 1) << 3;
+    const uint8_t LABEL_RULE_MASK = (uint8_t)(0x0F) << 3;
     const uint8_t LABEL_COMP_MASK = (uint8_t)0x01;
     const uint8_t LABEL_SWAP_MASK = (uint8_t)(0x01 << 2);
     const uint8_t LABEL_SWAP_TO_MASK = (uint8_t)(0x01 << 1);
@@ -106,13 +106,13 @@ namespace BRAVE_DD {
     const uint64_t FLOAT_VALUE_FLAG_MASK = ((uint64_t)0x01<<63);
     const uint64_t INT_VALUE_FLAG_MASK = ((uint64_t)0x01<<62);
     const uint64_t SPECIAL_VALUE_FLAG_MASK = ((uint64_t)0x01<<61);
-    const uint64_t RULE_MASK = (uint64_t)((0x01<<4) - 1) << 51;
-    const uint64_t LEVEL_MASK = (uint64_t)((0x01<<16) - 1) << 32;
+    const uint64_t RULE_MASK = (uint64_t)(0x0F) << 51;
+    const uint64_t LEVEL_MASK = (uint64_t)0xFFFF << 32;
     const uint64_t COMP_MASK = (uint64_t)(0x01) << 48;
     const uint64_t SWAP_MASK = (uint64_t)(0x01) << 50;
     const uint64_t SWAP_TO_MASK = (uint64_t)(0x01) << 49;
-    const uint64_t NODE_MASK = ((uint64_t)(0x01)<<32) - 1;
-    const uint64_t LABEL_MASK = (uint64_t)((0x01<<8) - 1) << 48;
+    const uint64_t NODE_MASK = 0xFFFFFFFF;
+    const uint64_t LABEL_MASK = (uint64_t)(0xFF) << 48;
 
     
     /* Methods of EdgeHandle */
@@ -166,7 +166,7 @@ namespace BRAVE_DD {
             std::cout << "[BRAVE_DD] ERROR!\t Unable to set target terminal node at level "<<level<< std::endl;
             exit(0);
         }
-        handle &= LEVEL_MASK;
+        handle &= ~LEVEL_MASK;
         handle |= ((uint64_t)level << 32);
     }
     static inline void packComp(EdgeHandle& handle, bool comp)
@@ -187,7 +187,19 @@ namespace BRAVE_DD {
     static inline void packTarget(EdgeHandle& handle, NodeHandle target)
     {
         handle &= ~NODE_MASK;
-        handle |= ((uint64_t)target);
+        handle |= (target);
+    }
+    static inline void printEdgeHandle(EdgeHandle& handle, std::ostream& out, int format)
+    {
+        if (format == 0) {
+            out << "<" << rule2String(unpackRule(handle));
+            out << ", " << unpackComp(handle);
+            out << ", " << unpackSwap(handle);
+            out << ", " << unpackNode(handle);
+            out << "> L: " << unpackLevel(handle);
+        } else {
+            // more format TBD
+        }
     }
 
 }; // end of namespace

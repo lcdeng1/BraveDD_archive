@@ -248,11 +248,12 @@ class BRAVE_DD::Node {
     }
 
     inline void setEdgeComp(char child, bool comp, bool isMxd) {
-        if (((!isMxd) && child > 1) || child > 3 || child == 0) {
+        if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
             exit(ErrCode::INVALID_BOUND);
         }
+        if (child == 0) return;
         info[1] &= ~(0x01 << (13 + (3 - child)));
         info[1] |= comp << (13 + (3 - child));
     }
@@ -318,6 +319,18 @@ class BRAVE_DD::Node {
         setEdgeSwap(child, 1, unpackSwapTo(label), isMxd);
     }
 
+    inline void setChildEdge(char child, EdgeHandle handle, bool isMxd, bool hasLvl) {
+        setEdgeRule(child, unpackRule(handle), isMxd);
+        setEdgeComp(child, unpackComp(handle), isMxd);
+        setEdgeSwap(child, 0, unpackSwap(handle), isMxd);
+        setEdgeSwap(child, 1, unpackSwapTo(handle), isMxd);
+        setChildNodeHandle(child, unpackNode(handle), isMxd);
+        if (hasLvl) setChildNodeLevel(child, unpackLevel(handle), isMxd);
+        if (unpackLevel(handle) == 0) {
+            info[1] &= ~(0x01<<(4-child));
+            if (handle & SPECIAL_VALUE_FLAG_MASK) info[1] |= (0x01<<(4-child));
+        }
+    }
     /**
      * Unpack and get the child edge's value, fill it into 32 bits
      * 
