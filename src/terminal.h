@@ -36,7 +36,7 @@ namespace BRAVE_DD {
             exit(0);
         }
         Value val(0);
-        NodeHandle data = unpackNode(handle);
+        NodeHandle data = unpackTarget(handle);
         if (handle & FLOAT_VALUE_FLAG_MASK) {
             // float value
             float value = *reinterpret_cast<float*>(&data);

@@ -11,6 +11,21 @@ namespace BRAVE_DD {
         NEG_INF,
         UNDEF
     };
+    static inline std::string speciaValue2String(SpecialValue value) {
+        std::string sv;
+        if (value == SpecialValue::OMEGA) {
+            sv = "Omega";
+        } else if (value == SpecialValue::POS_INF) {
+            sv = "PosInf";
+        } else if (value == SpecialValue::NEG_INF) {
+            sv = "NegInf";
+        } else if (value == SpecialValue::UNDEF) {
+            sv = "UnDef";
+        } else {
+            sv = "Unknown";
+        }
+        return sv;
+    }
     class Value;
     class Edge;
     class Forest;
@@ -142,7 +157,7 @@ namespace BRAVE_DD {
         return handle & SWAP_TO_MASK;
     }
     /* Get the target node index from the given EdgeHandle */
-    static inline NodeHandle unpackNode(const EdgeHandle& handle)
+    static inline NodeHandle unpackTarget(const EdgeHandle& handle)
     {
         return (NodeHandle)(handle & NODE_MASK);
     }
@@ -191,11 +206,24 @@ namespace BRAVE_DD {
     }
     static inline void printEdgeHandle(EdgeHandle& handle, std::ostream& out, int format)
     {
+        NodeHandle target = unpackTarget(handle);
         if (format == 0) {
             out << "<" << rule2String(unpackRule(handle));
             out << ", " << unpackComp(handle);
             out << ", " << unpackSwap(handle);
-            out << ", " << unpackNode(handle);
+            out << ", ";
+            if (unpackLevel(handle) == 0) {
+                out << "T_";
+                if (handle & FLOAT_VALUE_FLAG_MASK) {
+                    out << *reinterpret_cast<float*>(&target);
+                } else if (handle & INT_VALUE_FLAG_MASK) {
+                    out << target;
+                } else if (handle & SPECIAL_VALUE_FLAG_MASK) {
+                    out << speciaValue2String((SpecialValue)target);
+                }
+            } else {
+                out << unpackTarget(handle);
+            }
             out << "> L: " << unpackLevel(handle);
         } else {
             // more format TBD
@@ -284,9 +312,19 @@ class BRAVE_DD::Value {
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-    inline int getIntValue() const { return intValue;}
+    inline int getIntValue() const {
+        if (valueType != INT) {
+            return static_cast<int>(floatValue);
+        }
+        return intValue;
+    }
     inline long getLongValue() const { return longValue;}
-    inline float getFloatValue() const { return floatValue;}
+    inline float getFloatValue() const { 
+        if (valueType != FLOAT) {
+            return static_cast<float>(intValue);
+        }
+        return floatValue;
+    }
     inline double getDoubleValue() const { return doubleValue;}
     inline SpecialValue getSpecialValue() const { return special;}
     // inline void setVoid() {valueType = VOID;}
@@ -405,7 +443,7 @@ class BRAVE_DD::Edge {
          * 
          * @return NodeHandle 
          */
-        inline NodeHandle getNodeHandle() const {return unpackNode(handle);}
+        inline NodeHandle getNodeHandle() const {return unpackTarget(handle);}
         // get rule and flags TBD
         inline ReductionRule getRule() const {return unpackRule(handle);}
         inline bool getComp() const {return unpackComp(handle);}

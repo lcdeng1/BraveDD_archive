@@ -324,7 +324,7 @@ class BRAVE_DD::Node {
         setEdgeComp(child, unpackComp(handle), isMxd);
         setEdgeSwap(child, 0, unpackSwap(handle), isMxd);
         setEdgeSwap(child, 1, unpackSwapTo(handle), isMxd);
-        setChildNodeHandle(child, unpackNode(handle), isMxd);
+        setChildNodeHandle(child, unpackTarget(handle), isMxd);
         if (hasLvl) setChildNodeLevel(child, unpackLevel(handle), isMxd);
         if (unpackLevel(handle) == 0) {
             info[1] &= ~(0x01<<(4-child));

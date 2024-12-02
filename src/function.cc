@@ -37,11 +37,52 @@ Func::~Func()
 /**************************** Make edge *************************/
 void Func::trueFunc()
 {
-    // TBD
+    /* Don't care the value on edge */
+    edge.handle = makeTerminal(INT, 1);
+    if (parent->getSetting().getCompType() == COMP) {
+        edge.complement();
+        packTarget(edge.handle, 0);
+    }
+    if (parent->getSetting().hasReductionRule(RULE_X)) {
+        packRule(edge.handle, RULE_X);
+    } else {
+        // build it bottom up
+        uint16_t numVal = parent->getSetting().getNumVars();
+        std::vector<Edge> children(2);
+        children[0] = edge;
+        children[1] = edge;
+        EdgeLabel incoming = 0;
+        packRule(incoming, RULE_X);
+        Edge reduced;
+        for (uint16_t i=1; i<=numVal; i++) {
+            reduced = parent->reduceEdge(i, incoming, i, children);
+            children[0] = reduced;
+            children[1] = reduced;
+        }
+        edge = reduced;
+    }
 }
 void Func::falseFunc()
 {
-    // TBD
+    edge.handle = makeTerminal(INT, 0);
+    if (parent->getSetting().hasReductionRule(RULE_X)) {
+        packRule(edge.handle, RULE_X);
+    } else {
+        // build it bottom up
+        uint16_t numVal = parent->getSetting().getNumVars();
+        std::vector<Edge> children(2);
+        children[0] = edge;
+        children[1] = edge;
+        EdgeLabel incoming = 0;
+        packRule(incoming, RULE_X);
+        Edge reduced;
+        for (uint16_t i=1; i<=numVal; i++) {
+            reduced = parent->reduceEdge(i, incoming, i, children);
+            children[0] = reduced;
+            children[1] = reduced;
+        }
+        edge = reduced;
+    }
 }
 /* For dimention 1 and 2 */
 void Func::constant(Value val)
@@ -113,17 +154,23 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             ReductionRule incoming = current.getRule();
             if (encode == TERMINAL) {
                 // terminal value, don't care the Value on edge
+                ValueType vt = (parent->getSetting().getValType() == INT
+                                || parent->getSetting().getValType() == LONG) ? INT : FLOAT;
                 if (allOne && (incoming == RULE_AH0 || incoming == RULE_AH1)) {
-                    ans.setValue((incoming == RULE_AH0)?0:1, INT);
+                    if (vt == INT) ans.setValue((incoming == RULE_AH0)?0:1, INT);
+                    else ans.setValue((incoming == RULE_AH0)?0.0f:1.0f, FLOAT);
                     return ans;
                 } else if ((!allOne) && (incoming == RULE_EL0 || incoming == RULE_EL1)) {
-                    ans.setValue((incoming == RULE_EL0)?0:1, INT);
+                    if (vt == INT) ans.setValue((incoming == RULE_EL0)?0:1, INT);
+                    else ans.setValue((incoming == RULE_EL0)?0.0f:1.0f, FLOAT);
                     return ans;
                 } else if (existOne && (incoming == RULE_EH0 || incoming == RULE_EH1)) {
-                    ans.setValue((incoming == RULE_EH0)?0:1, INT);
+                    if (vt == INT) ans.setValue((incoming == RULE_EH0)?0:1, INT);
+                    else ans.setValue((incoming == RULE_EH0)?0.0f:1.0f, FLOAT);
                     return ans;
                 } else if ((!existOne) && (incoming == RULE_AL0 || incoming == RULE_AL1)) {
-                    ans.setValue((incoming == RULE_AL0)?0:1, INT);
+                    if (vt == INT) ans.setValue((incoming == RULE_AL0)?0:1, INT);
+                    else ans.setValue((incoming == RULE_AL0)?0.0f:1.0f, FLOAT);
                     return ans;
                 } else if (targetLvl == 0) {
                     // value type INT, FLOAT, or VOID (special value)
