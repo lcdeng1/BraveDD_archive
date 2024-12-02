@@ -300,10 +300,11 @@ class BRAVE_DD::Forest {
      * @param beginLevel    The beginning level of the unreduced incoming edge.
      * @param label         The unreduced incoming edge label.
      * @param nodeLevel     The level of the unreduced target node.
-     * @param child         The vector of child edges of the unreduced target node.
+     * @param down          The vector of child edges of the unreduced target node.
+     * @param value         [Optional] The value attached on the incoming edge.
      * @return Edge         - Output: the reduced edge pointing to a reduced node uniquely stored.
      */
-    Edge reduceEdge(uint16_t beginLevel, EdgeLabel label, uint16_t nodeLevel, std::vector<Edge>& child);
+    Edge reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const uint16_t nodeLevel, const std::vector<Edge>& down, const Value& value = Value());
 
 
 
@@ -386,7 +387,14 @@ class BRAVE_DD::Forest {
      */
     void normalizeNode(uint16_t lvl, Node& P, EdgeLabel& out);
     
-    Edge reduceNode(uint16_t nodeLevel, std::vector<Edge>& child);
+    /**
+     * @brief Reduce a node assuming the incoming edge is a short edge with 0 edge value.
+     * 
+     * @param nodeLevel     The level of the unreduced node.
+     * @param down          The vector of child edges of the unreduced node.
+     * @return Edge         - Output: reduced edge.
+     */
+    Edge reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down);
 
     /**
      * @brief Merge the incoming edge having EdgeLabel "label", which is respect of 
@@ -394,13 +402,15 @@ class BRAVE_DD::Forest {
      * the node at level "lvl2" after calling reduceNode method. Edge "*out" can not 
      * be null, it will be written the merged edge.
      * 
-     * @param lvl1          The represent level of the incoming edge.
-     * @param lvl2          The target node level of the incoming edge.
+     * @param beginLevel    The represent level of the incoming edge.
+     * @param mergeLevel    The target node level of the incoming edge.
      * @param label         The incoming edge label.
      * @param reduced       The reduced edge.
-     * @param out           Output: merged edge (label, target node handle).
+     * @param value         [Optional] The value attached on the incoming edge.
+     * @return Edge         - Output: merged edge (label, target node handle).
      */
-    void mergeEdge(uint16_t lvl1, uint16_t lvl2, EdgeLabel label, const Edge& reduced, Edge& out);
+    // Edge mergeEdge(uint16_t beginLevel, uint16_t mergeLevel, EdgeLabel label, Edge& reduced);
+    Edge mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value = Value());
     /* Marker */
     /**
      * @brief Unmark all nodes in the forest. This is usually used to initialize 

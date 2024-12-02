@@ -56,12 +56,22 @@ void Forest::importForest(std::istream& in)
     //
 }
 /************************* Reduction ****************************/
-Edge Forest::reduceNode(uint16_t nodeLevel, std::vector<Edge>& child)
+Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& child)
 {
-    //
+    Edge reduced;
+    //TBD
+    return reduced;
+
 }
 
-Edge Forest::reduceEdge(uint16_t beginLevel, EdgeLabel label, uint16_t nodeLevel, std::vector<Edge>& child)
+Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value)
+{
+    Edge merged;
+    // TBD
+    return merged;
+}
+
+Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const uint16_t nodeLevel, const std::vector<Edge>& down, const Value& value)
 {
     /* check level */
     if (beginLevel < nodeLevel) {
@@ -69,24 +79,48 @@ Edge Forest::reduceEdge(uint16_t beginLevel, EdgeLabel label, uint16_t nodeLevel
         exit(0);
     }
     /* check number of child */
-    if ((setting.isRelation() && child.size() != 4) || (!setting.isRelation() && child.size() != 2)) {
+    if ((setting.isRelation() && down.size() != 4) || (!setting.isRelation() && down.size() != 2)) {
         std::cout << "[BRAVE_DD] ERROR!\t Incorrect number of child edges!" << std::endl;
         exit(0);
     }
+    /* copy the children info */
+    std::vector<Edge> child = down;
     /* push the flags or value down */
-    SwapSet st = setting.getSwapType();
-    if (st == ONE) {
-        // swap-one
-    } else if (st == ALL) {
-        //
+    CompSet ct = setting.getCompType();
+    if (ct == COMP && unpackComp(label)) {                          // complement
+        for (size_t i=0; i<child.size(); i++) child[i].complement();
     }
-
-
-    // the reduced node
-    
-    // Edge reduced;
-    // reduceNode(P, &reduced);
-    // mergeEdge(lvl, P.level, label, &reduced, out);
-    Edge res(child[0]);
-    return res;
+    SwapSet st = setting.getSwapType();
+    if (!setting.isRelation() && unpackSwap(label)) {           // set: swap-one or swap-all
+        if (st == ONE) {                                            // swap-one
+            SWAP(child[0], child[1]);
+        } else if (st == ALL) {                                     // swap-all
+            SWAP(child[0], child[1]);
+            child[0].swap();
+            child[1].swap();
+        }
+    } else if (setting.isRelation()) {                          // relation: swap-from, swap-to, swap-from_to
+        if ((st == FROM || st == FROM_TO) && unpackSwap(label)) {   // swap "from"
+            SWAP(child[0], child[2]);
+            SWAP(child[1], child[3]);
+        }
+        if ((st == TO || st == FROM_TO) && unpackSwapTo(label)) {   // swap "to"
+            // to
+            SWAP(child[0], child[1]);
+            SWAP(child[2], child[3]);
+        }
+    }
+    /* reduce node */
+    Edge reduced;
+    reduced = reduceNode(nodeLevel, child);    // this will take care of value on edge
+    /* incoming edge rule for merge */
+    EdgeLabel mergeLabel = 0;
+    packRule(mergeLabel, unpackRule(label));
+    /* merge incoming edge with reduced node */
+    if (setting.getEncodeMechanism() == TERMINAL) {
+        reduced = mergeEdge(beginLevel, nodeLevel, mergeLabel, reduced);
+    } else {
+        reduced = mergeEdge(beginLevel, nodeLevel, mergeLabel, reduced, value);
+    }
+    return reduced;
 }
