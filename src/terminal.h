@@ -24,8 +24,8 @@ namespace BRAVE_DD {
     
     /**
      * @brief Get the terminal value for the given EdgeHandle.
-     * Note: it would check if the given handle is terminal, 
-     *       and exit if not.
+     * Note: it would check if the given handle points to terminal, and the value type header is valid.
+     *       it will exit if check failed.
      * 
      * @param handle        The given EdgeHandle.
      * @return Value     – Output termianl value wrapper.
@@ -59,10 +59,14 @@ namespace BRAVE_DD {
     
     /**
      * @brief Make a plain EdgeHandle target to terminal node, by giving the terminal value and type.
+     * Note: Since the terminal value type (INT or FLOAT) is not distinguished in the actual stored nodes 
+     *       in NodeManager, and the child edges of the node need to be queried during the evaluation
+     *       process, please make sure that the "type" used is consistent with the ValueType supported 
+     *       by the working forest, otherwise unpredictable results will occur.
      * 
-     * @param type 
-     * @param value 
-     * @return EdgeHandle 
+     * @param type          The value type of terminal value: INT, FLOAT, or VOID for special value.
+     * @param value         The terminal value.
+     * @return EdgeHandle   - Output plain EdgeHandle without rule or flags initialied.
      */
     static inline EdgeHandle makeTerminal(const ValueType type, const void* value) {
         if (type != INT && type != FLOAT && type != VOID) {
@@ -87,6 +91,17 @@ namespace BRAVE_DD {
         packTarget(handle, node);
         return handle;
     }
+    /**
+     * @brief Make a plain EdgeHandle target to terminal node, by giving the terminal value and type.
+     * Note: Since the terminal value type (INT or FLOAT) is not distinguished in the actual stored nodes 
+     *       in NodeManager, and the child edges of the node need to be queried during the evaluation
+     *       process, please make sure that the "type" used is consistent with the ValueType supported 
+     *       by the working forest, otherwise unpredictable results will occur.
+     * 
+     * @param type          The value type of terminal value: INT, FLOAT, or VOID for special value.
+     * @param value         The terminal value.
+     * @return EdgeHandle   - Output plain EdgeHandle without rule or flags initialied.
+     */
     template <typename T>
     static inline EdgeHandle makeTerminal(const ValueType type, const T& value) {
         // return makeTerminal(type, reinterpret_cast<void*>(const_cast<T*>(&value)));
