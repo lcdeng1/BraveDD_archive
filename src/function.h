@@ -27,6 +27,7 @@ class BRAVE_DD::Func {
     Func(Forest* f, const Edge& e);
     ~Func();
 
+    /***************************** General **************************/
     inline Forest* getForest() const {return parent;};
     inline bool isAttachedTo(const Forest* p) const {return getForest() == p;}
     inline bool isSameForest(const Func &e) const {return parent == e.getForest();}
@@ -60,7 +61,11 @@ class BRAVE_DD::Func {
 
 
     /************************* Within Operations ********************/
-    // 0 element not used! Doc!!
+
+    /** Compute and get the encoded function value by giving the assignment.
+     *  Note: the first element of "assignment" (assignment[0]) is not used!
+     * 
+     */
     Value evaluate(const std::vector<bool>& assignment) const;
     Value evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aTo) const;
 

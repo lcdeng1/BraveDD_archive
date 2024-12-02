@@ -114,7 +114,6 @@ void Func::variable(uint16_t lvl, bool isPrime, Value low, Value high)
     // TBD
 }
 
-// 0 element not used! Doc!!
 Value Func::evaluate(const std::vector<bool>& assignment) const
 {
     /* check the level */
