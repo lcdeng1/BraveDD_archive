@@ -64,7 +64,7 @@ class BRAVE_DD::Forest {
      * @return Node         – Output the targer node stored in NodeManager.
      */
     inline Node& getNode(const EdgeHandle& edge) const {
-        return getNode(unpackLevel(edge), unpackNode(edge));
+        return getNode(unpackLevel(edge), unpackTarget(edge));
     }
     
     /**
