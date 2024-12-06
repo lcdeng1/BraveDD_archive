@@ -364,7 +364,7 @@ class BRAVE_DD::Node {
         hash_stream hs;
         hs.start(0);
         // push info
-        hs.push(info[1] >> 2);
+        hs.push(info[1] >> 1);
         for (int i=2; i<size; i++) hs.push(info[i]);
         return (uint64_t)hs.finish64();
     }
