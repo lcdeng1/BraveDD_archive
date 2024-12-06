@@ -56,10 +56,11 @@ void Forest::importForest(std::istream& in)
     //
 }
 /************************* Reduction ****************************/
-Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& child)
+Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
 {
     Edge reduced;
-    //TBD
+    /* check if the node matches an illegal pattern */
+
     return reduced;
 
 }
@@ -67,6 +68,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& child
 Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value)
 {
     Edge merged;
+    /* check whether push-up or push-down, shortenI or shortenX */
     // TBD
     return merged;
 }
@@ -123,4 +125,17 @@ Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const 
         reduced = mergeEdge(beginLevel, nodeLevel, mergeLabel, reduced, value);
     }
     return reduced;
+}
+
+void Forest::markNodes(const Edge& edge) const
+{
+    char numChild = (setting.isRelation()) ? 4 : 2;
+    if (edge.getNodeLevel() > 0) {
+        if (!getNode(edge).isMarked()) {
+            getNode(edge).mark();
+            for (char i=0; i<numChild; i++) {
+                markNodes(getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i));
+            }
+        }
+    }
 }

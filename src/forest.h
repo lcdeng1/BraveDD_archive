@@ -310,7 +310,29 @@ class BRAVE_DD::Forest {
 
 
     /************************* Within Operations ********************/
-    
+    /**
+     * @brief Unmark all nodes in the forest. This is usually used to initialize 
+     * for counting the marked nodes or sweeping the unmarked nodes.
+     * 
+     */
+    inline void unmark() const {nodeMan->unmark();}
+
+    /**
+     * @brief Mark all the nonterminal nodes reachable from the given Func edge
+     * in the forest.
+     * 
+     * @param Func          The Func edge.
+     */
+    inline void markNodes(const Func& func) const {markNodes(func.edge);}
+
+    /**
+     * @brief Mark all the nonterminal nodes reachable from all Func edge in 
+     * the forest.
+     * 
+     */
+    inline void markAllFuncs() const {
+        // TBD
+    }
 
     /***************************** Cardinality **********************/
     uint64_t countNodes();   // all Funcs
@@ -409,30 +431,10 @@ class BRAVE_DD::Forest {
      * @param value         [Optional] The value attached on the incoming edge.
      * @return Edge         - Output: merged edge (label, target node handle).
      */
-    // Edge mergeEdge(uint16_t beginLevel, uint16_t mergeLevel, EdgeLabel label, Edge& reduced);
     Edge mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value = Value());
-    /* Marker */
-    /**
-     * @brief Unmark all nodes in the forest. This is usually used to initialize 
-     * for counting the marked nodes or sweeping the unmarked nodes.
-     * 
-     */
-    void unmark();
-    /**
-     * @brief Mark all the nonterminal nodes reachable from the given Func edge
-     * in the forest.
-     * 
-     * @param Func          The Func edge.
-     */
-    void markNodes(Func Func);
-    void markNodes(Edge edge);
-    /**
-     * @brief Mark all the nonterminal nodes reachable from all Func nodes in 
-     * the forest.
-     * 
-     */
-    void markAllFuncs();
 
+    /* Marker */
+    void markNodes(const Edge& edge) const;
 
     /// =============================================================
     friend class NodeManager;
