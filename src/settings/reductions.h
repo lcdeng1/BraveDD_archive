@@ -114,6 +114,9 @@ namespace BRAVE_DD {
                 exit(0);
         }
     }
+    static inline bool hasRuleTerminalOne(ReductionRule rule) {
+        return (bool)(rule & (0x01 << 1));
+    }
     static inline std::string rule2String(ReductionRule rule) {
         switch (rule) {
             case RULE_EL0: return "EL0";
