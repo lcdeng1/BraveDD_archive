@@ -56,8 +56,11 @@ class BRAVE_DD::NodeManager {
      *  If marked, the mark bit(s) is cleared.
      *  If unmarked, the node is recycled.
      */
-    inline void sweep(uint16_t lvl) { chunks[lvl-1].sweep(); }
+    void sweep(uint16_t lvl);
     void sweep();
+
+    void unmark(uint16_t lvl);
+    void unmark();
 
     inline uint32_t numUsed(uint16_t lvl) const { return PRIMES[chunks[lvl-1].sizeIndex] - chunks[lvl-1].numFrees; }
     inline uint32_t numAlloc(uint16_t lvl) const { return chunks[lvl-1].firstUnalloc; }
@@ -86,7 +89,7 @@ class BRAVE_DD::NodeManager {
         // ========================================================
             friend class NodeManager;
             Forest*     parent;         // Parent forest
-            Node*       nodes;          // Actual node storage; the 1st slot (nodes[0]) will be used
+            Node*       nodes;          // Actual node storage; the 1st slot (nodes[0]) will not be used
             int         sizeIndex;      // Index of prime number for size
             uint32_t    firstUnalloc;   // Index of first unallocated slot
             uint32_t    freeList;       // Header of the list of unused slots
