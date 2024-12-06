@@ -28,14 +28,15 @@ class BRAVE_DD::Func {
     ~Func();
 
     /***************************** General **************************/
-    inline Forest* getForest() const {return parent;};
+    inline Forest* getForest() const {return parent;}
+    inline Edge getEdge() const {return edge;}
     inline bool isAttachedTo(const Forest* p) const {return getForest() == p;}
     inline bool isSameForest(const Func &e) const {return parent == e.getForest();}
-    
-    
+
     void release();
-    inline std::string getLabel() const {return label;}
-    inline void setLabel(std::string l) {label = l;}
+
+    inline std::string getName() const {return name;}
+    inline void setName(std::string l) {name = l;}
 
     /**************************** Make Func *************************/
     // Constant false Func
@@ -97,7 +98,7 @@ class BRAVE_DD::Func {
     friend class Forest;
     Forest*     parent;     // parent forest
     Edge        edge;       // edge information
-    std::string label;      // Optional, only used for I/O; defaults to empty string
+    std::string name;       // Optional, only used for I/O; defaults to empty string
     /* For the Funcs registry in the parent forest */
     Func*       prevFunc;   // Previous Func edge in parent forest
     Func*       nextFunc;   // Next Func edge in parent forest
@@ -153,7 +154,7 @@ class BRAVE_DD::ExplictFunc {
     private:
     /*-------------------------------------------------------------*/
     std::vector<std::vector<bool> >     assignments;
-    std::vector<Value>              outcomes;
+    std::vector<Value>                  outcomes;
 };
 
 #endif

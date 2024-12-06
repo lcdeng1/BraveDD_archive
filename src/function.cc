@@ -17,7 +17,7 @@ Func::Func()
 Func::Func(Forest* f)
 {
     parent = f;
-    label = "";
+    name = "";
     prevFunc = 0;
     nextFunc = 0;
 }
@@ -25,7 +25,7 @@ Func::Func(Forest* f, const Edge& e)
 :edge(e)
 {
     parent = f;
-    label = "";
+    name = "";
     prevFunc = 0;
     nextFunc = 0;
 }
@@ -33,6 +33,8 @@ Func::~Func()
 {
     //
 }
+
+/***************************** General **************************/
 
 /**************************** Make edge *************************/
 void Func::trueFunc()
