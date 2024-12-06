@@ -204,9 +204,22 @@ namespace BRAVE_DD {
         handle &= ~NODE_MASK;
         handle |= (target);
     }
+    static inline std::string unpackTermiValue(const EdgeHandle& handle) {
+        std::string value = "";
+        if (unpackLevel(handle) == 0) {
+            NodeHandle target = unpackTarget(handle);
+            if (handle & FLOAT_VALUE_FLAG_MASK) {
+                value = std::to_string(*reinterpret_cast<float*>(&target));
+            } else if (handle & INT_VALUE_FLAG_MASK) {
+                value = std::to_string(target);
+            } else if (handle & SPECIAL_VALUE_FLAG_MASK) {
+                value = speciaValue2String((SpecialValue)target);
+            }
+        }
+        return value;
+    }
     static inline void printEdgeHandle(EdgeHandle& handle, std::ostream& out, int format)
     {
-        NodeHandle target = unpackTarget(handle);
         if (format == 0) {
             out << "<" << rule2String(unpackRule(handle));
             out << ", " << unpackComp(handle);
@@ -214,13 +227,7 @@ namespace BRAVE_DD {
             out << ", ";
             if (unpackLevel(handle) == 0) {
                 out << "T_";
-                if (handle & FLOAT_VALUE_FLAG_MASK) {
-                    out << *reinterpret_cast<float*>(&target);
-                } else if (handle & INT_VALUE_FLAG_MASK) {
-                    out << target;
-                } else if (handle & SPECIAL_VALUE_FLAG_MASK) {
-                    out << speciaValue2String((SpecialValue)target);
-                }
+                out << unpackTermiValue(handle);
             } else {
                 out << unpackTarget(handle);
             }
@@ -444,6 +451,7 @@ class BRAVE_DD::Edge {
          * @return NodeHandle 
          */
         inline NodeHandle getNodeHandle() const {return unpackTarget(handle);}
+        inline EdgeHandle getEdgeHandle() const {return handle;}
         // get rule and flags TBD
         inline ReductionRule getRule() const {return unpackRule(handle);}
         inline bool getComp() const {return unpackComp(handle);}
