@@ -1,22 +1,56 @@
 =============================================== ForestSetting =============================================
+-------------------------------------------- (src/setting.h) ----------------------------------------------
 domain          |   * the number of variables
                 |   * variable order (not implemented)
------------------------------------------------------------------------------------------------------------
+encodingType    |   {TERMINAL, EDGE_PLUS, EDGE_PLUSMOD, EDGE_MULT}
+mergeType       |   {PUSH_UP, PUSH_DOWN, SHORTEN_I, SHORTEN_X} see comments in "setting.h"
+name            |   predefined BDD/MXD type, or user defined name
+---------------------------------------- (src/settings/range.h) -------------------------------------------
 range           |   * range type: {Boolean, Finite, non-neg Finite, Integer, non-neg Real, Real}
                 |   * value type: {void, int, long, float, double}
                 |   * max range N for range type "Finite"
                 |   * flags of allowing special values: negative infinity, postive infinity, or undefined
------------------------------------------------------------------------------------------------------------
+------------------------------------- (src/settings/reductions.h) -----------------------------------------
 reductions      |   * dimension: 1 or 2
                 |   * predefined type including "user_defined"
                 |   * vector of bool encoding set of reduction rules allowed
------------------------------------------------------------------------------------------------------------
+------------------------------------- (src/settings/edge_flags.h) -----------------------------------------
 flags           |   * swap flag type
                 |   * complement flag type
------------------------------------------------------------------------------------------------------------
-encodingType    |   {TERMINAL, EDGE_PLUS, EDGE_PLUSMOD, EDGE_MULT}
------------------------------------------------------------------------------------------------------------
-mergeType       |   {PUSH_UP, PUSH_DOWN, SHORTEN_I, SHORTEN_X} see comments in "setting.h"
------------------------------------------------------------------------------------------------------------
-name            |   predefined BDD/MXD type, or user defined name
 ===========================================================================================================
+
+
+[Date: Dec 13]
+=========================================== Development Status ============================================
+                    |                       |   TERMINAL            |   EDGE_PLUS/MOD/MULT
+-----------------------------------------------------------------------------------------------------------
+ForestSetting       |   predefined type     |       I               |       U
+                    |   user-defined        |       D               |       D
+                    |   consistency         |       U               |       U
+-----------------------------------------------------------------------------------------------------------
+Forest              |   insertNode              I
+                    |   getChild                I
+                    |   markNodes               I
+                    |   unmark                  I
+                    |   reduceEdge          |       U               |       U
+                    |   reduceNode          |       I               |       U
+                    |   normalize           |       I               |       U
+                    |   mergeEdge           |       U               |       U
+-----------------------------------------------------------------------------------------------------------
+evaluation          |                       |       I               |       U
+-----------------------------------------------------------------------------------------------------------
+unionAssignment(s)  |       TBD
+-----------------------------------------------------------------------------------------------------------
+output              |   DotMaker            |       D               |       U
+                    |   BDDX                |       U               |       U
+-----------------------------------------------------------------------------------------------------------
+input               |   BDDX                |       U               |       U
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+operation           |       TBD: by Dec 31
+-----------------------------------------------------------------------------------------------------------
+ComputingTable      |       TBD: by Dec 31
+-----------------------------------------------------------------------------------------------------------
+application         |   queens                  I
+                    |   sliding                 I
+===========================================================================================================
+[U]: under implementation; [I]: implemented but under testing; [D]: implemented and tested; [N]: not supported
