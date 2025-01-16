@@ -218,7 +218,7 @@ namespace BRAVE_DD {
         }
         return value;
     }
-    static inline void printEdgeHandle(EdgeHandle& handle, std::ostream& out, int format)
+    static inline void printEdgeHandle(const EdgeHandle& handle, std::ostream& out, int format)
     {
         if (format == 0) {
             out << "<" << rule2String(unpackRule(handle));
@@ -456,8 +456,20 @@ class BRAVE_DD::Edge {
         inline ReductionRule getRule() const {return unpackRule(handle);}
         inline bool getComp() const {return unpackComp(handle);}
         inline bool getSwap(bool isTo) const {return (isTo)?unpackSwapTo(handle):unpackSwap(handle);}
-
         inline Value getValue() const {return value;}
+
+        inline void setNodeHandle(NodeHandle target) {packTarget(handle, target);}
+        inline void setEdgeHandle(EdgeHandle edge) {handle = edge;}
+        inline void setRule(ReductionRule rule) {packRule(handle, rule);}
+        inline void setComp(bool comp) {packComp(handle, comp);}
+        inline void setSwap(bool swap, bool isTo) {
+            if (isTo) {
+                packSwap(handle, swap);
+            } else {
+                packSwapTo(handle, swap);
+            }
+        }
+        inline void setLevel(uint16_t lvl) {packLevel(handle, lvl);}
 
         inline void complement() {
             // complement the reduction rule and flip the complement bit, when complement allowed
@@ -484,7 +496,7 @@ class BRAVE_DD::Edge {
             return !equals(e);
         }
 
-        void print(std::ostream& out, int format) const;
+        void print(std::ostream& out, int format=0) const;
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/

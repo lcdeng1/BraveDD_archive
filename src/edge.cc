@@ -35,6 +35,15 @@ Value::Value(float f)
     floatValue = f;
 }
 
+void Value::print(std::ostream& out, int format) const
+{
+    if (format == 0) {
+        //
+    } else {
+        // more format TBD
+    }
+}
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -61,4 +70,15 @@ Edge::Edge(const EdgeHandle h, Value val):value(val)
 Edge::~Edge()
 {
 
+}
+
+void Edge::print(std::ostream& out, int format) const
+{
+    printEdgeHandle(handle, out, format);
+    // value?
+    if (format == 0) {
+        //
+    } else {
+        // more format TBD
+    }
 }
