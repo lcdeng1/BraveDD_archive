@@ -57,6 +57,39 @@ namespace BRAVE_DD {
         return val;
     }
     
+    static inline bool isTerminalOne(const EdgeHandle& handle) {
+        Value val = getTerminalValue(handle);
+        bool ans = 0;
+        union {
+            int valInt;
+            float valFloat;
+        };
+        if (val.getType() == INT) {
+            val.getValueTo(&valInt, INT);
+            ans = (valInt == 1);
+        } else {
+            val.getValueTo(&valFloat, FLOAT);
+            ans = (valFloat == 1.0f);
+        }
+        return ans;
+    }
+
+    static inline bool isTerminalZero(const EdgeHandle& handle) {
+        Value val = getTerminalValue(handle);
+        bool ans = 0;
+        union {
+            int valInt;
+            float valFloat;
+        };
+        if (val.getType() == INT) {
+            val.getValueTo(&valInt, INT);
+            ans = (valInt == 0);
+        } else {
+            val.getValueTo(&valFloat, FLOAT);
+            ans = (valFloat == 0.0f);
+        }
+        return ans;
+    }
     /**
      * @brief Make a plain EdgeHandle target to terminal node, by giving the terminal value and type.
      * Note: Since the terminal value type (INT or FLOAT) is not distinguished in the actual stored nodes 
