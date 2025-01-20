@@ -7,6 +7,17 @@
 #include "settings/edge_flags.h"
 
 namespace BRAVE_DD {
+    /// Predefined BDD type
+    enum class PredefForest {
+        REXBDD,
+        QBDD,
+        FBDD,
+        ZBDD,
+        ESRBDD,
+        FBMXD,
+        IBMXD,
+        ESRBMXD
+    };
     /// Encoding mechanism
     enum EncodeMechanism{
         TERMINAL,           // only if range type is Boolean:       BDDs, MTBDDs
@@ -119,7 +130,8 @@ class BRAVE_DD::ForestSetting {
          * @param numVals       The given number of variables.
          */
         ForestSetting(const unsigned numVals);
-        ForestSetting(const std::string& bdd, const unsigned numVals);
+        ForestSetting(const PredefForest type, const unsigned numVals, const long maxRange=1);
+        ForestSetting(const std::string& bdd, const unsigned numVals, const long maxRange=1);
         ~ForestSetting();
         //******************************************
         //  Getters for the type
@@ -212,15 +224,6 @@ class BRAVE_DD::ForestSetting {
         inline void setName(const std::string& bdd) {name = bdd;}
 
         //******************************************
-        //  Consistency
-        //******************************************
-        /** Check the consistency of specifications, find and report conflicts.
-         *  This is usually used before constructing Forest with this setting.
-         *  Return 1: pass; 0: failed
-         */
-        bool checkConsistency() const;
-
-        //******************************************
         //  Size of Node in NodeManager
         //******************************************
         inline int nodeSize() const {
@@ -251,8 +254,9 @@ class BRAVE_DD::ForestSetting {
         //******************************************
         //  I/O
         //******************************************
-        void exportSetting(std::ostream& out) const;
-        void importSetting(std::istream& in);
+
+        void output(std::ostream& out, int format = 0) const;
+        void input(std::istream& in);
 
     /*-------------------------------------------------------------*/
     private:
