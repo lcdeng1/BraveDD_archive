@@ -176,7 +176,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 } else if (targetLvl == 0) {
                     // value type INT, FLOAT, or VOID (special value)
                     ans = getTerminalValue(current.handle);
-                    if (current.getComp()) {
+                    if (current.getComp() && ct != NO_COMP) {
                         if (ans.valueType == INT) {
                             int terminalVal = *reinterpret_cast<int*>(&targetHandle);
                             terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
