@@ -33,7 +33,7 @@ namespace BRAVE_DD {
     static inline std::string compSet2String(CompSet ct) {
         std::string compType;
         if (ct==NO_COMP) compType = "No";
-        else if (ct==COMP) compType = "YES";
+        else if (ct==COMP) compType = "Yes";
         else compType = "Unknown";
         return compType;
     }

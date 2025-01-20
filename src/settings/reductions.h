@@ -117,6 +117,21 @@ namespace BRAVE_DD {
     static inline bool hasRuleTerminalOne(ReductionRule rule) {
         return (bool)(rule & (0x01 << 1));
     }
+    static inline bool isRuleEL(ReductionRule rule) {
+        return (rule == RULE_EL0 || rule == RULE_EL1);
+    }
+    static inline bool isRuleEH(ReductionRule rule) {
+        return (rule == RULE_EH0 || rule == RULE_EH1);
+    }
+    static inline bool isRuleAL(ReductionRule rule) {
+        return (rule == RULE_AL0 || rule == RULE_AL1);
+    }
+    static inline bool isRuleAH(ReductionRule rule) {
+        return (rule == RULE_AH0 || rule == RULE_AH1);
+    }
+    static inline bool isRuleI(ReductionRule rule) {
+        return (rule == RULE_I0 || rule == RULE_I1);
+    }
     static inline std::string rule2String(ReductionRule rule) {
         switch (rule) {
             case RULE_EL0: return "EL0";
