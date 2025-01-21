@@ -33,9 +33,8 @@ class BRAVE_DD::Func {
     inline bool isAttachedTo(const Forest* p) const {return getForest() == p;}
     inline bool isSameForest(const Func &e) const {return parent == e.getForest();}
 
-    void release();
-
     inline std::string getName() const {return name;}
+    inline void setEdge(Edge& e) {edge = e;}
     inline void setName(std::string l) {name = l;}
 
     /**************************** Make Func *************************/
