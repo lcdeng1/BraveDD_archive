@@ -17,6 +17,7 @@
 #include "lib_manager.h"
 #include "operators.h"
 #include "operations/builtin.h"
+#include "operations/apply.h"
 #include "IO/out_dot.h"
 
 #endif
