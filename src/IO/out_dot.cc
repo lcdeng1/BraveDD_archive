@@ -31,6 +31,8 @@ void DotMaker::buildGraph(const Func& func)
     int numRules = parent->getSetting().getReductionSize();
     CompSet cs = parent->getSetting().getCompType();
     SwapSet ss = parent->getSetting().getSwapType();
+    parent->unmark();
+    parent->markNodes(func);
     /* start */
     outfile << "digraph g\n{\n";
     outfile << "\trankdir=TB\n";
@@ -94,11 +96,13 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
     }
     label += ">";
     /* root edge */
-    std::string root = "N" + std::to_string(lvl);
+    std::string root = "N";
     std::string style = (isLow) ? "dashed" : "solid";
-    if (lvl == numVars) {
+    if ((lvl == numVars) && (rootHandle == 0)) {
+        root += std::to_string(lvl+1);
         outfile << "\t{rank=same v"<<numVars+1<<" "<<root<<" [shape = point]}\n";
     } else {
+        root += std::to_string(lvl);
         root += "_";
         root += std::to_string(rootHandle);
     }
@@ -111,12 +115,17 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
             outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
             outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
             <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
-            for (char i=0; i<numChild; i++) {
-                buildEdge(edge.getNodeLevel(),
-                            parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
-                            edge.getNodeHandle(),
-                            (i==0 || i==2));
+            // build child edges of target node if it's marked
+            if (parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
+                for (char i=0; i<numChild; i++) {
+                    buildEdge(edge.getNodeLevel(),
+                                parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
+                                edge.getNodeHandle(),
+                                (i==0 || i==2));
+                }
             }
+            // unmark
+            parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
         }
     } else {
         // for edge valued TBD
