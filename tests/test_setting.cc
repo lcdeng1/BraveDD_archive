@@ -46,8 +46,8 @@ int main(int argc, char** argv) {
     setting1.setCompType(NO_COMP);             // Complement flag
     setting1.setMergeType(PUSH_DOWN);          // Merge type (this will be removed)
     setting1.setName("v5f6-EVBDD");            // Name
-    setting1.exportSetting(std::cout);
-    forest1.getSetting().exportSetting(std::cout);
+    setting1.output(std::cout, 0);
+    forest1.getSetting().output(std::cout, 0);
 
     if (forest1.getSetting().getNumVars() == setting1.getNumVars()) {
         std::cout<< "Error!" << std::endl;
