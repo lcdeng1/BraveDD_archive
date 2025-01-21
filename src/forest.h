@@ -214,7 +214,7 @@ class BRAVE_DD::Forest {
     inline Edge getChildEdge(const uint16_t level, const NodeHandle handle, const char child) const {
         Edge ans;
         ans.handle = getChildEdgeHandle(level, handle, child);
-        if (setting.getEncodeMechanism() != TERMINAL && unpackLevel(ans.handle) != 0) {
+        if ((setting.getEncodeMechanism() != TERMINAL) && (unpackLevel(ans.handle) != 0)) {
             // get the valid value, TBD
             // Node& node = getNode(level, handle);
         }
@@ -388,6 +388,7 @@ class BRAVE_DD::Forest {
      * @brief Get the ForestSetting used by this forest.
      */
     inline const ForestSetting& getSetting() const {return setting;}
+    inline void exportSetting(std::ostream out, int format) const {setting.output(out, format);}
 
     /*************************** Reordering *************************/
     void shiftUp(unsigned lvl);
@@ -398,16 +399,36 @@ class BRAVE_DD::Forest {
     private:
     /*-------------------------------------------------------------*/
     /// Helper Methods ==============================================
+
+    /** Check the comopatibility of specifications, find and report conflicts.
+     *  This is usually used before constructing Forest with this setting.
+     *  Return 1: pass; 0: failed
+     */
+    bool checkCompatibility() const;
+
     /**
-     * @brief Normalize a node, 
-     * Normalize the given node "P". EdgeLabel "*out" specifies 
-     * the incoming edge rule/value and flags, which may be changed by the normalization.
+     * @brief Check if the swap-all bit is useless, by giving the parent forest and edge
      * 
-     * @param lvl           The given node level.
-     * @param P             The given node waiting for normalization.
+     * @param F         the parent forest.
+     * @param e         the given edge.
+     * @return char     0: necessary; 1: can be directly deleted; 2: the same as complement bit.
+     */
+    char isSwapAllUseless(Edge& e);
+
+    Edge unreduceEdge(const uint16_t level, const Edge& edge);
+
+    /**
+     * @brief Normalize a node to ensure canonicity.
+     * 
+     * @param nodeLevel     The given node level.
+     * @param down          The vector of child edges of the node.
      * @param out           Output: edge label (rule/value, flags).
      */
-    void normalizeNode(uint16_t lvl, Node& P, EdgeLabel& out);
+    Edge normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& down);
+
+    public:
+
+    Edge normalizeEdge(const uint16_t level, const Edge& edge);
     
     /**
      * @brief Reduce a node assuming the incoming edge is a short edge with 0 edge value.
