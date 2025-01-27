@@ -242,7 +242,7 @@ class BRAVE_DD::Reductions {
             } else if (type == IDENTITY_IDENTITY) {
                 dimension = 2;
                 rules[RULE_I0] = 1;
-                rules[RULE_I1] = 1;
+                // rules[RULE_I1] = 1;
             } else if (type == FULLY_IDENTITY) {
                 dimension = 2;
                 // Apply reduction rules: I0 (0), X (1)
