@@ -132,7 +132,6 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 allOne &= assignment[i];
                 existOne |= assignment[i];
             }
-            
             if (encode == TERMINAL) {
                 // terminal value, don't care the Value on edge
                 ValueType vt = (parent->getSetting().getValType() == INT
@@ -178,11 +177,6 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             existOne = 0;
             targetHandle = current.getNodeHandle();
             targetLvl = current.getNodeLevel();
-
-            // std::cout<<"k: " << k;
-            // std::cout<<"; next currt: ";
-            // current.print(std::cout, 0);
-            // std::cout << std::endl;
             continue;
         }
         // not reach the terminal cases of reduction rules, or got the next edge

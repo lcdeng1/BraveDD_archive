@@ -426,8 +426,6 @@ class BRAVE_DD::Forest {
      */
     Edge normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& down);
 
-    public:
-
     Edge normalizeEdge(const uint16_t level, const Edge& edge);
     
     /**
@@ -460,6 +458,7 @@ class BRAVE_DD::Forest {
     /// =============================================================
     friend class NodeManager;
     friend class UniqueTable;
+    friend class Func;
         ForestSetting       setting;        // Specification setting of this forest.
         NodeManager*        nodeMan;        // Node manager.
         UniqueTable*        uniqueTable;    // Unique table.
