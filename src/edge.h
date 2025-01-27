@@ -464,9 +464,9 @@ class BRAVE_DD::Edge {
         inline void setComp(bool comp) {packComp(handle, comp);}
         inline void setSwap(bool swap, bool isTo) {
             if (isTo) {
-                packSwap(handle, swap);
-            } else {
                 packSwapTo(handle, swap);
+            } else {
+                packSwap(handle, swap);
             }
         }
         inline void setLevel(uint16_t lvl) {packLevel(handle, lvl);}
