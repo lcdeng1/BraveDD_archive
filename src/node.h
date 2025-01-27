@@ -316,43 +316,20 @@ class BRAVE_DD::Node {
         setEdgeRule(child, unpackRule(label), isMxd);
         setEdgeComp(child, unpackComp(label), isMxd);
         setEdgeSwap(child, 0, unpackSwap(label), isMxd);
-        setEdgeSwap(child, 1, unpackSwapTo(label), isMxd);
+        if (isMxd) setEdgeSwap(child, 1, unpackSwapTo(label), isMxd);
     }
 
     inline void setChildEdge(char child, EdgeHandle handle, bool isMxd, bool hasLvl) {
         setEdgeRule(child, unpackRule(handle), isMxd);
         setEdgeComp(child, unpackComp(handle), isMxd);
         setEdgeSwap(child, 0, unpackSwap(handle), isMxd);
-        setEdgeSwap(child, 1, unpackSwapTo(handle), isMxd);
+        if (isMxd) setEdgeSwap(child, 1, unpackSwapTo(handle), isMxd);
         setChildNodeHandle(child, unpackTarget(handle), isMxd);
         if (hasLvl) setChildNodeLevel(child, unpackLevel(handle), isMxd);
         if (unpackLevel(handle) == 0) {
             info[1] &= ~(0x01<<(4-child));
             if (handle & SPECIAL_VALUE_FLAG_MASK) info[1] |= (0x01<<(4-child));
         }
-    }
-    /**
-     * Unpack and get the child edge's value, fill it into 32 bits
-     * 
-     * @param child 
-     * @return uint32_t 
-     */
-    inline uint32_t edgeValue32(char child) const {
-        uint32_t val = 0;
-        // TBD
-        return val;
-    }
-
-    /**
-     * Unpack and get the child edge's value, fill it into 64 bits
-     * 
-     * @param child 
-     * @return uint64_t 
-     */
-    inline uint64_t edgeValue64(char child) const {
-        uint64_t val = 0;
-        // TBD
-        return val;
     }
 
     /**
