@@ -41,55 +41,29 @@ void Func::trueFunc()
 {
     /* Don't care the value on edge */
     edge.handle = makeTerminal(INT, 1);
-    if (parent->getSetting().getCompType() == COMP) {
-        edge.complement();
-        packTarget(edge.handle, 0);
+    if (parent->setting.getValType() == FLOAT) {
+        edge.handle = makeTerminal(FLOAT, 1.0f);
     }
-    if (parent->getSetting().hasReductionRule(RULE_X)) {
-        packRule(edge.handle, RULE_X);
-    } else {
-        // build it bottom up
-        uint16_t numVal = parent->getSetting().getNumVars();
-        std::vector<Edge> children(2);
-        children[0] = edge;
-        children[1] = edge;
-        EdgeLabel incoming = 0;
-        packRule(incoming, RULE_X);
-        Edge reduced;
-        for (uint16_t i=1; i<=numVal; i++) {
-            reduced = parent->reduceEdge(i, incoming, i, children);
-            children[0] = reduced;
-            children[1] = reduced;
-        }
-        edge = reduced;
-    }
+    packRule(edge.handle, RULE_X);
+    edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
 }
 void Func::falseFunc()
 {
     edge.handle = makeTerminal(INT, 0);
-    if (parent->getSetting().hasReductionRule(RULE_X)) {
-        packRule(edge.handle, RULE_X);
-    } else {
-        // build it bottom up
-        uint16_t numVal = parent->getSetting().getNumVars();
-        std::vector<Edge> children(2);
-        children[0] = edge;
-        children[1] = edge;
-        EdgeLabel incoming = 0;
-        packRule(incoming, RULE_X);
-        Edge reduced;
-        for (uint16_t i=1; i<=numVal; i++) {
-            reduced = parent->reduceEdge(i, incoming, i, children);
-            children[0] = reduced;
-            children[1] = reduced;
-        }
-        edge = reduced;
+    if (parent->setting.getValType() == FLOAT) {
+        edge.handle = makeTerminal(FLOAT, 0.0f);
     }
+    packRule(edge.handle, RULE_X);
+    edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
 }
 /* For dimention 1 and 2 */
 void Func::constant(Value val)
 {
-    // TBD
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
+        //
+    } else {
+        //
+    }
 }
 /* For dimention of 2 (Relation) */
 void Func::identity(std::vector<bool> dependance)
@@ -143,16 +117,22 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
     bool allOne = 1, existOne = 0;
     /* evaluation starting from the target node level */
     for (uint16_t k=assignment.size()-1; k>0; k--) {
-        
+#ifdef BRAVE_DD_TRACE
+        std::cout<<"evaluate k: " << k;
+        std::cout<<"currt: ";
+        current.print(std::cout, 0);
+        std::cout << std::endl;
+#endif
+        /* check the incoming edge's reduction rule for terminal cases */
+        ReductionRule incoming = current.getRule();
         /* if incoming edge skips levels */
-        if (targetLvl < k) {
+        if ((targetLvl < k) && (incoming != RULE_X)) {
             // determine flags of all-ones and exist-ones
             for (uint16_t i=k; i>targetLvl; i--) {
                 allOne &= assignment[i];
                 existOne |= assignment[i];
             }
-            /* check the incoming edge's reduction rule for terminal cases */
-            ReductionRule incoming = current.getRule();
+            
             if (encode == TERMINAL) {
                 // terminal value, don't care the Value on edge
                 ValueType vt = (parent->getSetting().getValType() == INT
@@ -173,23 +153,6 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                     if (vt == INT) ans.setValue((incoming == RULE_AL0)?0:1, INT);
                     else ans.setValue((incoming == RULE_AL0)?0.0f:1.0f, FLOAT);
                     return ans;
-                } else if (targetLvl == 0) {
-                    // value type INT, FLOAT, or VOID (special value)
-                    ans = getTerminalValue(current.handle);
-                    if (current.getComp() && ct != NO_COMP) {
-                        if (ans.valueType == INT) {
-                            int terminalVal = *reinterpret_cast<int*>(&targetHandle);
-                            terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
-                            ans.setValue(terminalVal, INT);
-                        } else if (ans.valueType == FLOAT) {
-                            float terminalVal = *reinterpret_cast<float*>(&targetHandle);
-                            terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
-                            ans.setValue(terminalVal, FLOAT);
-                        } else if (ans.valueType == VOID) {
-                            // special value: NegInf => PosInf?
-                        }
-                    }
-                    return ans;
                 }
             } else if (encode == EDGE_PLUS) {
                 // edge values plus
@@ -201,21 +164,47 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 // edge values multiply
                 // TBD
             }
-        } // end long edge's terminal cases
+        } else if (targetLvl > 0) {
+            /* short incoming edge, or long incoming edge but skips */
+            k = targetLvl;
+            isSwap = (st==ONE || st==ALL) ? current.getSwap(0) : 0;
+            // get swap/comp bit only when it's allowed, since user may insert illegal nodes into nodemanager (which is allowed)
+            isComp = (ct==COMP) ? current.getComp() : 0;
+            current = parent->getChildEdge(k, targetHandle, isSwap^assignment[k]);
+            if (isComp) current.complement();
+            if (isSwap && st==ALL) current.swap();  // for swap-all
+            /* update varibles */
+            allOne = 1;
+            existOne = 0;
+            targetHandle = current.getNodeHandle();
+            targetLvl = current.getNodeLevel();
 
-        /* short incoming edge, or long incoming edge but skips */
-        k = targetLvl;
-        isSwap = (st==ONE || st==ALL) ? current.getSwap(0) : 0;
-        // get swap/comp bit only when it's allowed, since user may insert illegal nodes into nodemanager (which is allowed)
-        isComp = (ct==COMP) ? current.getComp() : 0;
-        current = parent->getChildEdge(k, targetHandle, isSwap^assignment[k]);
-        if (isComp) current.complement();
-        if (isSwap && st==ALL) current.swap();  // for swap-all
-        /* update varibles */
-        allOne = 1;
-        existOne = 0;
-        targetHandle = current.getNodeHandle();
-        targetLvl = current.getNodeLevel();
+            // std::cout<<"k: " << k;
+            // std::cout<<"; next currt: ";
+            // current.print(std::cout, 0);
+            // std::cout << std::endl;
+            continue;
+        }
+        // not reach the terminal cases of reduction rules, or got the next edge
+        if (targetLvl == 0) {
+            // value type INT, FLOAT, or VOID (special value)
+            ans = getTerminalValue(current.handle);
+            if (current.getComp() && ct != NO_COMP) {
+                if (ans.valueType == INT) {
+                    int terminalVal = *reinterpret_cast<int*>(&targetHandle);
+                    terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
+                    ans.setValue(terminalVal, INT);
+                } else if (ans.valueType == FLOAT) {
+                    float terminalVal = *reinterpret_cast<float*>(&targetHandle);
+                    terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
+                    ans.setValue(terminalVal, FLOAT);
+                } else if (ans.valueType == VOID) {
+                    // special value: NegInf => PosInf?
+                    // TBD
+                }
+            }
+            return ans;
+        }
     }
     return ans;
 }
