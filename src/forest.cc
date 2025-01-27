@@ -57,6 +57,13 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
     // assuming all child edges are reduced and legal
     /* copy the child info */
     std::vector<Edge> child = down;
+#ifdef BRAVE_DD_TRACE
+    std::cout<<"normalize node:\n";
+    child[0].print(std::cout);
+    std::cout << std::endl;
+    child[1].print(std::cout);
+    std::cout << std::endl;
+#endif
     /* the result */
     Edge ans;
     ans.setLevel(nodeLevel);
@@ -118,6 +125,13 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             child[0].complement();
             child[1].complement();
         }
+#ifdef BRAVE_DD_TRACE
+        std::cout << "normalized child:\n";
+        child[0].print(std::cout);
+        std::cout << std::endl;
+        child[1].print(std::cout);
+        std::cout << std::endl;
+#endif
         
         bool hasLvl = setting.getReductionSize() > 0;
         node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
@@ -137,6 +151,11 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
     ans.setSwap(swap, 0);
     ans.setSwap(swapTo, 1);
     ans.setNodeHandle(insertNode(nodeLevel, node));
+#ifdef BRAVE_DD_TRACE
+    std::cout << "normalize done, ans edge: ";
+    ans.print(std::cout);
+    std::cout << std::endl;
+#endif
     return ans;
 }
 
@@ -245,8 +264,8 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                 }
             }
         }
-        // rule 4: EH edge at level 2 target to terminal 0 or 1, changed to EL
-        if ((level == 2)
+        // rule 4: EH edge at level 1 target to terminal 0 or 1, changed to EL
+        if ((level == 1)
             && isRuleEH(normalized.getRule())
             && (hasRuleTerminalOne(normalized.getRule()) != (normalized.getComp()^isTermOne))
             && (isTermOne || isTermZero)) {
@@ -295,6 +314,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                 for (size_t i=0; i<childEdges.size(); i++) {
                     childEdges[i] = temp;
                 }
+                // as short incoming edge, reduceNode can be directly called
                 temp = reduceNode(k, childEdges);
             }
         } else if (isRuleEL(rule) || isRuleEH(rule) || isRuleAL(rule) || isRuleAH(rule)) {
@@ -342,6 +362,13 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     for (size_t i=0; i<child.size(); i++) {
         child[i] = normalizeEdge(nodeLevel-1, child[i]);
     }
+#ifdef BRAVE_DD_TRACE
+    std::cout << "reduce node: \n";
+    child[0].print(std::cout);
+    std::cout << std::endl;
+    child[1].print(std::cout);
+    std::cout << std::endl;
+#endif
     /* setting info */
     bool isCompAllowed = (setting.getCompType() != NO_COMP);
     // bool isSwapAllowed = (setting.getSwapType() != NO_SWAP);
@@ -371,8 +398,10 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
             bool isTermZero0 = isTerminalZero(child[0].getEdgeHandle());
             bool isTermZero1 = isTerminalZero(child[1].getEdgeHandle());
             /* Meta-edge: Constant <C, 0, c, 0> */
-            if ((child[0].getRule() == child[1].getRule()) && (nodeLevel >= 1) && (child[0].getComp() == child[1].getComp())
-                && (child[0].getRule() == RULE_X) && setting.hasReductionRule(RULE_X)) {
+            if ((child[0].getEdgeHandle() == child[1].getEdgeHandle())
+                && (child[0].getRule() == child[1].getRule()) && (nodeLevel >= 1)
+                && (child[0].getRule() == RULE_X)
+                && setting.hasReductionRule(RULE_X)) {
                 reduced = child[0];
                 isMatch = 1;
             /* Meta-edge: Bottom variable <B, 0, c, 0> */
@@ -830,6 +859,13 @@ Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const 
     }
     /* copy the children info */
     std::vector<Edge> child = down;
+#ifdef BRAVE_DD_TRACE
+    std::cout << "reduce edge; beginlvl: "<< beginLevel << "; nodelvl: " << nodeLevel << std::endl;
+    child[0].print(std::cout);
+    std::cout << std::endl;
+    child[1].print(std::cout);
+    std::cout << std::endl;
+#endif
     /* push the flags or value down */
     CompSet ct = setting.getCompType();
     if (ct == COMP && unpackComp(label)) {                          // complement
