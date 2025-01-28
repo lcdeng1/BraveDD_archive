@@ -80,22 +80,31 @@ TODOs:
 * forest.cc
     1. Check compatibility of settings in Forst
     2. Normalize MXDs nonterminal nodes
-    3. Edge value
+    3. reduceEdge for edge-value
+* function.cc
+    1. evaluation for MXDs
+    2. evaluation for edge-valued
 * operations/operation.h
-    1. Computing table
-    ...
-* operations/unary.cc
-    1. Check compatibility of forests
-    2. built-in operations interface
-    3. COPY implementation
-    ...
-* operations/binary.cc
-    1. Check compatibility of forests
-    2. built-in operations interface
-    3. UNION implementation: copy to the same target forest first
+    1. COPY implementation
+    2. COMPLEMENT implementation
+    3. UNION implementation
+    4. IMAGE (next) implementation
     ...
     (unionAssignment implementation should move to here)
 * operations/apply.h
     1. Front end for more operations (refer to operations/builtin.h)
-* operations/builtin.cc
-    1. Construct Unary/BinaryOperations for more built-ins
+* operations/operations_generator.cc
+    1. Duplicate
+* operators.cc
+    1. Apply
+    2. IO
+
+Tests:
+    1. reduceEdge for terminal-encoding MXDs with X or I
+    2. reduceEdge for arbitrary subset of reduction rules
+    3. reduceEdge for swap-all
+    4. reduceEdge for edge-valued
+    5. COPY form and to terminal-encoding BDDs
+    6. UNION for terminal-encoding BDDs/MXDs
+    7. IMAGE for terminal-encoding
+    
