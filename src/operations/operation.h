@@ -130,9 +130,9 @@ class BRAVE_DD::UnaryOperation : public Operation {
     /*-------------------------------------------------------------*/
     /// Helper Methods ==============================================
     bool checkForestCompatibility() const;
-    Edge computeCOPY(const Edge& source);
-    Edge computeCOMPLEMENT(const Edge& source);
-    long computeCARD(const Edge& source);
+    Edge computeCOPY(const uint16_t lvl, const Edge& source);
+    Edge computeCOMPLEMENT(const uint16_t lvl, const Edge& source);
+    long computeCARD(const uint16_t lvl, const Edge& source);
     // list
     friend class UnaryList;
     UnaryList&          parent;
@@ -224,6 +224,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
     bool checkForestCompatibility() const;
     Edge computeUNION(const Edge& source1, const Edge& source2);
     Edge computeINTERSECTION(const Edge& source1, const Edge& source2);
+    Edge computeIMAGE(const Edge& source1, const Edge& trans, bool isPre = 0);
     // list
     friend class BinaryList;
     BinaryList&         parent;

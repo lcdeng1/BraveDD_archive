@@ -32,13 +32,14 @@ void UnaryOperation::compute(const Func& source, Func& target)
     if (!checkForestCompatibility()) {
         throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
     }
+    uint16_t numVars = sourceForest->getSetting().getNumVars();
     Edge ans;
     // copy to target forest
-    ans = computeCOPY(source.getEdge());
+    ans = computeCOPY(numVars, source.getEdge());
     if (opType == UnaryOperationType::UOP_COPY) {
         return;
     } else if (opType == UnaryOperationType::UOP_COMPLEMENT) {
-        ans = computeCOMPLEMENT(ans);
+        ans = computeCOMPLEMENT(numVars, ans);
     } else {
         // TBD
     }
@@ -65,17 +66,22 @@ bool UnaryOperation::checkForestCompatibility() const
     // TBD
     return ans;
 }
-Edge UnaryOperation::computeCOPY(const Edge& source)
+Edge UnaryOperation::computeCOPY(const uint16_t lvl, const Edge& source)
 {
     // Direct return if the target forest is the source forest
     if (sourceForest == targetForest) {
         return source;
     }
+    // Terminal case
+
+
+    // check compute table
+
     Edge ans;
     //TBD
     return ans;
 }
-Edge UnaryOperation::computeCOMPLEMENT(const Edge& source)
+Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
 {
     // Assuming this is within the same forest
     Edge ans;
@@ -166,27 +172,43 @@ void BinaryOperation::compute(const Func& source1, const Func& source2, Func& re
         throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
     }
     Edge ans;
-    // copy sources to the same target forest
-    Func source1res(res.getForest());
-    Func source2res(res.getForest());
+    Func source1Equ;
+    Func source2Equ;
+    // Unary operation to copy from source1 forest to target forest
     UnaryOperation* cp1 = UOPs.find(UnaryOperationType::UOP_COPY, source1.getForest(), res.getForest());
     if (!cp1) {
         cp1 = UOPs.add(new UnaryOperation(UOPs, UnaryOperationType::UOP_COPY, source1.getForest(), res.getForest()));
     }
-    cp1->compute(source1, source1res);
-    UnaryOperation* cp2 = UOPs.find(UnaryOperationType::UOP_COPY, source2.getForest(), res.getForest());
-    if (!cp2) {
-        cp2 = UOPs.add(new UnaryOperation(UOPs, UnaryOperationType::UOP_COPY, source2.getForest(), res.getForest()));
+    // copy sources to the same target forest, if they are both set-of-states or relation
+    if (source1Forest->getSetting().isRelation() == source2Forest->getSetting().isRelation()) {
+        source1Equ = Func(res.getForest());
+        cp1->compute(source1, source1Equ);
+        source2Equ = Func(res.getForest());
+        UnaryOperation* cp2 = UOPs.find(UnaryOperationType::UOP_COPY, source2.getForest(), res.getForest());
+        if (!cp2) {
+            cp2 = UOPs.add(new UnaryOperation(UOPs, UnaryOperationType::UOP_COPY, source2.getForest(), res.getForest()));
+        }
+        cp2->compute(source2, source2Equ);
     }
-    cp2->compute(source2, source2res);
-    // ans = computeCOPY(source.getEdge());
+    // compute the result
     if (opType == BinaryOperationType::BOP_UNION) {
-        ans = computeUNION(source1res.getEdge(), source2res.getEdge());
+        ans = computeUNION(source1Equ.getEdge(), source2Equ.getEdge());
     } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-        ans = computeINTERSECTION(source1res.getEdge(), source2res.getEdge());
+        ans = computeINTERSECTION(source1Equ.getEdge(), source2Equ.getEdge());
+    } else if (opType == BinaryOperationType::BOP_PREIMAGE) {
+        ans = computeIMAGE(source1.getEdge(), source2.getEdge(), 1);
+        Func ansEqu(source1.getForest(), ans);
+        cp1->compute(ansEqu, res);
+        return;
+    } else if (opType == BinaryOperationType::BOP_POSTIMAGE) {
+        ans = computeIMAGE(source1.getEdge(), source2.getEdge());
+        Func ansEqu(source1.getForest(), ans);
+        cp1->compute(ansEqu, res);
+        return;
     } else {
         // TBD
     }
+    // passing result
     res.setEdge(ans);
 }
 
