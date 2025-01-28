@@ -206,11 +206,11 @@ class BRAVE_DD::BinaryOperation : public Operation {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-    BinaryOperation(BinaryList& owner, BinaryOperationType type, Forest* arg1, Forest* arg2, Forest* res);
+    BinaryOperation(BinaryList& owner, BinaryOperationType type, Forest* source1, Forest* source2, Forest* res);
 
     /* Main part: computation */
-    void compute(const Func& arg1, const Func& arg2, Func& res);
-    void compute(const Func& arg1, const ExplictFunc arg2, Func& res);
+    void compute(const Func& source1, const Func& source2, Func& res);
+    void compute(const Func& source1, const ExplictFunc source2, Func& res);
     /*-------------------------------------------------------------*/
     protected:
     /*-------------------------------------------------------------*/
@@ -222,16 +222,16 @@ class BRAVE_DD::BinaryOperation : public Operation {
     /*-------------------------------------------------------------*/
     /// Helper Methods ==============================================
     bool checkForestCompatibility() const;
-    Edge computeUNION(const Edge& arg1, const Edge& arg2);
-    Edge computeINTERSECTION(const Edge& arg1, const Edge& arg2);
+    Edge computeUNION(const Edge& source1, const Edge& source2);
+    Edge computeINTERSECTION(const Edge& source1, const Edge& source2);
     // list
     friend class BinaryList;
     BinaryList&         parent;
     BinaryOperation*    next;
     // arguments
-    Forest*             arg1Forest;
-    Forest*             arg2Forest;
-    OpndType            arg2Type;
+    Forest*             source1Forest;
+    Forest*             source2Forest;
+    OpndType            source2Type;
     Forest*             resForest;
     BinaryOperationType opType;
 };
@@ -269,22 +269,22 @@ class BRAVE_DD::BinaryList {
         }
         searchRemove(bop);
     }
-    inline BinaryOperation* find(const BinaryOperationType opT, const Forest* arg1F, const Forest* arg2F, const Forest* resF) {
+    inline BinaryOperation* find(const BinaryOperationType opT, const Forest* source1F, const Forest* source2F, const Forest* resF) {
         if (!front) return nullptr;
-        if ((front->opType == opT) && (front->arg1Forest == arg1F) && (front->arg2Forest == arg2F) && (front->resForest == resF)) return front;
-        return mtfBinary(opT, arg1F, arg2F, resF);
+        if ((front->opType == opT) && (front->source1Forest == source1F) && (front->source2Forest == source2F) && (front->resForest == resF)) return front;
+        return mtfBinary(opT, source1F, source2F, resF);
     }
-    inline BinaryOperation* find(const BinaryOperationType opT, const Forest* arg1F, const OpndType arg2T, const Forest* resF) {
+    inline BinaryOperation* find(const BinaryOperationType opT, const Forest* source1F, const OpndType source2T, const Forest* resF) {
         if (!front) return nullptr;
-        if ((front->opType == opT) && (front->arg1Forest == arg1F) && (front->arg2Type == arg2T) && (front->resForest == resF)) return front;
-        return mtfBinary(opT, arg1F, arg2T, resF);
+        if ((front->opType == opT) && (front->source1Forest == source1F) && (front->source2Type == source2T) && (front->resForest == resF)) return front;
+        return mtfBinary(opT, source1F, source2T, resF);
     }
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
     void searchRemove(BinaryOperation* bop);
-    BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* arg1F, const Forest* arg2F, const Forest* resF);
-    BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* arg1F, const OpndType arg2T, const Forest* resF);
+    BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const Forest* source2F, const Forest* resF);
+    BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const OpndType source2T, const Forest* resF);
 
 };
 

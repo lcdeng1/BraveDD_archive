@@ -152,45 +152,45 @@ void UnaryList::searchRemove(UnaryOperation* uop)
 // *                                                                *
 // *                                                                *
 // ******************************************************************
-BinaryOperation::BinaryOperation(BinaryList& owner, BinaryOperationType type, Forest* arg1, Forest* arg2, Forest* res)
+BinaryOperation::BinaryOperation(BinaryList& owner, BinaryOperationType type, Forest* source1, Forest* source2, Forest* res)
 :parent(owner), opType(type)
 {
-    arg1Forest = arg1;
-    arg2Forest = arg2;
+    source1Forest = source1;
+    source2Forest = source2;
     resForest = res;
 }
 
-void BinaryOperation::compute(const Func& arg1, const Func& arg2, Func& res)
+void BinaryOperation::compute(const Func& source1, const Func& source2, Func& res)
 {
     if (!checkForestCompatibility()) {
         throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
     }
     Edge ans;
     // copy sources to the same target forest
-    Func arg1res(res.getForest());
-    Func arg2res(res.getForest());
-    UnaryOperation* cp1 = UOPs.find(UnaryOperationType::UOP_COPY, arg1.getForest(), res.getForest());
+    Func source1res(res.getForest());
+    Func source2res(res.getForest());
+    UnaryOperation* cp1 = UOPs.find(UnaryOperationType::UOP_COPY, source1.getForest(), res.getForest());
     if (!cp1) {
-        cp1 = UOPs.add(new UnaryOperation(UOPs, UnaryOperationType::UOP_COPY, arg1.getForest(), res.getForest()));
+        cp1 = UOPs.add(new UnaryOperation(UOPs, UnaryOperationType::UOP_COPY, source1.getForest(), res.getForest()));
     }
-    cp1->compute(arg1, arg1res);
-    UnaryOperation* cp2 = UOPs.find(UnaryOperationType::UOP_COPY, arg2.getForest(), res.getForest());
+    cp1->compute(source1, source1res);
+    UnaryOperation* cp2 = UOPs.find(UnaryOperationType::UOP_COPY, source2.getForest(), res.getForest());
     if (!cp2) {
-        cp2 = UOPs.add(new UnaryOperation(UOPs, UnaryOperationType::UOP_COPY, arg2.getForest(), res.getForest()));
+        cp2 = UOPs.add(new UnaryOperation(UOPs, UnaryOperationType::UOP_COPY, source2.getForest(), res.getForest()));
     }
-    cp2->compute(arg2, arg2res);
+    cp2->compute(source2, source2res);
     // ans = computeCOPY(source.getEdge());
     if (opType == BinaryOperationType::BOP_UNION) {
-        ans = computeUNION(arg1res.getEdge(), arg2res.getEdge());
+        ans = computeUNION(source1res.getEdge(), source2res.getEdge());
     } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-        ans = computeINTERSECTION(arg1res.getEdge(), arg2res.getEdge());
+        ans = computeINTERSECTION(source1res.getEdge(), source2res.getEdge());
     } else {
         // TBD
     }
     res.setEdge(ans);
 }
 
-void BinaryOperation::compute(const Func& arg1, const ExplictFunc arg2, Func& res)
+void BinaryOperation::compute(const Func& source1, const ExplictFunc source2, Func& res)
 {
     //
 }
@@ -201,14 +201,14 @@ bool BinaryOperation::checkForestCompatibility() const
     // TBD
     return ans;
 }
-Edge BinaryOperation::computeUNION(const Edge& arg1, const Edge& arg2)
+Edge BinaryOperation::computeUNION(const Edge& source1, const Edge& source2)
 {
     //
     Edge ans;
     //TBD
     return ans;
 }
-Edge BinaryOperation::computeINTERSECTION(const Edge& arg1, const Edge& arg2)
+Edge BinaryOperation::computeINTERSECTION(const Edge& source1, const Edge& source2)
 {
     //
     Edge ans;
@@ -226,12 +226,12 @@ BinaryList::BinaryList(const std::string n)
     reset(n);
 }
 
-BinaryOperation* BinaryList::mtfBinary(const BinaryOperationType opT, const Forest* arg1F, const Forest* arg2F, const Forest* resF)
+BinaryOperation* BinaryList::mtfBinary(const BinaryOperationType opT, const Forest* source1F, const Forest* source2F, const Forest* resF)
 {
     BinaryOperation* prev = front;
     BinaryOperation* curr = front->next;
     while (curr) {
-        if ((curr->opType == opT) && (curr->arg1Forest == arg1F) && (curr->arg2Forest == arg2F) && (curr->resForest == resF)) {
+        if ((curr->opType == opT) && (curr->source1Forest == source1F) && (curr->source2Forest == source2F) && (curr->resForest == resF)) {
             // Move to front
             prev->next = curr->next;
             curr->next = front;
@@ -244,12 +244,12 @@ BinaryOperation* BinaryList::mtfBinary(const BinaryOperationType opT, const Fore
     return nullptr;
 }
 
-BinaryOperation* BinaryList::mtfBinary(const BinaryOperationType opT, const Forest* arg1F, const OpndType arg2T, const Forest* resF)
+BinaryOperation* BinaryList::mtfBinary(const BinaryOperationType opT, const Forest* source1F, const OpndType source2T, const Forest* resF)
 {
     BinaryOperation* prev = front;
     BinaryOperation* curr = front->next;
     while (curr) {
-        if ((curr->opType == opT) && (curr->arg1Forest == arg1F) && (curr->arg2Type == arg2T) && (curr->resForest == resF)) {
+        if ((curr->opType == opT) && (curr->source1Forest == source1F) && (curr->source2Type == source2T) && (curr->resForest == resF)) {
             // Move to front
             prev->next = curr->next;
             curr->next = front;
