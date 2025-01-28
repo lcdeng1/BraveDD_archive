@@ -116,10 +116,11 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
     /* flags for reduction rules */
     bool allOne = 1, existOne = 0;
     /* evaluation starting from the target node level */
-    for (uint16_t k=assignment.size()-1; k>0; k--) {
+    uint16_t k = assignment.size()-1;
+    while (k >= 0) {
 #ifdef BRAVE_DD_TRACE
         std::cout<<"evaluate k: " << k;
-        std::cout<<"currt: ";
+        std::cout<<"; currt: ";
         current.print(std::cout, 0);
         std::cout << std::endl;
 #endif
@@ -136,21 +137,12 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 // terminal value, don't care the Value on edge
                 ValueType vt = (parent->getSetting().getValType() == INT
                                 || parent->getSetting().getValType() == LONG) ? INT : FLOAT;
-                if (allOne && (incoming == RULE_AH0 || incoming == RULE_AH1)) {
-                    if (vt == INT) ans.setValue((incoming == RULE_AH0)?0:1, INT);
-                    else ans.setValue((incoming == RULE_AH0)?0.0f:1.0f, FLOAT);
-                    return ans;
-                } else if ((!allOne) && (incoming == RULE_EL0 || incoming == RULE_EL1)) {
-                    if (vt == INT) ans.setValue((incoming == RULE_EL0)?0:1, INT);
-                    else ans.setValue((incoming == RULE_EL0)?0.0f:1.0f, FLOAT);
-                    return ans;
-                } else if (existOne && (incoming == RULE_EH0 || incoming == RULE_EH1)) {
-                    if (vt == INT) ans.setValue((incoming == RULE_EH0)?0:1, INT);
-                    else ans.setValue((incoming == RULE_EH0)?0.0f:1.0f, FLOAT);
-                    return ans;
-                } else if ((!existOne) && (incoming == RULE_AL0 || incoming == RULE_AL1)) {
-                    if (vt == INT) ans.setValue((incoming == RULE_AL0)?0:1, INT);
-                    else ans.setValue((incoming == RULE_AL0)?0.0f:1.0f, FLOAT);
+                if ((allOne && isRuleAH(incoming))
+                    || ((!allOne) && isRuleEL(incoming))
+                    || (existOne && isRuleEH(incoming))
+                    || ((!existOne) && isRuleAL(incoming))) {
+                    if (vt == INT) ans.setValue(hasRuleTerminalOne(incoming)?1:0, INT);
+                    else ans.setValue(hasRuleTerminalOne(incoming)?1.0f:0.0f, FLOAT);
                     return ans;
                 }
             } else if (encode == EDGE_PLUS) {
@@ -163,13 +155,14 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 // edge values multiply
                 // TBD
             }
-        } else if (targetLvl > 0) {
+        }
+        if (targetLvl > 0) {
             /* short incoming edge, or long incoming edge but skips */
-            k = targetLvl;
+            k = targetLvl-1;
             isSwap = (st==ONE || st==ALL) ? current.getSwap(0) : 0;
             // get swap/comp bit only when it's allowed, since user may insert illegal nodes into nodemanager (which is allowed)
             isComp = (ct==COMP) ? current.getComp() : 0;
-            current = parent->getChildEdge(k, targetHandle, isSwap^assignment[k]);
+            current = parent->getChildEdge(targetLvl, targetHandle, isSwap^assignment[targetLvl]);
             if (isComp) current.complement();
             if (isSwap && st==ALL) current.swap();  // for swap-all
             /* update varibles */
@@ -177,6 +170,11 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             existOne = 0;
             targetHandle = current.getNodeHandle();
             targetLvl = current.getNodeLevel();
+#ifdef BRAVE_DD_TRACE
+            std::cout<<"next currt: k="<< k <<", targetlvl=" << targetLvl << "; ";
+            current.print(std::cout, 0);
+            std::cout << std::endl;
+#endif
             continue;
         }
         // not reach the terminal cases of reduction rules, or got the next edge
@@ -199,6 +197,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             }
             return ans;
         }
+        k--;
     }
     return ans;
 }
