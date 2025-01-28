@@ -6,3 +6,4 @@ build*
 *.dot
 *.pdf
 *.tar.gz
+*.gv
