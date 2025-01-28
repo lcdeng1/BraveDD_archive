@@ -40,9 +40,21 @@ UnaryOperation* BRAVE_DD::COMPLEMENT(Forest* arg, Forest* res)
 // Binary operations
 BinaryOperation* BRAVE_DD::UNION(Forest* arg1, Forest* arg2, Forest* res)
 {
-    //
+    if (!arg1 || !arg2) return nullptr;
+    // commute
+    if (arg1 > arg2) SWAP(arg1, arg2);
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_UNION, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BOPs, BinaryOperationType::BOP_UNION, arg1, arg2, res);
+    return bop;
 }
 BinaryOperation* BRAVE_DD::INTERSECTION(Forest* arg1, Forest* arg2, Forest* res)
 {
-    //
+    if (!arg1 || !arg2) return nullptr;
+    // commute
+    if (arg1 > arg2) SWAP(arg1, arg2);
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_INTERSECTION, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BOPs, BinaryOperationType::BOP_INTERSECTION, arg1, arg2, res);
+    return bop;
 }
