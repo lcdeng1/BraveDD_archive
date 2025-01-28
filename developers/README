@@ -25,19 +25,20 @@ flags           |   * swap flag type
                      +----------------------------------------+----------------------------------+----------+-------------------+
                      |  N  |  X  | ELt | EHt | ALt | AHt | It | NO | ONE | ALL | FROM | TO | F_T | NO | YES | PU | PD | SX | SI |
 ---------------------+-----+-----+-----+-----+-----+-----+----+----+-----+-----+------+----+-----+----+-----+----+----+----+----+
-     | T   | Boolean |  O  |  O  |  O  |  O  |  O  |  O  | *  | O  |  O  |  O  |  *   | *  |  *  | O  |  O  | O  | O  | *  | *  |
-     |     | Others  |  O  |  O  |  ?  |  ?  |  ?  |  ?  | *  | O  |  O  |  O  |  *   | *  |  *  | O  |  ?  | ?  | ?  | *  | *  |
+     | T   | Boolean |  V  |  V  |  V  |  V  |  V  |  V  | X  | V  |  V  |  V  |  X   | X  |  X  | V  |  V  | V  | P5 | X  | X  |
+     |     | Others  |  V  |  V  |  P5 |  P5 |  P5 |  P5 | X  | V  |  V  |  V  |  X   | X  |  X  | V  |  P4 | P1 | P5 | X  | X  |
 BDDs +---------------+-----+-----+-----+-----+-----+-----+----+----+-----+-----+------+----+-----+----+-----+----+----+----+----+
-     | EV            |  O  |  O  |  *  |  *  |  *  |  *  | *  | O  |  O  |  O  |  *   | *  |  *  | O  |  ?  | O  | O  | *  | *  |
+     | EV            |  P1 |  P1 |  X  |  X  |  X  |  X  | X  | P1 |  P2 |  P3 |  X   | X  |  X  | P1 |  P4 | P1 | X  | X  | X  |
 ---------------------+-----+-----+-----+-----+-----+-----+----+----+-----+-----+------+----+-----+----+-----+----+----+----+----+
-     | T   | Boolean |  O  |  O  |  *  |  *  |  *  |  *  | O  | O  |  *  |  *  |  O   | O  |  O  | O  |  O  | O  | O  | O  | O  |
-     |    ?| Others  |  O  |  O  |  *  |  *  |  *  |  *  | ?  | O  |  *  |  *  |  O   | O  |  O  | O  |  ?  | ?  | ?  | ?  | ?  |
+     | T   | Boolean |  V  |  V  |  X  |  X  |  X  |  X  | V  | V  |  X  |  X  |  P3  | P3 |  P3 | V  |  V  | V  | V  | V  | V  |
+     |     | Others  |  V  |  V  |  X  |  X  |  X  |  X  | P5 | V  |  X  |  X  |  P3  | P3 |  P3 | V  |  P4 | P1 | P5 | P5 | P5 |
 MXDs +---------------+-----+-----+-----+-----+-----+-----+----+----+-----+-----+------+----+-----+----+-----+----+----+----+----+
-     | EV ?          |  O  |  O  |  *  |  *  |  *  |  *  | *  | O  |  *  |  *  |  O   | O  |  O  | O  |  ?  | *  | *  | *  | *  |
+     | EV            |  P1 |  P1 |  X  |  X  |  X  |  X  | X  | P1 |  P2 |  X  |  P3  | P3 |  P3 | P1 |  P4 | P1 | X  | X  | X  |
 =================================================================================================================================
-[O]: legal; [*]: illegal; [?]: TBD
+[X]: illegal and won't be implemented; [V]: legal and implemented;
+[P(1-5)]: legal but not implemented (with priority number, the smaller the higher priority)
 
-[Date: Jan 13, 2025]
+[Date: Jan 27, 2025]
 =========================================== Development Status ============================================
                     |                       |   TERMINAL            |   EDGE_PLUS/MOD/MULT
 -----------------------------------------------------------------------------------------------------------
@@ -48,10 +49,10 @@ Forest              |   compatibility       |               U
                     |   insertNode          |               D
                     |   markNodes           |               D
                     |   unmark              |               D
-                    |   reduceEdge          |       U               |       U
-                    |   reduceNode          |       I               |       U
-                    |   normalize           |       I               |       U
-                    |   mergeEdge           |       U               |       U
+                    |   reduceEdge          |       D               |       U
+                    |   reduceNode          |       D               |       U
+                    |   normalize           |       D               |       U
+                    |   mergeEdge           |       D               |       U
                     |   ....
 -----------------------------------------------------------------------------------------------------------
 evaluation          |                       |       I               |       U
@@ -74,9 +75,27 @@ application         |   queens              |               I
 ===========================================================================================================
 [U]: under implementation; [I]: implemented but under testing; [D]: implemented and tested; [N]: not supported
 
-Note:
-1. EH or EL edge at level 2 target to terminal
-2. nonX reduction rules will only be applied to terminal encoding with boolean range
-3. identify reduction rule in the BDDs where it is not allowed
-4. build legal edge: long edge should be built if it is illegal
-5. unreduce edge: when push-down reduced edge in mergeEdge
+
+TODOs:
+* forest.cc
+    1. Check compatibility of settings in Forst
+    2. Normalize MXDs nonterminal nodes
+    3. Edge value
+* operations/operation.h
+    1. Computing table
+    ...
+* operations/unary.cc
+    1. Check compatibility of forests
+    2. built-in operations interface
+    3. COPY implementation
+    ...
+* operations/binary.cc
+    1. Check compatibility of forests
+    2. built-in operations interface
+    3. UNION implementation: copy to the same target forest first
+    ...
+    (unionAssignment implementation should move to here)
+* operations/apply.h
+    1. Front end for more operations (refer to operations/builtin.h)
+* operations/builtin.cc
+    1. Construct Unary/BinaryOperations for more built-ins
