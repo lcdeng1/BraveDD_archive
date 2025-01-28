@@ -34,6 +34,7 @@ bool buildSetForest(uint16_t num, PredefForest bdd)
     if (num > 5) return 0;
     ForestSetting setting(bdd, num);
     Forest* forest = new Forest(setting);
+    forest->getSetting().output(std::cout);
     bool ans = 0;
     // variables
     std::vector<std::vector<bool> > vars(1<<num, std::vector<bool>(num+1, false));
@@ -83,6 +84,9 @@ bool buildSetForest(uint16_t num, PredefForest bdd)
         }
     }
     ans = 1;
+    for (uint16_t i=1; i<=num; i++) {
+        std::cout << "Number of nodes at level " << i << ": " << forest->getNodeManUsed(i) << std::endl;
+    }
     delete forest;
     return ans;
 }
