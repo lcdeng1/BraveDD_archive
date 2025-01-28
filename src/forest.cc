@@ -398,12 +398,26 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
             bool isTermZero0 = isTerminalZero(child[0].getEdgeHandle());
             bool isTermZero1 = isTerminalZero(child[1].getEdgeHandle());
             /* Meta-edge: Constant <C, 0, c, 0> */
-            if ((child[0].getEdgeHandle() == child[1].getEdgeHandle())
-                && (child[0].getRule() == child[1].getRule()) && (nodeLevel >= 1)
-                && (child[0].getRule() == RULE_X)
-                && setting.hasReductionRule(RULE_X)) {
-                reduced = child[0];
-                isMatch = 1;
+            if (((child[0].getRule() == RULE_X) || (hasRuleTerminalOne(child[0].getRule()) == (child[0].getComp() ^ isTermOne0)))
+                && ((child[1].getRule() == RULE_X) || (hasRuleTerminalOne(child[1].getRule()) == (child[1].getComp() ^ isTermOne1)))
+                && ((isTermOne0 || isTermZero0) && (isTermOne1 || isTermZero1))
+                && ((child[0].getComp() ^ isTermOne0) == (child[1].getComp() ^ isTermOne1))
+                && (nodeLevel >= 1)) {
+                if (setting.hasReductionRule(RULE_X)) {
+                    reduced = child[0];
+                    isMatch = 1;
+                } else {
+                    // enumerate from EL0 to AH1 to check if it's allowed
+                    for (int r=0; r<8; r++){
+                        if (setting.hasReductionRule((ReductionRule)r)
+                            && ((child[0].getComp()^isTermOne0) == hasRuleTerminalOne((ReductionRule)r))) {
+                            reduced = child[0];
+                            reduced.setRule((ReductionRule)r);
+                            isMatch = 1;
+                            break;
+                        }
+                    }
+                }                
             /* Meta-edge: Bottom variable <B, 0, c, 0> */
             } else if ((child[0].getRule() == RULE_X)
                         && (child[1].getRule() == RULE_X)
@@ -430,7 +444,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
                     }
                 }
             /* Meta-edge: anD (conjunction) <D, 0, c, 0> */
-            } else if ((child[0].getRule() == RULE_X)
+            } else if (((child[0].getRule() == RULE_X) || (hasRuleTerminalOne(child[0].getRule()) == (child[0].getComp() ^ isTermOne0)))
                         && (child[1].getRule() != RULE_X)
                         && (nodeLevel > 1)
                         && ((((child[0].getComp()^isTermOne0) != (child[1].getComp()^isTermOne1))
@@ -479,8 +493,8 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
                     }
                 }
             /* Meta-edge: oR (disjunction) <R, 0, c, 0> */
-            } else if ((child[0].getRule() != RULE_X)
-                        && (child[1].getRule() == RULE_X)
+            } else if (((child[1].getRule() == RULE_X) || (hasRuleTerminalOne(child[1].getRule()) == (child[1].getComp() ^ isTermOne1)))
+                        && (child[0].getRule() != RULE_X)
                         && (nodeLevel > 1)
                         && ((((child[0].getComp()^isTermOne0) != (child[1].getComp()^isTermOne1))
                                 && isRuleEH(child[0].getRule()))
@@ -539,8 +553,9 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
             bool isTermOne0 = isTerminalOne(child[0].getEdgeHandle());
             bool isTermZero0 = isTerminalZero(child[0].getEdgeHandle());
             bool comp0 = child[0].getComp();
+            ReductionRule rule0 = child[0].getRule();
             ReductionRule rule1 = child[1].getRule();
-            if ((child[0].getRule() == RULE_X)
+            if (((rule0 == RULE_X) || (hasRuleTerminalOne(rule0) == (comp0 ^ isTermOne0)))
                 && (isTermOne0 || isTermZero0)
                 && (((rule1 == RULE_X)
                         && (nodeLevel - child[1].getNodeLevel() == 1)
@@ -563,7 +578,9 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
             bool isTermZero1 = isTerminalZero(child[1].getEdgeHandle());
             bool comp1 = child[1].getComp();
             ReductionRule rule0 = child[0].getRule();
-            if ((child[1].getRule() == RULE_X) && (isTermOne1 || isTermZero1)
+            ReductionRule rule1 = child[1].getRule();
+            if (((rule1 == RULE_X) || (hasRuleTerminalOne(rule1) == (comp1 ^ isTermOne1)))
+                && (isTermOne1 || isTermZero1)
                 && (((rule0 == RULE_X)
                         && (nodeLevel - child[0].getNodeLevel() == 1)
                         && (setting.hasReductionRule((isTermOne1^comp1)? RULE_EH1 : RULE_EH0)))
