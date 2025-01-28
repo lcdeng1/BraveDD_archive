@@ -234,7 +234,6 @@ class BRAVE_DD::BinaryOperation : public Operation {
     OpndType            arg2Type;
     Forest*             resForest;
     BinaryOperationType opType;
-    bool                canCommute;
 };
 
 // ******************************************************************
@@ -270,22 +269,22 @@ class BRAVE_DD::BinaryList {
         }
         searchRemove(bop);
     }
-    inline BinaryOperation* find(const Forest* arg1F, const Forest* arg2F, const Forest* resF) {
+    inline BinaryOperation* find(const BinaryOperationType opT, const Forest* arg1F, const Forest* arg2F, const Forest* resF) {
         if (!front) return nullptr;
-        if ((front->arg1Forest == arg1F) && (front->arg2Forest == arg2F) && (front->resForest == resF)) return front;
-        return mtfUnary(arg1F, arg2F, resF);
+        if ((front->opType == opT) && (front->arg1Forest == arg1F) && (front->arg2Forest == arg2F) && (front->resForest == resF)) return front;
+        return mtfBinary(opT, arg1F, arg2F, resF);
     }
-    inline BinaryOperation* find(const Forest* arg1F, const OpndType arg2T, const Forest* resF) {
+    inline BinaryOperation* find(const BinaryOperationType opT, const Forest* arg1F, const OpndType arg2T, const Forest* resF) {
         if (!front) return nullptr;
-        if ((front->arg1Forest == arg1F) && (front->arg2Type == arg2T) && (front->resForest == resF)) return front;
-        return mtfUnary(arg1F, arg2T, resF);
+        if ((front->opType == opT) && (front->arg1Forest == arg1F) && (front->arg2Type == arg2T) && (front->resForest == resF)) return front;
+        return mtfBinary(opT, arg1F, arg2T, resF);
     }
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
     void searchRemove(BinaryOperation* bop);
-    BinaryOperation* mtfUnary(const Forest* arg1F, const Forest* arg2F, const Forest* resF);
-    BinaryOperation* mtfUnary(const Forest* arg1F, const OpndType arg2T, const Forest* resF);
+    BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* arg1F, const Forest* arg2F, const Forest* resF);
+    BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* arg1F, const OpndType arg2T, const Forest* resF);
 
 };
 

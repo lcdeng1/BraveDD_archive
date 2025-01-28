@@ -38,11 +38,12 @@ void UnaryOperation::compute(const Func& source, Func& target)
     if (opType == UnaryOperationType::UOP_COPY) {
         return;
     } else if (opType == UnaryOperationType::UOP_COMPLEMENT) {
-        ans = computeCOMPLEMENT(source.getEdge());
+        ans = computeCOMPLEMENT(ans);
     } else {
         // TBD
     }
     target.setEdge(ans);
+    // other info TBD
 }
 void UnaryOperation::compute(const Func& source, long& target)
 {
@@ -225,12 +226,12 @@ BinaryList::BinaryList(const std::string n)
     reset(n);
 }
 
-BinaryOperation* BinaryList::mtfUnary(const Forest* arg1F, const Forest* arg2F, const Forest* resF)
+BinaryOperation* BinaryList::mtfBinary(const BinaryOperationType opT, const Forest* arg1F, const Forest* arg2F, const Forest* resF)
 {
     BinaryOperation* prev = front;
     BinaryOperation* curr = front->next;
     while (curr) {
-        if ((curr->arg1Forest == arg1F) && (curr->arg2Forest == arg2F) && (curr->resForest == resF)) {
+        if ((curr->opType == opT) && (curr->arg1Forest == arg1F) && (curr->arg2Forest == arg2F) && (curr->resForest == resF)) {
             // Move to front
             prev->next = curr->next;
             curr->next = front;
@@ -243,12 +244,12 @@ BinaryOperation* BinaryList::mtfUnary(const Forest* arg1F, const Forest* arg2F, 
     return nullptr;
 }
 
-BinaryOperation* BinaryList::mtfUnary(const Forest* arg1F, const OpndType arg2T, const Forest* resF)
+BinaryOperation* BinaryList::mtfBinary(const BinaryOperationType opT, const Forest* arg1F, const OpndType arg2T, const Forest* resF)
 {
     BinaryOperation* prev = front;
     BinaryOperation* curr = front->next;
     while (curr) {
-        if ((curr->arg1Forest == arg1F) && (curr->arg2Type == arg2T) && (curr->resForest == resF)) {
+        if ((curr->opType == opT) && (curr->arg1Forest == arg1F) && (curr->arg2Type == arg2T) && (curr->resForest == resF)) {
             // Move to front
             prev->next = curr->next;
             curr->next = front;
