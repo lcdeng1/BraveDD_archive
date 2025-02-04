@@ -75,7 +75,7 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
     label += "<";
     if (numRules > 0) {
         ReductionRule rule = edge.getRule();
-        label += (parent->getSetting().hasReductionRule(rule)) ? rule2String(rule) : "N";
+        label += ((rule == RULE_X) && !parent->getSetting().hasReductionRule(rule)) ? "N" : rule2String(rule);
     }
     if (cs != NO_COMP) {
         label += (edge.getComp()) ? ", c" : ", _";
