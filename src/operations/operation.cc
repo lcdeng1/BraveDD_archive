@@ -1,4 +1,5 @@
 #include "operation.h"
+#include "../IO/out_dot.h"
 
 using namespace BRAVE_DD;
 // ******************************************************************
@@ -10,6 +11,10 @@ using namespace BRAVE_DD;
 // ******************************************************************
 
 Operation::Operation()
+{
+    //
+}
+Operation::~Operation()
 {
     //
 }
@@ -26,6 +31,17 @@ UnaryOperation::UnaryOperation(UnaryList& owner, UnaryOperationType type, Forest
     targetForest = target;
     targetType = OpndType::FOREST;
 }
+UnaryOperation::UnaryOperation(UnaryList& owner, UnaryOperationType type, Forest* source, OpndType target)
+:parent(owner), opType(type)
+{
+    sourceForest = source;
+    targetForest = source;
+    targetType = target;
+}
+UnaryOperation::~UnaryOperation()
+{
+    //
+}
 
 void UnaryOperation::compute(const Func& source, Func& target)
 {
@@ -36,9 +52,19 @@ void UnaryOperation::compute(const Func& source, Func& target)
     Edge ans;
     // copy to target forest
     ans = computeCOPY(numVars, source.getEdge());
-    if (opType == UnaryOperationType::UOP_COPY) {
-        return;
-    } else if (opType == UnaryOperationType::UOP_COMPLEMENT) {
+    if (opType == UnaryOperationType::UOP_COMPLEMENT) {
+        // target forest allows complement flag
+        if ((targetForest->getSetting().getCompType() != NO_COMP)
+        && (targetForest->getSetting().getEncodeMechanism() == TERMINAL)) {
+            ans.complement();
+            // normalize edge
+            if (!targetForest->getSetting().hasReductionRule(ans.getRule())) {
+                ans = targetForest->normalizeEdge(numVars, ans);
+            }
+            target.setEdge(ans);
+            return;
+        }
+        // here is the forest that does not allow complement bit, recursively compute
         ans = computeCOMPLEMENT(numVars, ans);
     } else {
         // TBD
@@ -74,7 +100,6 @@ Edge UnaryOperation::computeCOPY(const uint16_t lvl, const Edge& source)
     }
     // Terminal case
 
-
     // check compute table
 
     Edge ans;
@@ -83,9 +108,32 @@ Edge UnaryOperation::computeCOPY(const uint16_t lvl, const Edge& source)
 }
 Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
 {
-    // Assuming this is within the same forest
-    Edge ans;
-    //TBD
+    /* Assuming this is within the same target forest
+     Here is forest that does not allow complement bit */
+    
+    Edge ans;    
+    // terminal case
+    if (source.getNodeLevel() == 0) {
+        ans = source;
+        ans.complement();
+        return targetForest->normalizeEdge(lvl, ans);
+    } else {
+        // check cache, TBD
+        std::vector<Edge> childEdges;
+        if (targetForest->getSetting().isRelation()) {
+            childEdges = std::vector<Edge>(4);
+        } else {
+            childEdges = std::vector<Edge>(2);
+        }
+        for (char i=0; (size_t)i<childEdges.size(); i++) {
+            childEdges[i] = targetForest->getChildEdge(source.getNodeLevel(), source.getNodeHandle(), i);
+            childEdges[i] = computeCOMPLEMENT(source.getNodeLevel()-1, childEdges[i]);
+        }
+        EdgeLabel label = 0;
+        packRule(label, compRule(source.getRule()));
+        ans = targetForest->reduceEdge(lvl, label, source.getNodeLevel(), childEdges, source.getValue());
+    }
+    // cache, TBD
     return ans;
 }
 
@@ -165,6 +213,10 @@ BinaryOperation::BinaryOperation(BinaryList& owner, BinaryOperationType type, Fo
     source2Forest = source2;
     resForest = res;
 }
+BinaryOperation::~BinaryOperation()
+{
+    //
+}
 
 void BinaryOperation::compute(const Func& source1, const Func& source2, Func& res)
 {
@@ -237,6 +289,13 @@ Edge BinaryOperation::computeINTERSECTION(const Edge& source1, const Edge& sourc
     //TBD
     return ans;
 }
+Edge BinaryOperation::computeIMAGE(const Edge& source1, const Edge& trans, bool isPre)
+{
+    //
+    Edge ans;
+    //TBD
+    return ans;
+}
 
 // ******************************************************************
 // *                                                                *
@@ -300,26 +359,26 @@ void BinaryList::searchRemove(BinaryOperation* bop)
 }
 
 
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                 NumericalOperation  methods                    *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-NumericalOperation::NumericalOperation()
-{
-    //
-}
+// // ******************************************************************
+// // *                                                                *
+// // *                                                                *
+// // *                 NumericalOperation  methods                    *
+// // *                                                                *
+// // *                                                                *
+// // ******************************************************************
+// NumericalOperation::NumericalOperation()
+// {
+//     //
+// }
 
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                 SaturationOperation  methods                   *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-SaturationOperation::SaturationOperation()
-{
-    //
-}
+// // ******************************************************************
+// // *                                                                *
+// // *                                                                *
+// // *                 SaturationOperation  methods                   *
+// // *                                                                *
+// // *                                                                *
+// // ******************************************************************
+// SaturationOperation::SaturationOperation()
+// {
+//     //
+// }
