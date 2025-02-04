@@ -417,6 +417,10 @@ class BRAVE_DD::Forest {
 
     Edge unreduceEdge(const uint16_t level, const Edge& edge);
 
+    Edge buildLow(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2);
+    Edge buildHigh(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2);
+    Edge buildUmb(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2, const Edge& e3);
+
     /**
      * @brief Normalize a node to ensure canonicity.
      * 
@@ -426,6 +430,14 @@ class BRAVE_DD::Forest {
      */
     Edge normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& down);
 
+    /**
+     * @brief Normalize a long edge to be legal for this forest setting. If the reduction rule
+     * is not allowed, the skipped nodes along this edge will be built and reduced.
+     * 
+     * @param level         The start level of the given long edge.
+     * @param edge          The given long edge to be normalized.
+     * @return Edge         Output: normalized edge.
+     */
     Edge normalizeEdge(const uint16_t level, const Edge& edge);
     
     /**
@@ -459,6 +471,8 @@ class BRAVE_DD::Forest {
     friend class NodeManager;
     friend class UniqueTable;
     friend class Func;
+    friend class UnaryOperation;
+    friend class BinaryOperation;
         ForestSetting       setting;        // Specification setting of this forest.
         NodeManager*        nodeMan;        // Node manager.
         UniqueTable*        uniqueTable;    // Unique table.
