@@ -110,13 +110,15 @@ namespace BRAVE_DD {
 
     Func operator&(const Func &e1, const Func &e2)
     {
-        Func out;
+        Func out(e1.getForest());
+        apply(INTERSECTION, e1, e2, out);
         // implementations TBD
         return out;
     }
     Func operator|(const Func &e1, const Func &e2)
     {
-        Func out;
+        Func out(e1.getForest());
+        apply(UNION, e1, e2, out);
         // implementations TBD
         return out;
     }
@@ -128,8 +130,9 @@ namespace BRAVE_DD {
     }
     Func operator!(const Func &e)
     {
-        // implementations TBD
-        return e;
+        Func res(e.getForest());
+        apply(COMPLEMENT, e, res);
+        return res;
     }
 
     Func operator+=(Func &e1, const Func &e2)

@@ -4,6 +4,7 @@
 #include "edge.h"
 #include "function.h"
 #include "io.h"
+#include "operations/apply.h"
 
 namespace BRAVE_DD {
     /* Operators for Edges */
