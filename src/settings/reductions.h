@@ -132,6 +132,26 @@ namespace BRAVE_DD {
     static inline bool isRuleI(ReductionRule rule) {
         return (rule == RULE_I0 || rule == RULE_I1);
     }
+    static inline char rulePattern(ReductionRule rule) {
+        char type;
+        switch (rule) {
+            case RULE_EL0:
+            case RULE_EL1:
+            case RULE_AH0:
+            case RULE_AH1:
+                type = 'L';
+                break;
+            case RULE_EH0:
+            case RULE_EH1:
+            case RULE_AL0:
+            case RULE_AL1:
+                type = 'H';
+                break;
+            default:
+                type = 'U';
+        }
+        return type;
+    }
     static inline std::string rule2String(ReductionRule rule) {
         switch (rule) {
             case RULE_EL0: return "EL0";
