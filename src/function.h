@@ -154,6 +154,7 @@ class BRAVE_DD::ExplictFunc {
     /*-------------------------------------------------------------*/
     std::vector<std::vector<bool> >     assignments;
     std::vector<Value>                  outcomes;
+    Value                               defaultVal;
 };
 
 #endif
