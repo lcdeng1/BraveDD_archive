@@ -64,6 +64,7 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         // setting for ZBDD
         reductions = Reductions(ZERO_SUP);
         name = "ZBDD";
+        mergeType = PUSH_UP;
     } else if (type == PredefForest::ESRBDD) {
         // setting for ESRBDD
         reductions = Reductions(USER_DEFINED);
@@ -121,6 +122,7 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         // setting for ZBDD
         reductions = Reductions(ZERO_SUP);
         name = "ZBDD";
+        mergeType = PUSH_UP;
     } else if (bddLower == "esrbdd") {
         // setting for ESRBDD
         reductions = Reductions(USER_DEFINED);
