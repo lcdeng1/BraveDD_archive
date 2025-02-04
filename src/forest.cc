@@ -1,5 +1,7 @@
 #include "forest.h"
 
+// #define BRAVE_DD_TRACE
+
 using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
@@ -389,7 +391,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
         // flag for checking if match any allowed meta-reduction rule
         bool isMatch = 0;
         /* ---------------------------------------------------------------------------------------------
-        * Forbidden patterns of nodes with both edges to terminal 0
+        * Forbidden patterns of nodes with both edges to terminals
         * --------------------------------------------------------------------------------------------*/
         if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {
             // flags to identify if terminal 0 or 1
@@ -683,6 +685,12 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
 
 Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value)
 {
+#ifdef BRAVE_DD_TRACE
+    std::cout << "merge edge; beginLvl: "<< beginLevel << "; mergeLvl: " << mergeLevel << std::endl;
+    std::cout << "<" << rule2String(unpackRule(label)) << ", " << unpackComp(label) << ", " << unpackSwap(label) << ", " << unpackSwapTo(label) << "> with ";
+    reduced.print(std::cout);
+    std::cout << std::endl;
+#endif
     MergeType mt = setting.getMergeType();
     Edge merged;
     ReductionRule incomingRule = unpackRule(label);
@@ -911,6 +919,11 @@ Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const 
     /* reduce node */
     Edge reduced;
     reduced = reduceNode(nodeLevel, child);    // this will take care of value on edge
+#ifdef BRAVE_DD_TRACE
+    std::cout << "after reduce node:" << std::endl;
+    reduced.print(std::cout);
+    std::cout << std::endl;
+#endif
     /* incoming edge rule for merge */
     EdgeLabel mergeLabel = 0;
     packRule(mergeLabel, unpackRule(label));
@@ -920,6 +933,11 @@ Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const 
     } else {
         reduced = mergeEdge(beginLevel, nodeLevel, mergeLabel, reduced, value);
     }
+#ifdef BRAVE_DD_TRACE
+    std::cout << "after merge edge:" << std::endl;
+    reduced.print(std::cout);
+    std::cout << std::endl;
+#endif
     return reduced;
 }
 
@@ -944,7 +962,10 @@ char Forest::isSwapAllUseless(Edge& e) {
 
 Edge Forest::unreduceEdge(const uint16_t level, const Edge& edge)
 {
+    Edge ans;
     // TBD
+    ans = edge;
+    return ans;
 }
 
 void Forest::markNodes(const Edge& edge) const
