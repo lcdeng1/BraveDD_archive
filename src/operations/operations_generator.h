@@ -16,6 +16,7 @@ namespace BRAVE_DD {
 
     UnaryOperation* COPY(Forest* arg, Forest* res);
     UnaryOperation* CARDINALITY(Forest* arg, OpndType res);
+    UnaryOperation* INDEX(Forest* arg, Forest* res);
     UnaryOperation* MASS(Forest* arg, OpndType res);
     UnaryOperation* HIGHEST(Forest* arg, OpndType res);
     UnaryOperation* LOWEST(Forest* arg, OpndType res);

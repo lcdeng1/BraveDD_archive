@@ -112,8 +112,8 @@ class BRAVE_DD::UnaryOperation : public Operation {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-    UnaryOperation(UnaryList& owner, UnaryOperationType type, Forest* source, Forest* target);
-    UnaryOperation(UnaryList& owner, UnaryOperationType type, Forest* source, OpndType target);
+    UnaryOperation(UnaryOperationType type, Forest* source, Forest* target);
+    UnaryOperation(UnaryOperationType type, Forest* source, OpndType target);
 
 
     /* Main part: check forest comatability and then calls corresponding op compute */
@@ -136,7 +136,7 @@ class BRAVE_DD::UnaryOperation : public Operation {
     long computeCARD(const uint16_t lvl, const Edge& source);
     // list
     friend class UnaryList;
-    UnaryList&          parent;
+    // UnaryList&          parent;
     UnaryOperation*     next;
     // arguments
     Forest*             sourceForest;
@@ -207,7 +207,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-    BinaryOperation(BinaryList& owner, BinaryOperationType type, Forest* source1, Forest* source2, Forest* res);
+    BinaryOperation(BinaryOperationType type, Forest* source1, Forest* source2, Forest* res);
 
     /* Main part: computation */
     void compute(const Func& source1, const Func& source2, Func& res);
@@ -223,12 +223,16 @@ class BRAVE_DD::BinaryOperation : public Operation {
     /*-------------------------------------------------------------*/
     /// Helper Methods ==============================================
     bool checkForestCompatibility() const;
-    Edge computeUNION(const Edge& source1, const Edge& source2);
-    Edge computeINTERSECTION(const Edge& source1, const Edge& source2);
-    Edge computeIMAGE(const Edge& source1, const Edge& trans, bool isPre = 0);
+    Edge computeUNION(const uint16_t lvl, const Edge& source1, const Edge& source2);
+    Edge computeINTERSECTION(const uint16_t lvl, const Edge& source1, const Edge& source2);
+    Edge computeIMAGE(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre = 0);
+    // elementwise related
+    Edge operateLL(const uint16_t lvl, const Edge& e1, const Edge& e2);
+    Edge operateHH(const uint16_t lvl, const Edge& e1, const Edge& e2);
+    Edge operateLH(const uint16_t lvl, const Edge& e1, const Edge& e2);
     // list
     friend class BinaryList;
-    BinaryList&         parent;
+    // BinaryList&         parent;
     BinaryOperation*    next;
     // arguments
     Forest*             source1Forest;
