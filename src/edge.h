@@ -432,24 +432,14 @@ class BRAVE_DD::Edge {
     public:
     /*-------------------------------------------------------------*/
         Edge();
-        // / Copy Constructor.
         Edge(const Edge &e);
         Edge(const ReductionRule rule, Value val);
         Edge(const EdgeHandle h, Value val);
-        /// Destructor.
         ~Edge();
-        /**
-         * @brief Get the target node level of a given edge.
-         * 
-         * @return uint16_t
-         */
-        inline uint16_t getNodeLevel() const {return unpackLevel(handle);}
 
-        /**
-         * @brief Get the target node handle.
-         * 
-         * @return NodeHandle 
-         */
+        /* Access to data */
+
+        inline uint16_t getNodeLevel() const {return unpackLevel(handle);}
         inline NodeHandle getNodeHandle() const {return unpackTarget(handle);}
         inline EdgeHandle getEdgeHandle() const {return handle;}
         // get rule and flags TBD
@@ -470,6 +460,16 @@ class BRAVE_DD::Edge {
             }
         }
         inline void setLevel(uint16_t lvl) {packLevel(handle, lvl);}
+
+        // unpack the x/y part of a long edge, only be used for BDDs edge
+        Edge part(bool xy) const;
+
+        // this only be used by BDDs or BMXDs with range 1
+        bool isComplementTo(const Edge& e) const;
+
+        bool isConstantOne() const;
+
+        bool isConstantZero() const;
 
         inline void complement() {
             // complement the reduction rule and flip the complement bit, when complement allowed
