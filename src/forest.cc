@@ -168,9 +168,10 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
     ReductionRule rule = edge.getRule();
     bool comp = edge.getComp();
     uint16_t targetLvl = edge.getNodeLevel();
-    /* Case 0: short edge to nonterminal, do nothing */
+    /* Case 0: short edge to nonterminal */
     if ((level == targetLvl) && (level > 0)) {
-        return edge;
+        normalized.setRule(RULE_X);
+        return normalized;
     }
     /* case 1: AL/AH edges but only skip 1 level, normalize it to EL/EH */
     if (level - targetLvl == 1) {
@@ -255,7 +256,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
             || ((rule == RULE_X) && (level - targetLvl > 0))) {
             // it should be a long X anyway
             normalized.setRule(RULE_X);
-            if (!setting.hasReductionRule(RULE_X)) {
+            if (!setting.hasReductionRule(RULE_X) && (level - targetLvl > 0)) {
                 // long X is not allowed, try to find a legal reduction rule
                 for (int r=0; r<11; r++){
                     if (setting.hasReductionRule((ReductionRule)r)
@@ -965,6 +966,93 @@ Edge Forest::unreduceEdge(const uint16_t level, const Edge& edge)
     Edge ans;
     // TBD
     ans = edge;
+    return ans;
+}
+
+Edge Forest::buildHalf(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2, const bool isLow)
+{
+    Edge ans;
+    EdgeLabel root = 0;
+    /* Base case that can directly call reduce edge*/
+    if (beginLvl == endLvl) {
+        std::vector<Edge> child(2);
+        child[0] = e1;
+        child[1] = e2;
+        packRule(root, RULE_X);
+        return reduceEdge(beginLvl, root, endLvl, child);
+    }
+    /* Base cases that can directly return a long edge */
+    if (e1 == e2) {
+        if (e1.getRule() == RULE_X) return e1;
+        // constant long edge, in case X is not allowed
+        if (e1.getNodeLevel() == 0) {
+            bool isOne = isTerminalOne(e1.getEdgeHandle());
+            bool isZero = isTerminalZero(e1.getEdgeHandle());
+            if ((hasRuleTerminalOne(e1.getRule()) == (e1.getComp() ^ isOne)) && (isOne || isZero)) {
+                return e1;
+            }
+        } else {
+            std::vector<Edge> child(2);
+            child[0] = e1;
+            child[1] = e2;
+            packRule(root, RULE_X);
+            return reduceEdge(beginLvl, root, endLvl, child);
+        }
+    }
+    if (isLow) {
+        // low pattern
+        if (e1.isConstantZero() || e1.isConstantOne()) {
+            ReductionRule incomingRule = e1.isConstantZero() ? RULE_EL0 : RULE_EL1;
+            packRule(root, incomingRule);
+            ans = mergeEdge(beginLvl, endLvl-1, root, e2);
+            ans = normalizeEdge(beginLvl, ans);
+            return ans;
+        }
+        if (e2.isConstantZero() || e2.isConstantOne()) {
+            ReductionRule incomingRule = e2.isConstantZero() ? RULE_AH0 : RULE_AH1;
+            packRule(root, incomingRule);
+            ans = mergeEdge(beginLvl, endLvl-1, root, e1);
+            ans = normalizeEdge(beginLvl, ans);
+            return ans;
+        }
+    } else {
+        // high pattern
+        if (e2.isConstantZero() || e2.isConstantOne()) {
+            ReductionRule incomingRule = e2.isConstantZero() ? RULE_EH0 : RULE_EH1;
+            packRule(root, incomingRule);
+            ans = mergeEdge(beginLvl, endLvl-1, root, e1);
+            ans = normalizeEdge(beginLvl, ans);
+            return ans;
+        }
+        if (e1.isConstantZero() || e1.isConstantOne()) {
+            ReductionRule incomingRule = e1.isConstantZero() ? RULE_AL0 : RULE_AL1;
+            packRule(root, incomingRule);
+            ans = mergeEdge(beginLvl, endLvl-1, root, e2);
+            ans = normalizeEdge(beginLvl, ans);
+            return ans;
+        }
+    }
+    /* Now we need to build this pattern */
+    std::vector<Edge> child(2);
+    packRule(root, RULE_X);
+    ans = isLow?e2:e1; 
+    for (uint16_t i=endLvl; i<=beginLvl; i++) {
+        child[0] = isLow ? mergeEdge(i-1, endLvl-1, root, e1) : ans;
+        child[1] = isLow ? ans : mergeEdge(i-1, endLvl-1, root, e2);
+        ans = reduceEdge(i, root, i, child);
+    }
+    return ans;
+}
+
+Edge Forest::buildUmb(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2, const Edge& e3)
+{
+    Edge ans;
+    EdgeLabel root = 0;
+    std::vector<Edge> child(2);
+    packRule(root, RULE_X);
+    child[0] = buildHalf(beginLvl-1, endLvl, e1, e2, 0);
+    child[1] = buildHalf(beginLvl-1, endLvl, e2, e3, 1);
+    ans = reduceEdge(beginLvl, root, beginLvl, child);
     return ans;
 }
 

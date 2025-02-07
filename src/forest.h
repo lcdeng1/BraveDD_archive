@@ -292,6 +292,43 @@ class BRAVE_DD::Forest {
         return res;
     }
 
+    inline Edge cofact(const uint16_t lvl, const Edge& edge, const char index) {
+        if (lvl == 0) return edge;
+        if (lvl == edge.getNodeLevel()) {
+            char childIndex = index;
+            if (edge.getSwap(0)) {
+                // only for BDDs
+                childIndex = 1 - childIndex;
+            }
+            Edge ans = getChildEdge(lvl, edge.getNodeHandle(), childIndex);
+            if (edge.getComp()) ans.complement();
+            if ((setting.getSwapType() == ALL) && edge.getSwap(0)) ans.swap();
+            return ans;
+        }
+        Edge ans;
+        ReductionRule rule = edge.getRule();
+        if ((isRuleEL(rule) && (index == 0)) || (isRuleEH(rule) && (index == 1))
+            || (isRuleAL(rule) && (lvl - edge.getNodeLevel() == 1) && (index == 0))
+            || (isRuleAH(rule) && (lvl - edge.getNodeLevel() == 1) && (index == 1))
+            || (isRuleI(rule) && ((index == 1) || (index == 2)))) {
+            EdgeHandle childH = makeTerminal(INT, (int)hasRuleTerminalOne(rule));
+            if (setting.getValType() == FLOAT) {
+                childH = makeTerminal(FLOAT, (float)hasRuleTerminalOne(rule));
+            }
+            packRule(childH, RULE_X);
+            ans.setEdgeHandle(childH);
+            ans = normalizeEdge(lvl-1, ans);
+            return ans;
+        }
+        ans = edge;
+        if ((lvl - edge.getNodeLevel()) == 1) {
+            ans.setRule(RULE_X);
+            return ans;
+        }
+        ans = normalizeEdge(lvl-1, ans);
+        return ans;
+    }
+
     /************************* Reduction ****************************/
     /**
      * @brief Reduce and return an edge pointing to a unique reduced node stored in NodeManager, by giving the beginning level 
@@ -407,21 +444,6 @@ class BRAVE_DD::Forest {
     bool checkCompatibility() const;
 
     /**
-     * @brief Check if the swap-all bit is useless, by giving the parent forest and edge
-     * 
-     * @param F         the parent forest.
-     * @param e         the given edge.
-     * @return char     0: necessary; 1: can be directly deleted; 2: the same as complement bit.
-     */
-    char isSwapAllUseless(Edge& e);
-
-    Edge unreduceEdge(const uint16_t level, const Edge& edge);
-
-    Edge buildLow(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2);
-    Edge buildHigh(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2);
-    Edge buildUmb(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2, const Edge& e3);
-
-    /**
      * @brief Normalize a node to ensure canonicity.
      * 
      * @param nodeLevel     The given node level.
@@ -463,6 +485,22 @@ class BRAVE_DD::Forest {
      * @return Edge         - Output: merged edge (label, target node handle).
      */
     Edge mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value = Value());
+
+    /**
+     * @brief Check if the swap-all bit is useless, by giving the parent forest and edge
+     * 
+     * @param F         the parent forest.
+     * @param e         the given edge.
+     * @return char     0: necessary; 1: can be directly deleted; 2: the same as complement bit.
+     */
+    char isSwapAllUseless(Edge& e);
+
+    Edge unreduceEdge(const uint16_t level, const Edge& edge);
+
+    // these are only used by BDDs operations
+
+    Edge buildHalf(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2, const bool isLow);
+    Edge buildUmb(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2, const Edge& e3);
 
     /* Marker */
     void markNodes(const Edge& edge) const;
