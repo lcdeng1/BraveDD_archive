@@ -32,7 +32,7 @@ namespace BRAVE_DD {
      */
     static inline Value getTerminalValue(const EdgeHandle& handle) {
         if(unpackLevel(handle)>0) {
-            std::cout << "[BRAVE_DD] ERROR!\t No value for nonterminal node!"<< std::endl;
+            std::cout << "[BRAVE_DD] ERROR!\t getTerminalValue(EdgeHandle): No value for nonterminal node!"<< std::endl;
             exit(0);
         }
         Value val(0);
@@ -51,7 +51,7 @@ namespace BRAVE_DD {
             val.setValue(value, VOID);
         } else {
             // unknown value
-            std::cout << "[BRAVE_DD] ERROR!\t Unknown value for terminal node!"<< std::endl;
+            std::cout << "[BRAVE_DD] ERROR!\t getTerminalValue(EdgeHandle): Unknown value for terminal node!"<< std::endl;
             exit(0);
         }
         return val;
@@ -103,7 +103,7 @@ namespace BRAVE_DD {
      */
     static inline EdgeHandle makeTerminal(const ValueType type, const void* value) {
         if (type != INT && type != FLOAT && type != VOID) {
-            std::cout << "[BRAVE_DD] ERROR!\t Unsupported data type! It can only be INT, FLOAT, or VOID."<< std::endl;
+            std::cout << "[BRAVE_DD] ERROR!\t makeTerminal(ValueType, void*): Unsupported data type! It can only be INT, FLOAT, or VOID."<< std::endl;
             exit(0);
         }
         EdgeHandle handle = 0;
