@@ -1,6 +1,7 @@
 #include "node_manager.h"
 #include "forest.h"
 
+// #define BRAVE_DD_NM_TRACE
 
 using namespace BRAVE_DD;
 // ******************************************************************
@@ -156,16 +157,20 @@ void NodeManager::sweep(uint16_t lvl)
 
 void NodeManager::sweep()
 {
-    for (uint16_t k=1; k<=parent->getSetting().getNumVars(); k++) {
+    for (uint16_t k=0; k<parent->getSetting().getNumVars(); k++) {
         sweep(k);
     }
 }
 
 void NodeManager::unmark(uint16_t lvl)
 {
-    for (uint32_t i=1; i<chunks[lvl].firstUnalloc; i++) {
-        if (chunks[lvl].nodes[i].isMarked()) {
-            chunks[lvl].nodes[i].unmark();
+#ifdef BRAVE_DD_NM_TRACE
+    std::cout << "unmark: unmark lvl = " << lvl << std::endl;
+    std::cout << "\tfirstUnalloc = " << chunks[lvl-1].firstUnalloc << "; size = " << PRIMES[chunks[lvl-1].sizeIndex] << std::endl;
+#endif
+    for (uint32_t i=1; i<chunks[lvl-1].firstUnalloc; i++) {
+        if (chunks[lvl-1].nodes[i].isMarked()) {
+            chunks[lvl-1].nodes[i].unmark();
         }
     }
 }
