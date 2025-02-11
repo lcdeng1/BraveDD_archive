@@ -1,6 +1,8 @@
 #include "out_dot.h"
 #include "../forest.h"
 
+// #define BRAVE_DD_DOT_TRACE
+
 using namespace BRAVE_DD;
 // ******************************************************************
 // *                                                                *
@@ -26,13 +28,29 @@ DotMaker::~DotMaker()
 
 void DotMaker::buildGraph(const Func& func)
 {
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildGraph: setting" << std::endl;
+    std::cout << std::endl;
+#endif
     /* setting info */
     uint16_t numVars = parent->getSetting().getNumVars();
     int numRules = parent->getSetting().getReductionSize();
     CompSet cs = parent->getSetting().getCompType();
     SwapSet ss = parent->getSetting().getSwapType();
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildGraph: unmark" << std::endl;
+    std::cout << std::endl;
+#endif
     parent->unmark();
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildGraph: marking" << std::endl;
+    std::cout << std::endl;
+#endif
     parent->markNodes(func);
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildGraph: start" << std::endl;
+    std::cout << std::endl;
+#endif
     /* start */
     outfile << "digraph g\n{\n";
     outfile << "\trankdir=TB\n";
@@ -43,6 +61,10 @@ void DotMaker::buildGraph(const Func& func)
         outfile << "\tv" << i << " [label=\"x" << i << "\"]\n";
         outfile << "\tv" << i << " -> v" << i-1 << " [style=invis]\n";
     }
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildGraph: legend" << std::endl;
+    std::cout << std::endl;
+#endif
     /* legend for edge label */
     std::string label = "";
     label += "<";
@@ -63,6 +85,11 @@ void DotMaker::buildGraph(const Func& func)
 
 void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle rootHandle, const bool isLow)
 {
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildEdge: lvl = " << lvl << std::endl;
+    edge.print(std::cout);
+    std::cout << std::endl;
+#endif
     /* setting info */
     uint16_t numVars = parent->getSetting().getNumVars();
     int numRules = parent->getSetting().getReductionSize();
