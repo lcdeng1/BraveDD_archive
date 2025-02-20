@@ -42,7 +42,7 @@ UnaryOperation::UnaryOperation(UnaryOperationType type, Forest* source, OpndType
 }
 UnaryOperation::~UnaryOperation()
 {
-    //
+    cache.~ComputeTable();
 }
 
 void UnaryOperation::compute(const Func& source, Func& target)
@@ -217,7 +217,7 @@ BinaryOperation::BinaryOperation(BinaryOperationType type, Forest* source1, Fore
 }
 BinaryOperation::~BinaryOperation()
 {
-    //
+    cache.~ComputeTable();
 }
 
 void BinaryOperation::compute(const Func& source1, const Func& source2, Func& res)
@@ -265,6 +265,7 @@ void BinaryOperation::compute(const Func& source1, const Func& source2, Func& re
     }
     // passing result
     res.setEdge(ans);
+    cache.reportStat(std::cout);
 }
 
 void BinaryOperation::compute(const Func& source1, const ExplictFunc source2, Func& res)
@@ -402,7 +403,8 @@ Edge BinaryOperation::computeINTERSECTION(const uint16_t lvl, const Edge& source
         SWAP(m1, m2);
     }
     
-    // check cache here, TBD
+    // check cache here
+    if (cache.check(lvl, e1, e2, ans)) return ans;
 
     // Case that edge1 is a short edge
     if (m1 == lvl) {
@@ -424,8 +426,16 @@ Edge BinaryOperation::computeINTERSECTION(const uint16_t lvl, const Edge& source
         packRule(root, RULE_X);
         ans = resForest->reduceEdge(lvl, root, lvl, child);
 
-        // save to cache, TBD
-
+        // save to cache
+#ifdef BRAVE_DD_TRACE_OPERATION
+    std::cout << "\tcase 1: save to cache: ";
+    ans.print(std::cout);
+    std::cout << std::endl;
+#endif
+        cache.add(lvl, e1, e2, ans);
+#ifdef BRAVE_DD_TRACE_OPERATION
+    std::cout << "\tsave done\n";
+#endif
         return ans;
     }
 
@@ -452,7 +462,16 @@ Edge BinaryOperation::computeINTERSECTION(const uint16_t lvl, const Edge& source
             ans = operateHH(lvl, e1, e2);
         }
     }
-    // save cache, TBD
+    // save cache
+#ifdef BRAVE_DD_TRACE_OPERATION
+    std::cout << "\tcase 2: save to cache: ";
+    ans.print(std::cout);
+    std::cout << std::endl;
+#endif
+    cache.add(lvl, e1, e2, ans);
+#ifdef BRAVE_DD_TRACE_OPERATION
+    std::cout << "\tsave done\n";
+#endif
     return ans;
 }
 Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre)
@@ -578,8 +597,8 @@ Edge BinaryOperation::operateLH(const uint16_t lvl, const Edge& e1, const Edge& 
     }
     Edge x, y, z;
     if (opType == BinaryOperationType::BOP_UNION) {
-        x = computeUNION(m1, x1, x2);
-        z = computeUNION(m1, y1, y2);
+        x = computeUNION(m, x1, x2);
+        z = computeUNION(m, y1, y2);
         if (lvl - m == 1) {
             EdgeLabel root = 0;
             packRule(root, RULE_X);
@@ -590,8 +609,8 @@ Edge BinaryOperation::operateLH(const uint16_t lvl, const Edge& e1, const Edge& 
         }
         y = computeUNION(m, x1, y2);
     } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-        x = computeINTERSECTION(m1, x1, x2);
-        z = computeINTERSECTION(m1, y1, y2);
+        x = computeINTERSECTION(m, x1, x2);
+        z = computeINTERSECTION(m, y1, y2);
         if (lvl - m == 1) {
             EdgeLabel root = 0;
             packRule(root, RULE_X);
