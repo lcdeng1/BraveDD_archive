@@ -18,7 +18,7 @@ if (MSVC)
   add_compile_options(/W4 /WX)
 else()
   add_compile_options(-Wall -Wextra -Wshadow -Wunused -std=c++11)
-  add_compile_options(-Wno-deprecated-copy-with-user-provided-copy -Wno-return-type)
+  #add_compile_options(-Wno-deprecated-copy-with-user-provided-copy -Wno-return-type)
 endif()
 
 enable_testing()
