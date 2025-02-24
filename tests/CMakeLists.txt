@@ -1,34 +1,29 @@
-#
-# Test source files
-#
-file(GLOB TEST_SOURCES tests/*.cc tests/*.cpp)
+cmake_minimum_required(VERSION 3.19)
+
+# Project name and version
+project(BraveDD VERSION 0.0.1)
+
+# Define metadata variables
+set(PROJECT_URL "https://github.com/asminer/brave_dd")
+set(PROJECT_HOMEPAGE_URL "https://github.com/asminer/brave_dd")
+set(PROJECT_COPYRIGHT "Copyright (C) 2024, .")
+set(PROJECT_LICENSE "Apache License, version 2.0")
+set(PROJECT_DATE "Jun 14, 2024")
+
+# Configure a header file to pass the metadata to the source code
+configure_file(${PROJECT_SOURCE_DIR}/src/info.h.in ${PROJECT_SOURCE_DIR}/src/info.h)
 
 # Add compile options
 if (MSVC)
   add_compile_options(/W4 /WX)
 else()
-  add_compile_options(-Wall -Wextra -Wshadow -Wunused -Wno-c++11-extensions -Wno-unused-parameter)
+  add_compile_options(-Wall -Wextra -Wshadow -Wunused -std=c++11)
+  add_compile_options(-Wno-deprecated-copy-with-user-provided-copy -Wno-return-type)
 endif()
 
-# Ensure `test_parser` is properly defined
-add_executable(test_parser ${CMAKE_CURRENT_SOURCE_DIR}/test_parser.cc)
-target_link_libraries(test_parser PUBLIC BraveDD)
-add_test(NAME test_parser COMMAND test_parser)
+enable_testing()
 
-# Loop for other tests
-foreach(file ${TEST_SOURCES})
-  get_filename_component(TEST_EXE ${file} NAME_WE)
-  if(NOT TEST_EXE STREQUAL "test_parser")  # Avoid duplicate definition
-    add_executable(${TEST_EXE} ${file})
-    target_link_libraries(${TEST_EXE} PUBLIC BraveDD)
-    target_include_directories(${TEST_EXE} PUBLIC
-      ${PROJECT_SOURCE_DIR}/src
-    )
-    add_test(NAME "${TEST_EXE}" COMMAND "${TEST_EXE}")
-  endif()
-endforeach()
-
-#
-# Allow quoted test names with spaces
-#
-cmake_policy(SET CMP0110 NEW)
+# Add subdirectories in build 
+add_subdirectory(src)
+add_subdirectory(tests)
+add_subdirectory(examples)

@@ -4,7 +4,9 @@
 */
 #ifndef BRAVE_DD_H
 #define BRAVE_DD_H
-
+namespace BRAVE_DD {
+    void printInfo();
+}
 #include "info.h"
 #include "defines.h"
 #include "setting.h"
