@@ -94,7 +94,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
 {
     /* check the level */
     if (parent->getSetting().getNumVars() != (assignment.size()-1)) {
-        std::cout << "[BRAVE_DD] ERROR!\t Variable number check failed in evaluation! It was "<<assignment.size()-1
+        std::cout << "[BRAVE_DD] ERROR!\t Func::evaluate(): Variable number check failed in evaluation! It was "<<assignment.size()-1
         <<", it should be "<<parent->getSetting().getNumVars() << std::endl;
         exit(0);
     }
@@ -168,6 +168,112 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             /* update varibles */
             allOne = 1;
             existOne = 0;
+            targetHandle = current.getNodeHandle();
+            targetLvl = current.getNodeLevel();
+#ifdef BRAVE_DD_TRACE
+            std::cout<<"next currt: k="<< k <<", targetlvl=" << targetLvl << "; ";
+            current.print(std::cout, 0);
+            std::cout << std::endl;
+#endif
+            continue;
+        }
+        // not reach the terminal cases of reduction rules, or got the next edge
+        if (targetLvl == 0) {
+            // value type INT, FLOAT, or VOID (special value)
+            ans = getTerminalValue(current.handle);
+            if (current.getComp() && ct != NO_COMP) {
+                if (ans.valueType == INT) {
+                    int terminalVal = *reinterpret_cast<int*>(&targetHandle);
+                    terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
+                    ans.setValue(terminalVal, INT);
+                } else if (ans.valueType == FLOAT) {
+                    float terminalVal = *reinterpret_cast<float*>(&targetHandle);
+                    terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
+                    ans.setValue(terminalVal, FLOAT);
+                } else if (ans.valueType == VOID) {
+                    // special value: NegInf => PosInf?
+                    // TBD
+                }
+            }
+            return ans;
+        }
+        k--;
+    }
+    return ans;
+}
+
+Value Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aTo) const
+{
+    /* check the level */
+    if ((parent->getSetting().getNumVars() != (aFrom.size()-1)) || (aFrom.size() != aTo.size())) {
+        std::cout << "[BRAVE_DD] ERROR!\t Func::evaluate(): Variable number check failed in evaluation! It was "<<aFrom.size()-1
+        <<", it should be "<<parent->getSetting().getNumVars() << std::endl;
+        exit(0);
+    }
+    /* final answer */
+    Value ans(0);
+    /* encode mechanism */
+    EncodeMechanism encode = parent->getSetting().getEncodeMechanism();
+    /* edge flags type */
+    SwapSet st = parent->getSetting().getSwapType();
+    CompSet ct = parent->getSetting().getCompType();
+    /* tmp store edge info for "for" loop */
+    Edge current = edge;
+    /* get target node info */
+    NodeHandle targetHandle = current.getNodeHandle();
+    uint16_t targetLvl = current.getNodeLevel();
+    /* info to determine next child edge */
+    bool isComp = 0, isSwapF = 0, isSwapT = 0;
+    bool isIdent = 1;
+    /* evaluation starting from the target node level */
+    uint16_t k = aFrom.size()-1;
+    while (k>=0) {
+#ifdef BRAVE_DD_TRACE
+        std::cout<<"evaluate k: " << k;
+        std::cout<<"; currt: ";
+        current.print(std::cout, 0);
+        std::cout << std::endl;
+#endif
+        /* check the incoming edge's reduction rule for terminal cases */
+        ReductionRule incoming = current.getRule();
+        /* if incoming edge skips levels */
+        if ((targetLvl < k) && (incoming != RULE_X)) {
+            // determine identity
+            for (uint16_t i=k; i>targetLvl; i--) {
+                if (aFrom[i] != aTo[i]) isIdent = 0;
+            }
+            if (encode == TERMINAL) {
+                // terminal value, don't care the Value on edge
+                ValueType vt = (parent->getSetting().getValType() == INT
+                                || parent->getSetting().getValType() == LONG) ? INT : FLOAT;
+                if ((!isIdent) && isRuleI(incoming)) {
+                    if (vt == INT) ans.setValue(hasRuleTerminalOne(incoming)?1:0, INT);
+                    else ans.setValue(hasRuleTerminalOne(incoming)?1.0f:0.0f, FLOAT);
+                    return ans;
+                }
+            } else if (encode == EDGE_PLUS) {
+                // edge values plus
+                // TBD
+            } else if (encode == EDGE_PLUSMOD) {
+                // edge values plus and modulo
+                // TBD
+            } else if (encode == EDGE_MULT) {
+                // edge values multiply
+                // TBD
+            }
+        }
+        if (targetLvl > 0) {
+            /* short incoming edge, or long incoming edge but skips */
+            k = targetLvl-1;
+            isSwapF = (st==FROM || st==FROM_TO) ? current.getSwap(0) : 0;
+            isSwapT = (st==TO || st==FROM_TO) ? current.getSwap(1) : 0;
+
+            // get swap/comp bit only when it's allowed, since user may insert illegal nodes into nodemanager (which is allowed)
+            isComp = (ct==COMP) ? current.getComp() : 0;
+            current = parent->getChildEdge(targetLvl, targetHandle, (char)(((isSwapF^aFrom[targetLvl])<<1) + (isSwapT^aTo[targetLvl])));
+            if (isComp) current.complement();
+            /* update varibles */
+            isIdent = 1;
             targetHandle = current.getNodeHandle();
             targetLvl = current.getNodeLevel();
 #ifdef BRAVE_DD_TRACE
