@@ -83,7 +83,7 @@ void DotMaker::buildGraph(const Func& func)
     outfile.close();    // close out file
 }
 
-void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle rootHandle, const bool isLow)
+void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle rootHandle, const char st)
 {
 #ifdef BRAVE_DD_DOT_TRACE
     std::cout << "buildEdge: lvl = " << lvl << std::endl;
@@ -124,7 +124,14 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
     label += ">";
     /* root edge */
     std::string root = "N";
-    std::string style = (isLow) ? "dashed" : "solid";
+    std::string style = "dashed";
+    if (st == 1) {
+        style = "solid";
+    } else if (st == 2) {
+        style = "dotted";
+    } else if (st == 3) {
+        style = "bold";
+    }
     if ((lvl == numVars) && (rootHandle == 0)) {
         root += std::to_string(lvl+1);
         outfile << "\t{rank=same v"<<numVars+1<<" "<<root<<" [shape = point]}\n";
@@ -148,7 +155,7 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
                     buildEdge(edge.getNodeLevel(),
                                 parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
                                 edge.getNodeHandle(),
-                                (i==0 || i==2));
+                                i);
                 }
             }
             // unmark
