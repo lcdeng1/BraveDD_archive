@@ -83,6 +83,66 @@ void DotMaker::buildGraph(const Func& func)
     outfile.close();    // close out file
 }
 
+void DotMaker::buildGraph(const std::vector<Func>& func)
+{
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildGraph: setting" << std::endl;
+    std::cout << std::endl;
+#endif
+    /* setting info */
+    uint16_t numVars = parent->getSetting().getNumVars();
+    int numRules = parent->getSetting().getReductionSize();
+    CompSet cs = parent->getSetting().getCompType();
+    SwapSet ss = parent->getSetting().getSwapType();
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildGraph: unmark" << std::endl;
+    std::cout << std::endl;
+#endif
+    parent->unmark();
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildGraph: marking" << std::endl;
+    std::cout << std::endl;
+#endif
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildGraph: start" << std::endl;
+    std::cout << std::endl;
+#endif
+    /* start */
+    outfile << "digraph g\n{\n";
+    outfile << "\trankdir=TB\n";
+    outfile << "\n\tnode [shape = none]\n";
+    outfile << "\tv0 [label=\"\"]\n";
+    for (uint32_t i = 1; i <= numVars; i++)
+    {
+        outfile << "\tv" << i << " [label=\"x" << i << "\"]\n";
+        outfile << "\tv" << i << " -> v" << i-1 << " [style=invis]\n";
+    }
+#ifdef BRAVE_DD_DOT_TRACE
+    std::cout << "buildGraph: legend" << std::endl;
+    std::cout << std::endl;
+#endif
+    /* legend for edge label */
+    std::string label = "";
+    label += "<";
+    if (numRules > 0) label += "X";
+    if (cs != NO_COMP) label += ", c";
+    if (ss == ONE || ss == ALL) label += (ss == ONE) ? ", s_o" : ", s_a";
+    if (ss == FROM || ss == FROM_TO) label += ", s_f";
+    if (ss == TO || ss == FROM_TO) label += ", s_t";
+    label += ">";
+    outfile << "\tv" << numVars+1 << " [label=\"" << label << "\"]\n";
+    outfile << "\tv" << numVars+1 << " -> v" << numVars << " [style=invis]\n";
+    /* build the function */
+    for (size_t i=0; i<func.size(); i++) {
+        parent->markNodes(func[i]);
+        buildEdge(numVars, func[i].getEdge());
+        parent->unmark();
+    }
+    /* end */
+    outfile << "}";
+    outfile.close();    // close out file
+}
+
 void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle rootHandle, const char st)
 {
 #ifdef BRAVE_DD_DOT_TRACE

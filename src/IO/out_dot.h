@@ -23,6 +23,7 @@ class BRAVE_DD::DotMaker {
     ~DotMaker();
 
     void buildGraph(const Func& func);
+    void buildGraph(const std::vector<Func>& func);
     void runDot(const std::string ext);
     /*-------------------------------------------------------------*/
     private:
