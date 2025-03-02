@@ -46,8 +46,8 @@ file_reader::~file_reader() {
             fclose(F);
     }
 }
+// ======================= Decompression for .xz files =======================
 
-// Optional: XZ decompression using LZMA (not used in file_reader)
 std::vector<uint8_t> decompress_xz(const std::string &filename) {
     std::ifstream file(filename, std::ios::binary);
     if (!file) {
@@ -133,7 +133,7 @@ void pla_parser::read_header(unsigned &ib, unsigned &ob, unsigned &nmt, FILE* de
             unget(next);
             break;
         }
-        next = get(); // Directive character
+        next = get(); 
         if (next == 'i') {
             ib = read_unsigned();
             if (debug) fprintf(debug, "    .i %u\n", ib);
@@ -153,7 +153,7 @@ void pla_parser::read_header(unsigned &ib, unsigned &ob, unsigned &nmt, FILE* de
 // Reads one minterm from the PLA file.
 bool pla_parser::read_minterm(char* input_bits, char& out_terminal) {
     int c;
-    // Skip lines that are directives (starting with '.') or comments.
+    // Skip lines that are directives 
     while (true) {
         c = get();
         if (EOF == c) return false;
@@ -195,8 +195,7 @@ bool pla_parser::read_minterm(char* input_bits, char& out_terminal) {
 
 // ======================= Parser Factory Functions =======================
 
-// Factory: Create a parser for the given file (auto-detecting format and compression).
-// This function examines the file extension to determine the format and compression.
+
 static bool matches(const char* ext, char format, char comp) {
     const char* ext1 = (format == 'b') ? ".bin" : ".pla";
     const char* ext2 = (comp == 'x') ? ".xz" : (comp == 'g') ? ".gz" : (comp == 'b') ? ".bz2" : "";
@@ -221,7 +220,6 @@ static bool file_type(const char* pathname, char& format, char &comp) {
     return false;
 }
 
-// Factory: Create a parser using a given pathname, format, and compression.
 static parser* new_parser(const char* pathname, char format, char compression) {
     file_reader* fr = new file_reader(pathname, compression);
     if (!fr->fok()) {
@@ -233,7 +231,6 @@ static parser* new_parser(const char* pathname, char format, char compression) {
     return nullptr;
 }
 
-// Factory: Auto-detect the file type from the pathname.
 parser* new_parser(const char* pathname) {
     char fmt, comp;
     if (!file_type(pathname, fmt, comp)) {
@@ -243,7 +240,6 @@ parser* new_parser(const char* pathname) {
     return new_parser(pathname, fmt, comp);
 }
 
-// Factory: Create a parser for a given format and compression when no file is provided (e.g. reading from stdin).
 parser* new_parser(char format, char compression) {
     file_reader* fr = new file_reader(nullptr, compression);
     if (!fr->fok()) {
