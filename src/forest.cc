@@ -651,6 +651,12 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     * ================================================================================================*/
     } else if (setting.isRelation() && setting.getEncodeMechanism() == TERMINAL) {
         bool isMatch = 0;
+        bool isConstOne1, isConstOne2;
+        bool isConstZero1, isConstZero2;
+        isConstOne1 = child[1].isConstantOne();
+        isConstOne2 = child[2].isConstantOne();
+        isConstZero1 = child[1].isConstantZero();
+        isConstZero2 = child[2].isConstantZero();
         /* ---------------------------------------------------------------------------------------------
         * Redundant X
         * --------------------------------------------------------------------------------------------*/
@@ -660,17 +666,17 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
             && (child[0].getRule() == RULE_X)
             && setting.hasReductionRule(RULE_X)) {
             reduced = child[0];
-            isMatch = 0;
+            isMatch = 1;
         /* ---------------------------------------------------------------------------------------------
         * Identity I
         * --------------------------------------------------------------------------------------------*/
-        } else if ((child[0].getEdgeHandle() == child[3].getEdgeHandle())
-                    && (child[1].getEdgeHandle() == child[2].getEdgeHandle())
-                    ) {
-            reduced = child[0];
-            reduced.setRule(RULE_I0);
-        } else {
-            //
+        } else if ((child[0].getEdgeHandle() == child[3].getEdgeHandle()) && (isRuleI(child[0].getRule()) || (nodeLevel - child[0].getNodeLevel() == 1))
+                    && (isConstOne1 || isConstZero1) && (isConstOne2 || isConstZero2) && (isConstOne1 == isConstOne2)
+                    && ((nodeLevel - child[0].getNodeLevel() == 1) || (hasRuleTerminalOne(child[0].getRule()) == isConstOne1))
+                    && setting.hasReductionRule((isConstOne1)?RULE_I1:RULE_I0)) {
+                reduced = child[0];
+                reduced.setRule((isConstOne1)?RULE_I1:RULE_I0);
+                isMatch = 1;            
         }
         // here means the forbidden node pattern found but its equivalent edge rules are not allowed
         if (!isMatch) return normalizeNode(nodeLevel, child);
@@ -754,7 +760,7 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
         if ((mt == PUSH_UP) || (mt == SHORTEN_X)) {
             // push-up one
             std::vector<Edge> childEdges;
-            if (setting.isRelation()) {
+            if (isRelation) {
                 childEdges = std::vector<Edge>(4);
             } else {
                 childEdges = std::vector<Edge>(2);

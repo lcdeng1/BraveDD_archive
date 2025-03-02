@@ -23,11 +23,12 @@ class BRAVE_DD::DotMaker {
     ~DotMaker();
 
     void buildGraph(const Func& func);
+    void buildGraph(const std::vector<Func>& func);
     void runDot(const std::string ext);
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-    void buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle rootHandle=0, const bool isLow = 0);
+    void buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle rootHandle=0, const char st = 0);
     /// ============================================================
         const Forest* parent;
         std::string basename;

@@ -292,15 +292,26 @@ class BRAVE_DD::Forest {
         return res;
     }
 
+    /**
+     * @brief Get the cofactor (edge) of an edge at level 'lvl' with respective of child 'index'. The operand 'edge'
+     * can be a BDD or BMXD edge, and the operand 'index' can be 0-1 for BDD edge or 0-3 for BMXD edge.
+     * 
+     * @param lvl 
+     * @param edge 
+     * @param index 
+     * @return Edge 
+     */
     inline Edge cofact(const uint16_t lvl, const Edge& edge, const char index) {
         if (lvl == 0) return edge;
         if (lvl == edge.getNodeLevel()) {
             char childIndex = index;
+            // swap, BMXD TBD
             if (edge.getSwap(0)) {
                 // only for BDDs
                 childIndex = 1 - childIndex;
             }
             Edge ans = getChildEdge(lvl, edge.getNodeHandle(), childIndex);
+            // complement
             if (edge.getComp()) ans.complement();
             if ((setting.getSwapType() == ALL) && edge.getSwap(0)) ans.swap();
             return ans;
