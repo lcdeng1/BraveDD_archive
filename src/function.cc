@@ -57,12 +57,34 @@ void Func::falseFunc()
     edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
 }
 /* For dimention 1 and 2 */
-void Func::constant(Value val)
+void Func::constant(int val)
 {
     if (parent->setting.getEncodeMechanism() == TERMINAL) {
-        //
+        edge.handle = makeTerminal(INT, val);
+        packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
     } else {
-        //
+        // TBD
+    }
+}
+void Func::constant(float val)
+{
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
+        edge.handle = makeTerminal(FLOAT, val);
+        packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else {
+        // TBD
+    }
+}
+void Func::constant(SpecialValue val)
+{
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
+        edge.handle = makeTerminal(VOID, val);
+        packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else {
+        // TBD
     }
 }
 /* For dimention of 2 (Relation) */
@@ -73,7 +95,19 @@ void Func::identity(std::vector<bool> dependance)
 /* For dimention of 1 (Set) */
 void Func::variable(uint16_t lvl)
 {
-    // TBD
+    std::vector<Edge> child(2);
+    child[0].handle = makeTerminal(INT, 0);
+    child[1].handle = makeTerminal(INT, 1);
+    if ((parent->getSetting().getValType() == FLOAT) || (parent->getSetting().getValType() == DOUBLE)) {
+        child[0].handle = makeTerminal(FLOAT, 0.0f);
+        child[1].handle = makeTerminal(FLOAT, 1.0f);
+    }
+    for (size_t i=0; i<child.size(); i++) {
+        packRule(child[i].handle, RULE_X);
+    }
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    edge = parent->reduceEdge(parent->getSetting().getNumVars(), root, lvl, child);
 }
 void Func::variable(uint16_t lvl, Value low, Value high)
 {
@@ -83,7 +117,23 @@ void Func::variable(uint16_t lvl, Value low, Value high)
 // Variable Func
 void Func::variable(uint16_t lvl, bool isPrime)
 {
-    // TBD
+    std::vector<Edge> child(4);
+    child[0].handle = makeTerminal(INT, 0);
+    child[1].handle = makeTerminal(INT, isPrime?1:0);
+    child[2].handle = makeTerminal(INT, isPrime?0:1);
+    child[3].handle = makeTerminal(INT, 1);
+    if ((parent->getSetting().getValType() == FLOAT) || (parent->getSetting().getValType() == DOUBLE)) {
+        child[0].handle = makeTerminal(FLOAT, 0.0f);
+        child[1].handle = makeTerminal(INT, isPrime?1.0f:0.0f);
+        child[2].handle = makeTerminal(INT, isPrime?0.0f:1.0f);
+        child[3].handle = makeTerminal(FLOAT, 1.0f);
+    }
+    for (size_t i=0; i<child.size(); i++) {
+        packRule(child[i].handle, RULE_X);
+    }
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    edge = parent->reduceEdge(parent->getSetting().getNumVars(), root, lvl, child);
 }
 void Func::variable(uint16_t lvl, bool isPrime, Value low, Value high)
 {
