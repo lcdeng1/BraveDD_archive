@@ -1,6 +1,6 @@
 #include "forest.h"
 
-// #define BRAVE_DD_TRACE
+// #define BRAVE_DD_FOREST_TRACE
 
 using namespace BRAVE_DD;
 // ******************************************************************
@@ -59,7 +59,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
     // assuming all child edges are reduced and legal
     /* copy the child info */
     std::vector<Edge> child = down;
-#ifdef BRAVE_DD_TRACE
+#ifdef BRAVE_DD_FOREST_TRACE
     std::cout<<"normalize node:\n";
     child[0].print(std::cout);
     std::cout << std::endl;
@@ -127,7 +127,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             child[0].complement();
             child[1].complement();
         }
-#ifdef BRAVE_DD_TRACE
+#ifdef BRAVE_DD_FOREST_TRACE
         std::cout << "normalized child:\n";
         child[0].print(std::cout);
         std::cout << std::endl;
@@ -153,7 +153,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
     ans.setSwap(swap, 0);
     ans.setSwap(swapTo, 1);
     ans.setNodeHandle(insertNode(nodeLevel, node));
-#ifdef BRAVE_DD_TRACE
+#ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "normalize done, ans edge: ";
     ans.print(std::cout);
     std::cout << std::endl;
@@ -163,6 +163,11 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
 
 Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
 {
+#ifdef BRAVE_DD_FOREST_TRACE
+    std::cout << "normalize edge from level: " << level << "; ";
+    edge.print(std::cout);
+    std::cout << std::endl;
+#endif
     Edge normalized = edge;
     bool isCompAllowed = (setting.getCompType() != NO_COMP);
     ReductionRule rule = edge.getRule();
@@ -365,7 +370,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     for (size_t i=0; i<child.size(); i++) {
         child[i] = normalizeEdge(nodeLevel-1, child[i]);
     }
-#ifdef BRAVE_DD_TRACE
+#ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "reduce node: \n";
     child[0].print(std::cout);
     std::cout << std::endl;
@@ -400,7 +405,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
             bool isTermOne1 = isTerminalOne(child[1].getEdgeHandle());
             bool isTermZero0 = isTerminalZero(child[0].getEdgeHandle());
             bool isTermZero1 = isTerminalZero(child[1].getEdgeHandle());
-            /* Meta-edge: Constant <C, 0, c, 0> */
+            /* Meta-edge: Constant <C, 0, c, 0/1> */
             if (((child[0].getRule() == RULE_X) || (hasRuleTerminalOne(child[0].getRule()) == (child[0].getComp() ^ isTermOne0)))
                 && ((child[1].getRule() == RULE_X) || (hasRuleTerminalOne(child[1].getRule()) == (child[1].getComp() ^ isTermOne1)))
                 && ((isTermOne0 || isTermZero0) && (isTermOne1 || isTermZero1))
@@ -420,7 +425,12 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
                             break;
                         }
                     }
-                }                
+                }
+            /* Meta-edge: Constant <C, 0, c, n>, n>1; complement bit TBD */
+            } else if ((child[0].getEdgeHandle() == child[1].getEdgeHandle())
+                        && (child[0].getRule() == RULE_X)) {
+                reduced = child[0];
+                isMatch = 1;
             /* Meta-edge: Bottom variable <B, 0, c, 0> */
             } else if ((child[0].getRule() == RULE_X)
                         && (child[1].getRule() == RULE_X)
@@ -692,7 +702,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
 
 Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value)
 {
-#ifdef BRAVE_DD_TRACE
+#ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "merge edge; beginLvl: "<< beginLevel << "; mergeLvl: " << mergeLevel << std::endl;
     std::cout << "<" << rule2String(unpackRule(label)) << ", " << unpackComp(label) << ", " << unpackSwap(label) << ", " << unpackSwapTo(label) << "> with ";
     reduced.print(std::cout);
@@ -719,7 +729,7 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
             && (isRuleEL(reducedRule) || isRuleEH(reducedRule) || isRuleI(reducedRule) || (reducedRule == RULE_X)))
         || ((incomingRule == RULE_X) && (incomingSkip == 0) && (reducedSkip > 0))) {
         merged = reduced;
-        return merged;
+        return normalizeEdge(beginLevel, merged);
     }
     /* ---------------------------------------------------------------------------------------------
     * "Maybe" Compatible merge when [Push-down/ShortenX/ShortenI]
@@ -741,7 +751,7 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
             merged =reduced;
             merged.setRule(incomingRule);
         }
-        return merged;
+        return normalizeEdge(beginLevel, merged);
     }
     /* ---------------------------------------------------------------------------------------------
     * "Must" Incompatible merge
@@ -891,7 +901,7 @@ Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const 
     }
     /* copy the children info */
     std::vector<Edge> child = down;
-#ifdef BRAVE_DD_TRACE
+#ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "reduce edge; beginlvl: "<< beginLevel << "; nodelvl: " << nodeLevel << std::endl;
     child[0].print(std::cout);
     std::cout << std::endl;
@@ -926,7 +936,7 @@ Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const 
     /* reduce node */
     Edge reduced;
     reduced = reduceNode(nodeLevel, child);    // this will take care of value on edge
-#ifdef BRAVE_DD_TRACE
+#ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "after reduce node:" << std::endl;
     reduced.print(std::cout);
     std::cout << std::endl;
@@ -940,12 +950,22 @@ Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const 
     } else {
         reduced = mergeEdge(beginLevel, nodeLevel, mergeLabel, reduced, value);
     }
-#ifdef BRAVE_DD_TRACE
+#ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "after merge edge:" << std::endl;
     reduced.print(std::cout);
     std::cout << std::endl;
 #endif
     return reduced;
+}
+
+void Forest::reportNodesNum(std::ostream& out) const
+{
+    uint64_t total = 0;
+    for (uint16_t k=1; k<=setting.getNumVars(); k++) {
+        out << "Level " << k << ": " << getNodeManUsed(k) << "\n";
+        total += getNodeManUsed(k);
+    }
+    out << "Total nodes: " << total << "\n";
 }
 
 /// Helper Methods ==============================================

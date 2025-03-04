@@ -410,12 +410,20 @@ class BRAVE_DD::Forest {
     inline uint32_t getNodeManUsed(const uint16_t level) const {
         return nodeMan->numUsed(level);
     }
+    inline uint64_t getNodeManUsed() const {
+        uint64_t total = 0;
+        for (uint16_t k=1; k<=setting.getNumVars(); k++) {
+            total += getNodeManUsed(k);
+        }
+        return total;
+    }
     inline uint32_t getNodeManAlloc(const uint16_t level) const {
         return nodeMan->numAlloc(level);
     }
     inline uint32_t getUTEntriesNum(const uint16_t level) const {
         return uniqueTable->getNumEntries(level);
     }
+    void reportNodesNum(std::ostream& out) const;
     uint64_t getPeakNodes();    // largest result of getCurrentNodes(), since the last call to resetPeakNodes()
     uint64_t getCurrentNodes(); // number of nodes in UT, including disconnected
     void resetPeakNodes();
