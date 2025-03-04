@@ -223,6 +223,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
     /*-------------------------------------------------------------*/
     /// Helper Methods ==============================================
     bool checkForestCompatibility() const;
+    Edge computeElmtWise(const uint16_t lvl, const Edge& source1, const Edge& source2);
     Edge computeUNION(const uint16_t lvl, const Edge& source1, const Edge& source2);
     Edge computeINTERSECTION(const uint16_t lvl, const Edge& source1, const Edge& source2);
     Edge computeIMAGE(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre = 0);
