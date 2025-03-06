@@ -311,7 +311,6 @@ class BRAVE_DD::Forest {
                 childIndex = 1 - childIndex;
             }
             Edge ans = getChildEdge(lvl, edge.getNodeHandle(), childIndex);
-            // complement
             if (edge.getComp()) ans.complement();
             if ((setting.getSwapType() == ALL) && edge.getSwap(0)) ans.swap();
             return ans;

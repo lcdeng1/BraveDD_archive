@@ -1,4 +1,5 @@
 #include "forest.h"
+#include "operations/operation.h"
 
 // #define BRAVE_DD_FOREST_TRACE
 
@@ -25,6 +26,9 @@ Forest::~Forest()
     delete nodeMan;
     delete uniqueTable;
     delete stats;
+    // find and remove all related operations
+    UOPs.remove(this);
+    BOPs.remove(this);
 }
 /***************************** Cardinality **********************/
 uint64_t Forest::count(Func func, int val)
