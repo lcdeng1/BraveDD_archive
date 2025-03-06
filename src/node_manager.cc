@@ -15,11 +15,7 @@ using namespace BRAVE_DD;
 NodeManager::SubManager::SubManager(Forest *f):parent(f)
 {
     sizeIndex = 0;
-    nodes = (Node*)malloc((PRIMES[sizeIndex] + 1) * sizeof(Node));
-    if (!nodes) {
-        std::cout << "[BRAVE_DD] ERROR!\t Malloc fail for submanager!"<< std::endl;
-        exit(0);
-    }
+    nodes = std::vector<Node>((PRIMES[sizeIndex] + 1), Node(parent->nodeSize));
     recycled = 0;
     firstUnalloc = 1;
     freeList = 0;
@@ -27,10 +23,11 @@ NodeManager::SubManager::SubManager(Forest *f):parent(f)
 }
 NodeManager::SubManager::~SubManager()
 {
-    for (uint32_t i=1; i<firstUnalloc; i++) {
-        nodes[i].~Node();
-    }
-    free(nodes);
+    // for (uint32_t i=1; i<firstUnalloc; i++) {
+    //     nodes[i].~Node();
+    // }
+    nodes.clear();
+    std::vector<Node>().swap(nodes);
 }
 
 NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
@@ -84,7 +81,7 @@ void NodeManager::SubManager::expand()
     } else {
         newSize = PRIMES[sizeIndex] + 1;
     }
-    nodes = (Node*)realloc(nodes, newSize * sizeof(Node));
+    nodes.resize(newSize, Node(parent->nodeSize));
     numFrees += (newSize - PRIMES[sizeIndex-1] - 1);
 }
 
@@ -92,19 +89,18 @@ void NodeManager::SubManager::shrink()
 {
     sizeIndex--;
     uint32_t newSize = PRIMES[sizeIndex] + 1;
-    nodes = (Node*)realloc(nodes, newSize * sizeof(Node));
+    nodes.resize(newSize, Node(parent->nodeSize));
     numFrees -= (PRIMES[sizeIndex+1] + 1 - newSize);
 }
 
 void NodeManager::SubManager::sweep()
 {
-    if (!nodes) return;
     /* Expand the unallocated portion as much as we  can */
     while (firstUnalloc) {
-        if ((nodes+firstUnalloc-1)->isMarked()) {
+        if (nodes[firstUnalloc-1].isMarked()) {
             break;
         }
-        (nodes+firstUnalloc-1)->~Node();
+        nodes[firstUnalloc-1].~Node();
         firstUnalloc--;
     }
     numFrees = ((PRIMES[sizeIndex]>UINT32_MAX)? UINT32_MAX:PRIMES[sizeIndex]) + 1 - firstUnalloc;
@@ -136,17 +132,19 @@ void NodeManager::SubManager::sweep()
 NodeManager::NodeManager(Forest *f):parent(f)
 {
     uint16_t lvls = f->getSetting().getNumVars();
-    chunks = (SubManager*)malloc(lvls * sizeof(SubManager));
-    for (uint32_t i=0; i<lvls; i++) {
-        new (&chunks[i]) SubManager(f);
+    // chunks = std::vector<SubManager>(lvls, SubManager(f));
+    chunks.reserve(lvls);
+    for (uint16_t i = 0; i < lvls; i++) {
+        chunks.emplace_back(f);  // Directly constructs SubManager
     }
 }
 NodeManager::~NodeManager()
 {
-    for (uint16_t i=0; i<parent->getSetting().getNumVars(); i++) {
-        chunks[i].~SubManager();
-    }
-    free(chunks);
+    // for (uint16_t i=0; i<parent->getSetting().getNumVars(); i++) {
+    //     chunks[i].~SubManager();
+    // }
+    chunks.clear();
+    std::vector<SubManager>().swap(chunks);
     parent = 0;
 }
 

@@ -154,16 +154,16 @@ class BRAVE_DD::UniqueTable {
                 void shrink();
             // ========================================================
                 friend class UniqueTable;
-                Forest*         parent;
-                NodeHandle*     table;
-                uint16_t        level;              // The level of stored nodes
-                int             sizeIndex;          // Table size at this level, index of PRIMES
-                uint64_t        numEntries;         // The number of nodes at this level
+                Forest*                     parent;
+                std::vector<NodeHandle>     table;
+                uint16_t                    level;              // The level of stored nodes
+                int                         sizeIndex;          // Table size at this level, index of PRIMES
+                uint64_t                    numEntries;         // The number of nodes at this level
         }; // class SubTable
 
         // ========================================================
-        Forest*         parent;     // Parent forest
-        SubTable*       tables;     // Subtables divided by levels
+        Forest*                     parent;     // Parent forest
+        std::vector<SubTable>       tables;     // Subtables divided by levels
 };
 
 

@@ -12,20 +12,13 @@ using namespace BRAVE_DD;
 UniqueTable::SubTable::SubTable(uint16_t lvl, Forest* f):parent(f),level(lvl)
 {
     sizeIndex = 0;
-    table = (NodeHandle*)malloc(PRIMES[sizeIndex] * sizeof(NodeHandle));
-    if (!table) {
-        std::cout << "[BRAVE_DD] ERROR!\t Malloc fail for subtable: "<<lvl<< std::endl;
-        exit(0);
-    }
-    memset(table, 0, PRIMES[sizeIndex]*sizeof(NodeHandle));
+    table = std::vector<NodeHandle>(PRIMES[sizeIndex], 0);
     numEntries = 0;
 }
 UniqueTable::SubTable::~SubTable()
 {
-    for (uint32_t i=0; i<PRIMES[sizeIndex]; i++) {
-        table[i] = 0;
-    }
-    free(table);
+    table.clear();
+    std::vector<NodeHandle>().swap(table);
     sizeIndex = 0;
     numEntries = 0;
 }
@@ -120,11 +113,7 @@ void UniqueTable::SubTable::expand()
         newSize = PRIMES[sizeIndex];
     }
     // new table of larger size
-    table = (NodeHandle*)realloc(table, newSize * sizeof(NodeHandle));
-    if (!table) {
-        std::cout << "[BRAVE_DD] ERROR!\t Realloc fail in expand subtable!"<< std::endl;
-        exit(0);
-    }
+    table.resize(newSize);
     for (uint32_t i=0; i<newSize; i++) {
         table[i] = 0;
     }
@@ -155,21 +144,15 @@ void UniqueTable::SubTable::expand()
 UniqueTable::UniqueTable(Forest* f):parent(f)
 {
     uint16_t lvls = f->getSetting().getNumVars();
-    tables = (SubTable*)malloc(lvls * sizeof(SubTable));
-    if (!tables) {
-        std::cout << "[BRAVE_DD] ERROR!\t Unable to construct UniqueTable!"<< std::endl;
-        exit(0);
-    }
+    tables = std::vector<SubTable>(lvls, SubTable(1, f));
     for (uint16_t i=0; i<lvls; i++) {
-        new (&tables[i]) SubTable(i+1, f);
+        tables[i].level = i+1;
     }
 }
 UniqueTable::~UniqueTable()
 {
-    for (uint16_t i=0; i<parent->getSetting().getNumVars(); i++) {
-        tables[i].~SubTable();
-    }
-    free(tables);
+    tables.clear();
+    std::vector<SubTable>().swap(tables);
     parent = 0;
 }
 

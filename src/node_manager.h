@@ -88,13 +88,13 @@ class BRAVE_DD::NodeManager {
 
         // ========================================================
             friend class NodeManager;
-            Forest*     parent;         // Parent forest
-            Node*       nodes;          // Actual node storage; the 1st slot (nodes[0]) will not be used
-            int         sizeIndex;      // Index of prime number for size
-            uint32_t    firstUnalloc;   // Index of first unallocated slot
-            uint32_t    freeList;       // Header of the list of unused slots
-            uint32_t    numFrees;       // Number of free/unused slots
-            uint32_t    recycled;       // Last recycled node index
+            Forest*                 parent;         // Parent forest
+            std::vector<Node>       nodes;          // Actual node storage; the 1st slot (nodes[0]) will not be used
+            int                     sizeIndex;      // Index of prime number for size
+            uint32_t                firstUnalloc;   // Index of first unallocated slot
+            uint32_t                freeList;       // Header of the list of unused slots
+            uint32_t                numFrees;       // Number of free/unused slots
+            uint32_t                recycled;       // Last recycled node index
 
     }; // class SubManager
 
@@ -102,8 +102,8 @@ class BRAVE_DD::NodeManager {
 
 
     // ========================================================
-    Forest* parent;        // Parent Forest
-    SubManager* chunks;    // Chunks by levels
+    Forest*                     parent;     // Parent Forest
+    std::vector<SubManager>     chunks;     // Chunks by levels
 
 };
 

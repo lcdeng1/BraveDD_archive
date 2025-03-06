@@ -73,15 +73,14 @@ class BRAVE_DD::Node {
     // construction by the forest setting
     Node(const ForestSetting& s) {
         int infoSize = s.nodeSize();
-        info = (uint32_t*)malloc(infoSize * sizeof(uint32_t));
-        for (int i=0; i<infoSize; i++) info[i] = 0;
+        info = std::vector<uint32_t>(infoSize, 0);
     }
     Node(const int size) {
-        info = (uint32_t*)malloc(size * sizeof(uint32_t));
-        for (int i=0; i<size; i++) info[i] = 0;
+        info = std::vector<uint32_t>(size, 0);
     }
     ~Node() {
-        free(info);
+        info.clear();
+        std::vector<uint32_t>().swap(info);
     }
 
     /// Methods =====================================================
@@ -332,6 +331,16 @@ class BRAVE_DD::Node {
         }
     }
 
+    inline uint32_t edgeValue(char child) const {
+        uint32_t val = 0;
+        // TBD
+        return val;
+    }
+
+    inline void setEdgeValue(char child) {
+        // TBD
+    }
+
     /**
      * Hash this node
      * 
@@ -367,7 +376,7 @@ class BRAVE_DD::Node {
     /*-------------------------------------------------------------*/
     /// ============================================================
     friend class Forest;
-    uint32_t* info;         // Next pointer, edge rules, edge flags, node handles, and levels
+    std::vector<uint32_t>   info;         // Next pointer, edge rules, edge flags, node handles, and levels
 };
 
 
