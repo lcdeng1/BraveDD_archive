@@ -43,6 +43,8 @@ UnaryOperation::UnaryOperation(UnaryOperationType type, Forest* source, OpndType
 UnaryOperation::~UnaryOperation()
 {
     cache.~ComputeTable();
+    sourceForest = nullptr;
+    targetForest = nullptr;
 }
 
 void UnaryOperation::compute(const Func& source, Func& target)
@@ -196,10 +198,33 @@ void UnaryList::searchRemove(UnaryOperation* uop)
     while (curr) {
         if (curr == uop) {
             prev->next = curr->next;
+            delete curr;
             return;
         }
         prev = curr;
         curr = curr->next;
+    }
+}
+
+void UnaryList::searchRemove(Forest* forest)
+{
+    if (!front) return;
+    // check front first
+    while (front && ((front->sourceForest == forest) || (front->targetForest == forest))) {
+        UnaryOperation* remove = front;
+        front = front->next;
+        delete remove;
+    }
+    // check the remaining
+    UnaryOperation* curr = front;
+    while (curr && curr->next) {
+        if ((curr->next->sourceForest == forest) || (curr->next->targetForest == forest)) {
+            UnaryOperation* remove = curr->next;
+            curr->next = curr->next->next;
+            delete remove;
+        } else {
+            curr = curr->next;
+        }
     }
 }
 
@@ -220,6 +245,9 @@ BinaryOperation::BinaryOperation(BinaryOperationType type, Forest* source1, Fore
 BinaryOperation::~BinaryOperation()
 {
     cache.~ComputeTable();
+    source1Forest = nullptr;
+    source2Forest = nullptr;
+    resForest = nullptr;
 }
 
 void BinaryOperation::compute(const Func& source1, const Func& source2, Func& res)
@@ -297,6 +325,9 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
     e1 = resForest->normalizeEdge(lvl, source1);
     e2 = resForest->normalizeEdge(lvl, source2);
     // Base case 1: two edges are the same
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking base case 1\n";
+#endif
     if (e1 == e2) {
         if ((opType == BinaryOperationType::BOP_UNION)
             || (opType == BinaryOperationType::BOP_INTERSECTION)) { // more operations?
@@ -304,6 +335,9 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         }
     }
     // Base case 2: two edges are complemented
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking base case 2\n";
+#endif
     if (e1.isComplementTo(e2)) {
         if (opType == BinaryOperationType::BOP_UNION) {
             EdgeHandle constant = makeTerminal(INT, 1);
@@ -328,6 +362,9 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         }
     }
     // Base case 3: one edge is constant ONE edge
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking base case 3\n";
+#endif
     if (e1.isConstantOne() || e2.isConstantOne()) {
         if (opType == BinaryOperationType::BOP_UNION) {
             EdgeHandle constant = makeTerminal(INT, 1);
@@ -345,6 +382,9 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         }
     }
     // Base case 4: one edge is constant ZERO edge
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking base case 4\n";
+#endif
     if (e1.isConstantZero() || e2.isConstantZero()) {
         if (opType == BinaryOperationType::BOP_UNION) {
             return (e1.isConstantZero()) ? e2 : e1;
@@ -372,9 +412,15 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
     }
 
     // check cache here
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking cache\n";
+#endif
     if (cache.check(lvl, e1, e2, ans)) return ans;
 
     // Case that edge1 is a short edge
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "check if recursive computing\n";
+#endif
     if (m1 == lvl) {
         Edge x1, y1, x2, y2;
         x1 = resForest->cofact(lvl, e1, 0);
@@ -394,6 +440,9 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
     }
 
     // Here we have m1>=m2, it's time to decide pattern types and use pattern operations
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "patterns computing\n";
+#endif
     char t1, t2;
     t1 = rulePattern(e1.getRule());
     t2 = rulePattern(e2.getRule());
@@ -623,7 +672,7 @@ Edge BinaryOperation::computeINTERSECTION(const uint16_t lvl, const Edge& source
 Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "compute " << ((isPre)?"Pre":"Post") << "IMAGE: lvl: " << lvl << "; s: ";
+    std::cout << ((isPre)?"Pre":"Post") << "IMAGE: lvl: " << (uint16_t)lvl << "; s: ";
     source1.print(std::cout);
     std::cout << "; r: ";
     trans.print(std::cout);
@@ -680,6 +729,7 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
     }
 
     uint16_t m = (s.getNodeLevel() > r.getNodeLevel()) ? s.getNodeLevel() : r.getNodeLevel();
+    // assertion: m>0
     Edge sCache = s;
     Edge rCache = r;
     if (s.getNodeLevel() == m) sCache.setRule(RULE_X);
@@ -698,9 +748,6 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
         packRule(constant, RULE_X);
         for (size_t i=0; i<2; i++) {
             child[i].setEdgeHandle(constant);
-#ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "normalize child edge in initialization\n";
-#endif
             child[i] = resForest->normalizeEdge(lvl, child[i]);
         }
         // recursive computing
@@ -708,9 +755,9 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "recursive computing\n";
 #endif
-        for (int i=0; i<4; i++) {
-            int s0Idx = (isPre) ? (i&(0x01)) : ((i&(0x01<<1))>>1);
-            int s1Idx = (isPre) ? ((i&(0x01<<1))>>1) : (i&(0x01));
+        for (char i=0; i<4; i++) {
+            char s0Idx = (isPre) ? (i&(0x01)) : ((i&(0x01<<1))>>1);
+            char s1Idx = (isPre) ? ((i&(0x01<<1))>>1) : (i&(0x01));
             sRec = source1Forest->cofact(m, s, s0Idx);
             rRec = source2Forest->cofact(m, r, i);
             resRec = computeIMAGE(m-1, sRec, rRec, isPre);
@@ -720,6 +767,11 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
                 un = BOPs.add(new BinaryOperation(BinaryOperationType::BOP_UNION, resForest, resForest, resForest));
             }
             child[s1Idx] = un->computeElmtWise(m-1, child[s1Idx], resRec);
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "after union child[" << (int)s1Idx << "]: ";
+    child[s1Idx].print(std::cout);
+    std::cout << std::endl;
+#endif
         }
         EdgeLabel root = 0;
         packRule(root, RULE_X);
@@ -728,13 +780,26 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
         cache.add(m, sCache, rCache, ans);
     }
     // merge with the incoming edge rule
-#ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "merge edge\n";
-#endif
     EdgeLabel incoming = 0;
     packRule(incoming, (r.getRule() == RULE_I0)?s.getRule():RULE_X);
-    ans = source1Forest->mergeEdge(lvl, m, incoming, ans);
-
+    ans = resForest->mergeEdge(lvl, m, incoming, ans);
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "after " << ((isPre)?"Pre":"Post") << "IMAGE: lvl: " << lvl << "; s: ";
+    source1.print(std::cout);
+    std::cout << "; r: ";
+    trans.print(std::cout);
+    std::cout << std::endl;
+    std::cout << "\tresult: ";
+    ans.print(std::cout);
+    std::cout << std::endl;
+    if (ans.getNodeLevel() == 2 && ans.getNodeHandle() == 4) {
+        Func functionErr(resForest);
+        functionErr.setEdge(ans);
+        DotMaker dot(resForest, "error_edge");
+        dot.buildGraph(functionErr);
+        dot.runDot("pdf");
+    }
+#endif
     return ans;
 }
 Edge BinaryOperation::operateLL(const uint16_t lvl, const Edge& e1, const Edge& e2)
@@ -947,10 +1012,33 @@ void BinaryList::searchRemove(BinaryOperation* bop)
     while (curr) {
         if (curr == bop) {
             prev->next = curr->next;
+            delete curr;
             return;
         }
         prev = curr;
         curr = curr->next;
+    }
+}
+
+void BinaryList::searchRemove(Forest* forest)
+{
+    if (!front) return;
+    // check front first
+    while (front && ((front->source1Forest == forest) || (front->source2Forest == forest) || (front->resForest == forest))) {
+        BinaryOperation* remove = front;
+        front = front->next;
+        delete remove;
+    }
+    // check the remaining
+    BinaryOperation* curr = front;
+    while (curr && curr->next) {
+        if ((curr->next->source1Forest == forest) || (curr->next->source2Forest == forest) || (curr->next->resForest == forest)) {
+            BinaryOperation* remove = curr->next;
+            curr->next = curr->next->next;
+            delete remove;
+        } else {
+            curr = curr->next;
+        }
     }
 }
 

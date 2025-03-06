@@ -124,7 +124,6 @@ class BRAVE_DD::UnaryOperation : public Operation {
     protected:
     /*-------------------------------------------------------------*/
     virtual ~UnaryOperation();
-    // computing tables TBD
 
     /*-------------------------------------------------------------*/
     private:
@@ -173,11 +172,15 @@ class BRAVE_DD::UnaryList {
     }
     inline void remove(UnaryOperation* uop) {
         if (front == uop) {
+            UnaryOperation* remove = front;
             front = front->next;
+            delete remove;
             return;
         }
         searchRemove(uop);
     }
+    // find and remove the operation including the given forest
+    inline void remove(Forest* forest) { searchRemove(forest); }
     inline UnaryOperation* find(const UnaryOperationType opT, const Forest* sourceF, const Forest* targetF) {
         if (!front) return nullptr;
         if ((front->opType == opT) && (front->sourceForest == sourceF) && (front->targetForest == targetF)) return front;
@@ -192,6 +195,7 @@ class BRAVE_DD::UnaryList {
     private:
     /*-------------------------------------------------------------*/
     void searchRemove(UnaryOperation* uop);
+    void searchRemove(Forest* forest);
     UnaryOperation* mtfUnary(const UnaryOperationType opT, const Forest* sourceF, const Forest* targetF);
     UnaryOperation* mtfUnary(const UnaryOperationType opT, const Forest* sourceF, const OpndType targetT);
 
@@ -216,7 +220,6 @@ class BRAVE_DD::BinaryOperation : public Operation {
     protected:
     /*-------------------------------------------------------------*/
     virtual ~BinaryOperation();
-    // computing tables TBD
 
     /*-------------------------------------------------------------*/
     private:
@@ -271,11 +274,15 @@ class BRAVE_DD::BinaryList {
     }
     inline void remove(BinaryOperation* bop) {
         if (front == bop) {
+            BinaryOperation* remove = front;
             front = front->next;
+            delete remove;
             return;
         }
         searchRemove(bop);
     }
+    // find and remove the operation including the given forest
+    inline void remove(Forest* forest) { searchRemove(forest); }
     inline BinaryOperation* find(const BinaryOperationType opT, const Forest* source1F, const Forest* source2F, const Forest* resF) {
         if (!front) return nullptr;
         if ((front->opType == opT) && (front->source1Forest == source1F) && (front->source2Forest == source2F) && (front->resForest == resF)) return front;
@@ -290,6 +297,7 @@ class BRAVE_DD::BinaryList {
     private:
     /*-------------------------------------------------------------*/
     void searchRemove(BinaryOperation* bop);
+    void searchRemove(Forest* forest);
     BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const Forest* source2F, const Forest* resF);
     BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const OpndType source2T, const Forest* resF);
 

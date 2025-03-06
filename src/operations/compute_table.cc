@@ -22,6 +22,7 @@ ComputeTable::ComputeTable()
 ComputeTable::~ComputeTable()
 {
     table.clear();
+    std::vector<CacheEntry>().swap(table);
 }
 
 bool ComputeTable::check(const uint16_t lvl, const Edge& a, Edge& ans)
