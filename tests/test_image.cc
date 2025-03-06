@@ -191,8 +191,8 @@ int main(int argc, char** argv)
         TESTS = atoi(argv[4]);
     } else {
         num = 4;
-        bdd = PredefForest::FBDD;
-        bmxd = PredefForest::FBMXD;
+        bdd = PredefForest::REXBDD;
+        bmxd = PredefForest::ESRBMXD;
     }
 
     std::cout<< "Image test." << std::endl;
