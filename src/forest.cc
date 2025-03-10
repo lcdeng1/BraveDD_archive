@@ -895,12 +895,12 @@ Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const 
 {
     /* check level */
     if (beginLevel < nodeLevel) {
-        std::cout << "[BRAVE_DD] ERROR!\t Invalid level for incoming edge or target node!" << std::endl;
+        std::cout << "[BRAVE_DD] ERROR!\t reduceEdge(): Invalid level for incoming edge or target node!" << std::endl;
         exit(0);
     }
     /* check number of child */
     if ((setting.isRelation() && down.size() != 4) || (!setting.isRelation() && down.size() != 2)) {
-        std::cout << "[BRAVE_DD] ERROR!\t Incorrect number of child edges!" << std::endl;
+        std::cout << "[BRAVE_DD] ERROR!\t reduceEdge(): Incorrect number of child edges!" << std::endl;
         exit(0);
     }
     /* copy the children info */

@@ -162,7 +162,8 @@ namespace BRAVE_DD {
     }
     Func operator|=(Func &e1, const Func &e2)
     {
-        // implementations TBD
+        Func out(e1.getForest());
+        apply(UNION, e1, e2, e1);
         return e1;
     }
 

@@ -13,7 +13,7 @@ using namespace BRAVE_DD;
 
 ComputeTable::ComputeTable()
 {
-    sizeIndex = 0;
+    sizeIndex = 5;
     numEnries = 0;
     table = std::vector<CacheEntry>(PRIMES[sizeIndex], CacheEntry());
     countHits = 0;

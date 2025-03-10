@@ -361,6 +361,14 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
             // more operations, TBD
         }
     }
+    // reordering
+    uint16_t m1, m2;
+    m1 = e1.getNodeLevel();
+    m2 = e2.getNodeLevel();
+    if (m1<m2) {
+        SWAP(e1, e2);
+        SWAP(m1, m2);
+    }
     // Base case 3: one edge is constant ONE edge
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "checking base case 3\n";
@@ -402,72 +410,152 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         }
     }
 
-    uint16_t m1, m2;
-    m1 = e1.getNodeLevel();
-    m2 = e2.getNodeLevel();
-    // ordering
-    if (m1<m2) {
-        SWAP(e1, e2);
-        SWAP(m1, m2);
-    }
-
     // check cache here
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "checking cache\n";
 #endif
-    if (cache.check(lvl, e1, e2, ans)) return ans;
+    if (cache.check(lvl, e1, e2, ans) && !resForest->getSetting().isRelation()) {
+        return ans;
+    } else if (cache.check(m1, e1, e2, ans) && resForest->getSetting().isRelation()) {
+        EdgeLabel root = 0;
+        if (e1.getRule() == e2.getRule()) {
+            packRule(root, e1.getRule());
+            ans = resForest->mergeEdge(lvl, m1, root, ans);
+            return ans;
+        } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
+            // assuming I1 is not considered, TBD
+            if (lvl-m1 == 0) {
+                packRule(root, RULE_X);
+            } else {
+                packRule(root, RULE_I0);
+            }
+            ans = resForest->mergeEdge(lvl, m1, root, ans);
+            return ans;
+        } else {
+            // for operation like UNION
+            packRule(root, RULE_X);
+            std::vector<Edge> tmp(4);
+            if (isRuleI(e1.getRule())) {
+                tmp[1] = e2;
+                tmp[2] = e2;
+            } else {
+                tmp[1] = e1;
+                tmp[2] = e1;
+            }
+            tmp[1].setRule(RULE_X);
+            tmp[2].setRule(RULE_X);
+            for (uint16_t k=m1+1; k<=lvl; k++) {
+                tmp[0] = ans;
+                tmp[3] = ans;
+                ans = resForest->reduceEdge(k, root, k, tmp);
+            }
+            return ans;
+        }
+    }
 
+    // Here means we can not find the result in cache, computation is needed
     // Case that edge1 is a short edge
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "check if recursive computing\n";
 #endif
     if (m1 == lvl) {
-        Edge x1, y1, x2, y2;
-        x1 = resForest->cofact(lvl, e1, 0);
-        y1 = resForest->cofact(lvl, e1, 1);
-        x2 = resForest->cofact(lvl, e2, 0);
-        y2 = resForest->cofact(lvl, e2, 1);
-        std::vector<Edge> child(2);
-        child[0] = computeElmtWise(lvl-1, x1, x2);
-        child[1] = computeElmtWise(lvl-1, y1, y2);
+        std::vector<Edge> child1, child2, tmp;
+        if (resForest->getSetting().isRelation()) {
+            child1 = std::vector<Edge>(4);
+            child2 = std::vector<Edge>(4);
+            tmp = std::vector<Edge>(4);
+        } else {
+            child1 = std::vector<Edge>(2);
+            child2 = std::vector<Edge>(2);
+            tmp = std::vector<Edge>(2);
+        }
+        for (char i=0; i<(char)child1.size(); i++) {
+            child1[i] = resForest->cofact(lvl, e1, i);
+            child2[i] = resForest->cofact(lvl, e2, i);
+            tmp[i] = computeElmtWise(lvl-1, child1[i], child2[i]);
+        }
         EdgeLabel root = 0;
         packRule(root, RULE_X);
-        ans = resForest->reduceEdge(lvl, root, lvl, child);
-
+        // std::cout << "reduce edge start\n";
+        ans = resForest->reduceEdge(lvl, root, lvl, tmp);
+        // std::cout << "reduce edge done\n";
         // save to cache
         cache.add(lvl, e1, e2, ans);
         return ans;
     }
 
-    // Here we have m1>=m2, it's time to decide pattern types and use pattern operations
+    // Here we have lvl>m1>=m2
+    if (!resForest->getSetting().isRelation()) {
+        // For BDDs, it's time to decide pattern types and use pattern operations
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "patterns computing\n";
 #endif
-    char t1, t2;
-    t1 = rulePattern(e1.getRule());
-    t2 = rulePattern(e2.getRule());
-    if (t1 == 'L') {
-        if (t2 == 'L' || t2 == 'U') {
-            ans = operateLL(lvl, e1, e2);
+        char t1, t2;
+        t1 = rulePattern(e1.getRule());
+        t2 = rulePattern(e2.getRule());
+        if (t1 == 'L') {
+            if (t2 == 'L' || t2 == 'U') {
+                ans = operateLL(lvl, e1, e2);
+            } else {
+                ans = operateLH(lvl, e1, e2);
+            }
+        } else if (t1 == 'H') {
+            if (t2 == 'H' || t2 == 'U') {
+                ans = operateHH(lvl, e1, e2);
+            } else {
+                ans = operateLH(lvl, e2, e1);
+            }
         } else {
-            ans = operateLH(lvl, e1, e2);
+            if (t2 == 'L' || t2 == 'U') {
+                ans = operateLL(lvl, e1, e2);
+            } else {
+                ans = operateHH(lvl, e1, e2);
+            }
         }
-    } else if (t1 == 'H') {
-        if (t2 == 'H' || t2 == 'U') {
-            ans = operateHH(lvl, e1, e2);
-        } else {
-            ans = operateLH(lvl, e2, e1);
-        }
+        // save cache
+        cache.add(lvl, e1, e2, ans);
+        return ans;
     } else {
-        if (t2 == 'L' || t2 == 'U') {
-            ans = operateLL(lvl, e1, e2);
-        } else {
-            ans = operateHH(lvl, e1, e2);
+        // For MXDs, recursively compute the bottom part, then cache and merge
+        std::vector<Edge> child1(4), child2(4), tmp(4);
+        for (char i=0; i<(char)child1.size(); i++) {
+            child1[i] = resForest->cofact(lvl, e1, i);
+            child2[i] = resForest->cofact(lvl, e2, i);
+            tmp[i] = computeElmtWise(m1-1, child1[i], child2[i]);
         }
+        EdgeLabel root = 0;
+        packRule(root, RULE_X);
+        ans = resForest->reduceEdge(m1, root, m1, tmp);
+        // save to cache
+        cache.add(m1, e1, e2, ans);
+        // merge edge
+        if (e1.getRule() == e2.getRule()) {
+            packRule(root, e1.getRule());
+            ans = resForest->mergeEdge(lvl, m1, root, ans);
+        } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
+            // assuming I1 is not considered, TBD
+            packRule(root, RULE_I0);
+            ans = resForest->mergeEdge(lvl, m1, root, ans);
+        } else {
+            // for operation like UNION
+            packRule(root, RULE_X);
+            if (isRuleI(e1.getRule())) {
+                tmp[1] = e2;
+                tmp[2] = e2;
+            } else {
+                tmp[1] = e1;
+                tmp[2] = e1;
+            }
+            tmp[1].setRule(RULE_X);
+            tmp[2].setRule(RULE_X);
+            for (uint16_t k=m1+1; k<=lvl; k++) {
+                tmp[0] = ans;
+                tmp[3] = ans;
+                ans = resForest->reduceEdge(k, root, k, tmp);
+            }
+        }
+        return ans;
     }
-    // save cache
-    cache.add(lvl, e1, e2, ans);
-    return ans;
 }
 
 Edge BinaryOperation::computeUNION(const uint16_t lvl, const Edge& source1, const Edge& source2)
