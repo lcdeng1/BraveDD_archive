@@ -145,7 +145,7 @@ Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
         ans = targetForest->reduceEdge(lvl, label, source.getNodeLevel(), childEdges, source.getValue());
     }
     // cache
-    cache.add(lvl, source, ans);    // interface change, TBD
+    cache.add(lvl, source, ans);
     return ans;
 }
 
@@ -552,9 +552,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         }
         EdgeLabel root = 0;
         packRule(root, RULE_X);
-        // std::cout << "reduce edge start\n";
         ans = resForest->reduceEdge(lvl, root, lvl, tmp);
-        // std::cout << "reduce edge done\n";
         // save to cache
         cache.add(lvl, e1, e2, ans);
         return ans;
@@ -595,8 +593,8 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         // For MXDs, recursively compute the bottom part, then cache and merge
         std::vector<Edge> child1(4), child2(4), tmp(4);
         for (char i=0; i<(char)child1.size(); i++) {
-            child1[i] = resForest->cofact(lvl, e1, i);
-            child2[i] = resForest->cofact(lvl, e2, i);
+            child1[i] = resForest->cofact(m1, e1, i);
+            child2[i] = resForest->cofact(m1, e2, i);
             tmp[i] = computeElmtWise(m1-1, child1[i], child2[i]);
         }
         EdgeLabel root = 0;
