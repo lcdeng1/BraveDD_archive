@@ -71,6 +71,7 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         addReductionRule(RULE_X);
         addReductionRule(RULE_EL0);
         addReductionRule(RULE_EH0);
+        mergeType = PUSH_UP;
         name = "ESRBDD";
     } else if (type == PredefForest::FBMXD) {
         // setting for FBMxD
@@ -129,6 +130,7 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         addReductionRule(RULE_X);
         addReductionRule(RULE_EL0);
         addReductionRule(RULE_EH0);
+        mergeType = PUSH_UP;
         name = "ESRBDD";
     } else if (bddLower == "evbdd" || bddLower == "ev+bdd") {
         // setting for EV+BDD
