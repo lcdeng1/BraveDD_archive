@@ -59,7 +59,7 @@ void UnaryOperation::compute(const Func& source, Func& target)
     if (opType == UnaryOperationType::UOP_COMPLEMENT) {
         // target forest allows complement flag
         if ((targetForest->getSetting().getCompType() != NO_COMP)
-        && (targetForest->getSetting().getEncodeMechanism() == TERMINAL)) {
+            && (targetForest->getSetting().getEncodeMechanism() == TERMINAL)) {
             ans.complement();
             // normalize edge
             if (!targetForest->getSetting().hasReductionRule(ans.getRule())) {
@@ -76,13 +76,16 @@ void UnaryOperation::compute(const Func& source, Func& target)
     target.setEdge(ans);
     // other info TBD
 }
+
 void UnaryOperation::compute(const Func& source, long& target)
 {
-    if (!checkForestCompatibility()) {
-        throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
+    uint16_t numVars = sourceForest->getSetting().getNumVars();
+    if (opType == UnaryOperationType::UOP_CARDINALITY) {
+        target = computeCARD(numVars, source.getEdge());
     }
     // TBD
 }
+
 void UnaryOperation::compute(const Func& source, double& target)
 {
     if (!checkForestCompatibility()) {
@@ -90,12 +93,14 @@ void UnaryOperation::compute(const Func& source, double& target)
     }
     // TBD
 }
+
 bool UnaryOperation::checkForestCompatibility() const
 {
     bool ans = 1;
     // TBD
     return ans;
 }
+
 Edge UnaryOperation::computeCOPY(const uint16_t lvl, const Edge& source)
 {
     // Direct return if the target forest is the source forest
@@ -110,6 +115,7 @@ Edge UnaryOperation::computeCOPY(const uint16_t lvl, const Edge& source)
     //TBD
     return ans;
 }
+
 Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
 {
     /* Assuming this is within the same target forest
@@ -123,7 +129,7 @@ Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
         return targetForest->normalizeEdge(lvl, ans);
     } else {
         // check cache
-        if (cache.check(lvl, source, source, ans)) return ans;  // interface change, TBD
+        if (cache.check(lvl, source, ans)) return ans;
         std::vector<Edge> childEdges;
         if (targetForest->getSetting().isRelation()) {
             childEdges = std::vector<Edge>(4);
@@ -139,8 +145,79 @@ Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
         ans = targetForest->reduceEdge(lvl, label, source.getNodeLevel(), childEdges, source.getValue());
     }
     // cache
-    cache.add(lvl, source, source, ans);    // interface change, TBD
+    cache.add(lvl, source, ans);    // interface change, TBD
     return ans;
+}
+
+long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
+{
+    // base cases:
+    if (lvl == 0) {
+        if (sourceForest->getSetting().getEncodeMechanism() == TERMINAL) {
+            return source.getComp() ^ isTerminalOne(source.getEdgeHandle());
+            // other value TBD
+        } // other encodings TBD
+    }
+    if (source.getNodeLevel() == 0) {
+        if (sourceForest->getSetting().getEncodeMechanism() == TERMINAL) {
+            if (source.isConstantZero()) {
+                return 0;
+            } else if (source.isConstantOne()) {
+                return (sourceForest->getSetting().isRelation()) ? (0x01 << (2*lvl)) : (0x01 << lvl);
+            } else if ((source.getRule() == RULE_EL1) || (source.getRule() == RULE_EH1)
+                        || (source.getRule() == RULE_AH0) || (source.getRule() == RULE_AL0)) {
+                return (0x01 << lvl) - 1;
+            } else if ((source.getRule() == RULE_EL0) || (source.getRule() == RULE_EH0)
+                        || (source.getRule() == RULE_AH1) || (source.getRule() == RULE_AL1)) {
+                return 1;
+            } else if (source.getRule() == RULE_I0) {
+                return 0x01 << lvl;
+            } else if (source.getRule() == RULE_I1) {
+                return (0x01 << (2*lvl)) - (0x01 << lvl);
+            }
+        }
+    }
+    // check the result of the target node
+    Edge cacheEdge = source;
+    cacheEdge.setRule(RULE_X);
+    long num = 0;
+    if (!cache.check(source.getNodeLevel(), cacheEdge, num)) {
+        // compute recursively
+        std::vector<Edge> child;
+        if (sourceForest->getSetting().isRelation()) {
+            child = std::vector<Edge>(4);
+        } else {
+            child = std::vector<Edge>(2);
+        }
+        long newNum = 0;
+        for (char i=0; i<(char)child.size(); i++) {
+            child[i] = sourceForest->cofact(source.getNodeLevel(), source, i);
+            newNum += computeCARD(source.getNodeLevel()-1, child[i]);
+        }
+        num = newNum;
+        // save to the cache
+        std::cout << "save to cache: " << newNum << std::endl;
+        cache.add(source.getNodeLevel(), cacheEdge, newNum);
+    }
+    // consider the incoming edge rule
+    int multiplier = 1;
+    int adder = 0;
+    if (source.getRule() == RULE_X) {
+        multiplier = (sourceForest->getSetting().isRelation()) ? (0x01 << (2*(lvl-source.getNodeLevel()))) : (0x01 << (lvl-source.getNodeLevel()));
+    } else if ((source.getRule() == RULE_EL1) || (source.getRule() == RULE_EH1)) {
+        adder = (0x01 << lvl) - (0x01 << source.getNodeLevel());
+    } else if ((source.getRule() == RULE_AL0) || (source.getRule() == RULE_AH0)) {
+        multiplier = (0x01 << (lvl - source.getNodeLevel())) - 1;
+    } else if ((source.getRule() == RULE_AL1) || (source.getRule() == RULE_AH1)) {
+        multiplier = (0x01 << (lvl - source.getNodeLevel())) - 1;
+        adder = 0x01 << source.getNodeLevel();
+    } else if (source.getRule() == RULE_I0) {
+        multiplier = 0x01 << (lvl - source.getNodeLevel());
+    } else if (source.getRule() == RULE_I1) {
+        multiplier = 0x01 << (lvl - source.getNodeLevel());
+        adder = (0x01 << (2*(lvl-source.getNodeLevel()))) - (0x01 << (lvl-source.getNodeLevel()));
+    }
+    return multiplier * num + adder;
 }
 
 
@@ -294,7 +371,7 @@ void BinaryOperation::compute(const Func& source1, const Func& source2, Func& re
     }
     // passing result
     res.setEdge(ans);
-    cache.reportStat(std::cout);
+    // cache.reportStat(std::cout);
 }
 
 void BinaryOperation::compute(const Func& source1, const ExplictFunc source2, Func& res)
