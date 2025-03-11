@@ -459,6 +459,7 @@ class BRAVE_DD::Edge {
                 packSwap(handle, swap);
             }
         }
+        inline void setValue(Value v) {value = v;}
         inline void setLevel(uint16_t lvl) {packLevel(handle, lvl);}
 
         // unpack the x/y part of a long edge, only be used for BDDs edge
