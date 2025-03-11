@@ -196,7 +196,6 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
         }
         num = newNum;
         // save to the cache
-        std::cout << "save to cache: " << newNum << std::endl;
         cache.add(source.getNodeLevel(), cacheEdge, newNum);
     }
     // consider the incoming edge rule
