@@ -147,6 +147,7 @@ int main(int argc, const char** argv)
     for (int i=0; i<N; i++) {
         for (int j=0; j<N; j++) {
             board[i][j].variable(i * N + j + 1);
+            forest->registerFunc(board[i][j]); // register function
         }
     }
 
@@ -156,6 +157,14 @@ int main(int argc, const char** argv)
     for (int i=0; i<N; i++) {
         solution &= rowConstraint(board, i);
         solution &= colConstraint(board, i);
+        // mark nodes and GC
+        forest->registerFunc(solution);
+        forest->markAllFuncs();
+        std::cout << "GC " << i << std::endl;
+        forest->markSweep();
+
+        // deregister this func
+        forest->deregisterFunc(solution);
     }
     solution &= diagConstraint(board);
 
@@ -167,6 +176,7 @@ int main(int argc, const char** argv)
     long num;
     apply(CARDINALITY, solution, num);
     std::cout << "Number of solutions: " << num << std::endl;
+    std::cout << "Number of nodes: " << forest->getNodeManUsed(solution) << std::endl;
 
     /* delete Forest */
     delete forest;
