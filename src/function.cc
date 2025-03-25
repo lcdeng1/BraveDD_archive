@@ -90,7 +90,30 @@ void Func::constant(SpecialValue val)
 /* For dimention of 2 (Relation) */
 void Func::identity(std::vector<bool> dependance)
 {
-    // TBD
+    uint16_t N = parent->getSetting().getNumVars();
+    uint16_t top = 0;
+    std::vector<Edge> child(4);
+    Edge reduced;
+    reduced.handle = makeTerminal(1);
+    if ((parent->getSetting().getValType() == FLOAT) || (parent->getSetting().getValType() == DOUBLE)) {
+        reduced.handle = makeTerminal(1.0f);
+    }
+    reduced.setRule(RULE_I0);
+    EdgeLabel root  = 0;
+    packRule(root, RULE_I0);
+    for (uint16_t k=1; k<=N; k++) {
+        if (dependance[k] == 1) {
+            reduced = parent->mergeEdge(k-1, top, root, reduced);
+            for (size_t i=0; i<child.size(); i++) {
+                child[i] = reduced;
+            }
+            reduced = parent->reduceEdge(k, root, k, child);
+            top = k;
+        } else {
+            continue;
+        }
+    }
+    edge = parent->mergeEdge(N, top, root, reduced);
 }
 /* For dimention of 1 (Set) */
 void Func::variable(uint16_t lvl)
