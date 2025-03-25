@@ -492,7 +492,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
             ans = resForest->normalizeEdge(lvl, ans);
             return ans;
         } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-            return (e1.isConstantOne()) ? e2 : e1;
+            return resForest->normalizeEdge(lvl, (e1.isConstantOne()) ? e2 : e1);
         } else {
             // more operations, TBD
         }
@@ -503,7 +503,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
 #endif
     if (e1.isConstantZero() || e2.isConstantZero()) {
         if (opType == BinaryOperationType::BOP_UNION) {
-            return (e1.isConstantZero()) ? e2 : e1;
+            return resForest->normalizeEdge(lvl, (e1.isConstantZero()) ? e2 : e1);
         } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
             EdgeHandle constant = makeTerminal(INT, 0);
             if (resForest->getSetting().getValType() == FLOAT) {
