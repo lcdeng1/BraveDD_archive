@@ -262,7 +262,8 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
         bool isTermOne = isTerminalOne(normalized.handle);
         bool isTermZero = isTerminalZero(normalized.handle);
         if (((rule != RULE_X) && (hasRuleTerminalOne(rule) == (normalized.getComp()^isTermOne)) && (isTermOne || isTermZero))
-            || ((rule == RULE_X) && (level - targetLvl > 0))) {
+            || ((rule == RULE_X) && (level - targetLvl > 0))
+            || (level - targetLvl == 0)) {
             // it should be a long X anyway
             normalized.setRule(RULE_X);
             if (!setting.hasReductionRule(RULE_X) && (level - targetLvl > 0)) {
