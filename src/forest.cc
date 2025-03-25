@@ -962,6 +962,20 @@ Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const 
     return reduced;
 }
 
+void Forest::markSweep()
+{
+    // sweep unique table
+    uniqueTable->sweep();
+    // sweep computing table (cache) related to this forest
+    UOPs.sweepCache(this);
+    BOPs.sweepCache(this);
+
+    // sweep
+    nodeMan->sweep();
+    // unmark
+    unmark();
+}
+
 void Forest::reportNodesNum(std::ostream& out) const
 {
     uint64_t total = 0;
