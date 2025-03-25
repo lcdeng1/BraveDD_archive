@@ -18,16 +18,16 @@ Func::Func(Forest* f)
 {
     parent = f;
     name = "";
-    prevFunc = 0;
-    nextFunc = 0;
+    // prevFunc = 0;
+    // nextFunc = 0;
 }
 Func::Func(Forest* f, const Edge& e)
 :edge(e)
 {
     parent = f;
     name = "";
-    prevFunc = 0;
-    nextFunc = 0;
+    // prevFunc = 0;
+    // nextFunc = 0;
 }
 Func::~Func()
 {
@@ -96,6 +96,7 @@ void Func::identity(std::vector<bool> dependance)
 void Func::variable(uint16_t lvl)
 {
     std::vector<Edge> child(2);
+    // edge valued TBD
     child[0].handle = makeTerminal(INT, 0);
     child[1].handle = makeTerminal(INT, 1);
     if ((parent->getSetting().getValType() == FLOAT) || (parent->getSetting().getValType() == DOUBLE)) {
