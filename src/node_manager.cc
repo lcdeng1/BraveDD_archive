@@ -66,6 +66,15 @@ Node& NodeManager::SubManager::getNodeFromHandle(const NodeHandle h)
     return nodes[h];
 }
 
+uint32_t NodeManager::SubManager::getNumMarked() const
+{
+    uint32_t num = 0;
+    for (uint32_t i=firstUnalloc-1; i>0; i--) {
+        if (nodes[i].isMarked()) num++;
+    }
+    return num;
+}
+
 void NodeManager::SubManager::expand()
 {
     // Check if we can enlarge
@@ -87,14 +96,17 @@ void NodeManager::SubManager::expand()
 
 void NodeManager::SubManager::shrink()
 {
+    uint32_t newSize = 1;
     sizeIndex--;
-    uint32_t newSize = PRIMES[sizeIndex] + 1;
+    if (sizeIndex >= 0) newSize = PRIMES[sizeIndex] + 1;
     nodes.resize(newSize, Node(parent->nodeSize));
+    nodes.shrink_to_fit();
     numFrees -= (PRIMES[sizeIndex+1] + 1 - newSize);
 }
 
 void NodeManager::SubManager::sweep()
 {
+    if (firstUnalloc == 1) return;
     /* Expand the unallocated portion as much as we  can */
     while (firstUnalloc) {
         if (nodes[firstUnalloc-1].isMarked()) {
@@ -105,9 +117,10 @@ void NodeManager::SubManager::sweep()
     }
     numFrees = ((PRIMES[sizeIndex]>UINT32_MAX)? UINT32_MAX:PRIMES[sizeIndex]) + 1 - firstUnalloc;
     /* Check if we can shrink */
-    if (firstUnalloc < PRIMES[sizeIndex-1]) {
-        shrink();
-    }
+    // TBD
+    // if (firstUnalloc < PRIMES[sizeIndex-1]) {
+    //     shrink();
+    // }
     /* Rebuild the free list, by scanning all nodes backwards.
        Unmarked nodes are added to the list. */
     freeList = 0;
@@ -155,7 +168,7 @@ void NodeManager::sweep(uint16_t lvl)
 
 void NodeManager::sweep()
 {
-    for (uint16_t k=0; k<parent->getSetting().getNumVars(); k++) {
+    for (uint16_t k=1; k<=parent->getSetting().getNumVars(); k++) {
         sweep(k);
     }
 }

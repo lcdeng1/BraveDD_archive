@@ -64,6 +64,7 @@ class BRAVE_DD::NodeManager {
 
     inline uint32_t numUsed(uint16_t lvl) const { return PRIMES[chunks[lvl-1].sizeIndex] - chunks[lvl-1].numFrees; }
     inline uint32_t numAlloc(uint16_t lvl) const { return chunks[lvl-1].firstUnalloc; }
+    inline uint32_t numMarked(uint16_t lvl) const { return chunks[lvl-1].getNumMarked(); }
 
     /*-------------------------------------------------------------*/
     private:
@@ -80,6 +81,9 @@ class BRAVE_DD::NodeManager {
             NodeHandle getFreeNodeHandle(const Node& node);
             /// Find the node corresponding to a node handle
             Node& getNodeFromHandle(const NodeHandle h);
+
+            /// Get the number of marked nodes
+            uint32_t getNumMarked() const;
 
             /// Expand the nodes to next size (if possible)
             void expand();
