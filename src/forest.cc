@@ -177,8 +177,8 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
     ReductionRule rule = edge.getRule();
     bool comp = edge.getComp();
     uint16_t targetLvl = edge.getNodeLevel();
-    /* Case 0: short edge to nonterminal */
-    if ((level == targetLvl) && (level > 0)) {
+    /* Case 0: short edge to nonterminal node */
+    if ((level == targetLvl) && (targetLvl > 0)) {
         normalized.setRule(RULE_X);
         return normalized;
     }
@@ -725,13 +725,13 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
     *       2. Incoming edge rule is long EL, edge "reduced" rule is long EL.
     *       3. Incoming edge rule is long EH, edge "reduced" rule is long EH.
     *       4. Incoming edge rule is long I, edge "reduced" rule is long I.
-    *       5. Incoming edge rule is short N, edge "reduced" rule is not short N.
+    *       5. Incoming edge rule is short N, edge "reduced" rule is any rule.
     *       
     *       The "merged" edge is set to be the "reduced" edge.
     * --------------------------------------------------------------------------------------------*/
     if (((incomingRule == reducedRule) && (incomingSkip > 0) && (reducedSkip > 0)
             && (isRuleEL(reducedRule) || isRuleEH(reducedRule) || isRuleI(reducedRule) || (reducedRule == RULE_X)))
-        || ((incomingRule == RULE_X) && (incomingSkip == 0) && (reducedSkip > 0))) {
+        || ((incomingSkip == 0) && (reducedSkip >= 0))) {
         merged = reduced;
         return normalizeEdge(beginLevel, merged);
     }
@@ -743,7 +743,7 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
     *      The edge "merged" rule MAY be set to be the incoming edge rule, while the swap bit, complement bit,
     *      target are set to be edge "reduced"'s. Or the edge "reduced" should be pushed down.
     * --------------------------------------------------------------------------------------------*/
-    if ((reducedRule == RULE_X) && (reducedSkip == 0)) {
+    if (reducedSkip == 0) {
         if ((mt == PUSH_UP)
             || ((incomingRule == RULE_X) && (incomingSkip == 0))
             || ((incomingRule == RULE_X) && (incomingSkip > 0) && (mt == SHORTEN_X))
