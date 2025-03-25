@@ -48,7 +48,7 @@ BinaryOperation* BRAVE_DD::UNION(Forest* arg1, Forest* arg2, Forest* res)
     BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_UNION, arg1, arg2, res);
     if (bop) return bop;
     bop = new BinaryOperation(BinaryOperationType::BOP_UNION, arg1, arg2, res);
-    return bop;
+    return BOPs.add(bop);
 }
 
 BinaryOperation* BRAVE_DD::INTERSECTION(Forest* arg1, Forest* arg2, Forest* res)
@@ -59,7 +59,7 @@ BinaryOperation* BRAVE_DD::INTERSECTION(Forest* arg1, Forest* arg2, Forest* res)
     BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_INTERSECTION, arg1, arg2, res);
     if (bop) return bop;
     bop = new BinaryOperation(BinaryOperationType::BOP_INTERSECTION, arg1, arg2, res);
-    return bop;
+    return BOPs.add(bop);
 }
 
 BinaryOperation* BRAVE_DD::PRE_IMAGE(Forest* arg1, Forest* arg2, Forest* res)
@@ -68,7 +68,7 @@ BinaryOperation* BRAVE_DD::PRE_IMAGE(Forest* arg1, Forest* arg2, Forest* res)
     BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_PREIMAGE, arg1, arg2, res);
     if (bop) return bop;
     bop = new BinaryOperation(BinaryOperationType::BOP_PREIMAGE, arg1, arg2, res);
-    return bop;
+    return BOPs.add(bop);
 }
 
 BinaryOperation* BRAVE_DD::POST_IMAGE(Forest* arg1, Forest* arg2, Forest* res)
@@ -77,5 +77,5 @@ BinaryOperation* BRAVE_DD::POST_IMAGE(Forest* arg1, Forest* arg2, Forest* res)
     BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_POSTIMAGE, arg1, arg2, res);
     if (bop) return bop;
     bop = new BinaryOperation(BinaryOperationType::BOP_POSTIMAGE, arg1, arg2, res);
-    return bop;
+    return BOPs.add(bop);
 }
