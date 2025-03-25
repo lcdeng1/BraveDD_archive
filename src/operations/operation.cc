@@ -142,7 +142,7 @@ Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
         }
         EdgeLabel label = 0;
         packRule(label, compRule(source.getRule()));
-        ans = targetForest->reduceEdge(lvl, label, source.getNodeLevel(), childEdges, source.getValue());
+        ans = targetForest->reduceEdge(lvl, label, source.getNodeLevel(), childEdges);
     }
     // cache
     cache.add(lvl, source, ans);
