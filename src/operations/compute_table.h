@@ -115,7 +115,8 @@ class BRAVE_DD::ComputeTable {
     void add(const uint16_t lvl, const Edge& a, const Edge& ans);
     void add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& ans);
 
-    void sweep();
+    // role: 0 for ans; 1 for key0; 2 for key1
+    void sweep(Forest* forest, int role);
 
     void reportStat(std::ostream& out, int format=0) const;
 

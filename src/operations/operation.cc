@@ -153,17 +153,17 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
 {
     // base cases:
     if (lvl == 0) {
-        if (sourceForest->getSetting().getEncodeMechanism() == TERMINAL) {
+        if (targetForest->getSetting().getEncodeMechanism() == TERMINAL) {
             return source.getComp() ^ isTerminalOne(source.getEdgeHandle());
             // other value TBD
         } // other encodings TBD
     }
     if (source.getNodeLevel() == 0) {
-        if (sourceForest->getSetting().getEncodeMechanism() == TERMINAL) {
+        if (targetForest->getSetting().getEncodeMechanism() == TERMINAL) {
             if (source.isConstantZero()) {
                 return 0;
             } else if (source.isConstantOne()) {
-                return (sourceForest->getSetting().isRelation()) ? (0x01 << (2*lvl)) : (0x01 << lvl);
+                return (targetForest->getSetting().isRelation()) ? (0x01 << (2*lvl)) : (0x01 << lvl);
             } else if ((source.getRule() == RULE_EL1) || (source.getRule() == RULE_EH1)
                         || (source.getRule() == RULE_AH0) || (source.getRule() == RULE_AL0)) {
                 return (0x01 << lvl) - 1;
@@ -184,14 +184,14 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
     if (!cache.check(source.getNodeLevel(), cacheEdge, num)) {
         // compute recursively
         std::vector<Edge> child;
-        if (sourceForest->getSetting().isRelation()) {
+        if (targetForest->getSetting().isRelation()) {
             child = std::vector<Edge>(4);
         } else {
             child = std::vector<Edge>(2);
         }
         long newNum = 0;
         for (char i=0; i<(char)child.size(); i++) {
-            child[i] = sourceForest->cofact(source.getNodeLevel(), source, i);
+            child[i] = targetForest->cofact(source.getNodeLevel(), source, i);
             newNum += computeCARD(source.getNodeLevel()-1, child[i]);
         }
         num = newNum;
@@ -202,7 +202,7 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
     int multiplier = 1;
     int adder = 0;
     if (source.getRule() == RULE_X) {
-        multiplier = (sourceForest->getSetting().isRelation()) ? (0x01 << (2*(lvl-source.getNodeLevel()))) : (0x01 << (lvl-source.getNodeLevel()));
+        multiplier = (targetForest->getSetting().isRelation()) ? (0x01 << (2*(lvl-source.getNodeLevel()))) : (0x01 << (lvl-source.getNodeLevel()));
     } else if ((source.getRule() == RULE_EL1) || (source.getRule() == RULE_EH1)) {
         adder = (0x01 << lvl) - (0x01 << source.getNodeLevel());
     } else if ((source.getRule() == RULE_AL0) || (source.getRule() == RULE_AH0)) {
@@ -268,7 +268,7 @@ UnaryOperation* UnaryList::mtfUnary(const UnaryOperationType opT, const Forest* 
 
 void UnaryList::searchRemove(UnaryOperation* uop)
 {
-    if (!front) return;
+    if (!front || !uop) return;
     UnaryOperation* prev = front;
     UnaryOperation* curr = front->next;
     while (curr) {
@@ -284,7 +284,7 @@ void UnaryList::searchRemove(UnaryOperation* uop)
 
 void UnaryList::searchRemove(Forest* forest)
 {
-    if (!front) return;
+    if (!front || !forest) return;
     // check front first
     while (front && ((front->sourceForest == forest) || (front->targetForest == forest))) {
         UnaryOperation* remove = front;
@@ -300,6 +300,38 @@ void UnaryList::searchRemove(Forest* forest)
             delete remove;
         } else {
             curr = curr->next;
+        }
+    }
+}
+
+void UnaryList::searchSweepCache(Forest* forest)
+{
+    if (!front || !forest) return;
+    UnaryOperation* curr = front;
+    bool isSource = curr->sourceForest == forest;
+    bool isTarget = curr->targetForest == forest;
+    while (curr) {
+        if (isSource || isTarget) {
+            // sweep cache
+            // if opType is COPY, check if it's source or target forest
+            if (curr->opType == UnaryOperationType::UOP_COPY) {
+                curr->cache.sweep(forest, (isSource) ? 1 : 0);
+            } else if (curr->opType == UnaryOperationType::UOP_COMPLEMENT) {
+                if (isTarget) {
+                    curr->cache.sweep(forest, 0);
+                    curr->cache.sweep(forest, 1);
+                }
+            } else if (curr->opType == UnaryOperationType::UOP_CARDINALITY) {
+                curr->cache.sweep(forest, 1);
+            } else {
+                // other operations, TBD
+                std::cout << "other operation not implemented" << std::endl;
+            }
+        }
+        curr = curr->next;
+        if (curr) {
+            isSource = curr->sourceForest == forest;
+            isTarget = curr->targetForest == forest;
         }
     }
 }
@@ -1200,6 +1232,44 @@ void BinaryList::searchRemove(Forest* forest)
             delete remove;
         } else {
             curr = curr->next;
+        }
+    }
+}
+
+void BinaryList::searchSweepCache(Forest* forest)
+{
+    if (!front || !forest) return;
+    BinaryOperation* curr = front;
+    bool isSource1 = curr->source1Forest == forest;
+    bool isSource2 = curr->source2Forest == forest;
+    bool isRes = curr->resForest == forest;
+    while (curr) {
+        if (isSource1 || isSource2 || isRes) {
+            // sweep cache
+            if ((curr->opType == BinaryOperationType::BOP_PREIMAGE) || (curr->opType == BinaryOperationType::BOP_POSTIMAGE)) {
+                if (isSource1) {
+                    curr->cache.sweep(forest, 0);
+                    curr->cache.sweep(forest, 1);
+                }
+                if (isSource2) {
+                    curr->cache.sweep(forest, 2);
+                }
+
+            } else if ((curr->opType == BinaryOperationType::BOP_UNION)
+                    || (curr->opType == BinaryOperationType::BOP_INTERSECTION)) {
+                if (isRes) {
+                    curr->cache.sweep(forest, 0);
+                    curr->cache.sweep(forest, 1);
+                    curr->cache.sweep(forest, 2);
+                }
+            }
+            // other operations TBD
+        }
+        curr = curr->next;
+        if (curr) {
+            isSource1 = curr->source1Forest == forest;
+            isSource2 = curr->source2Forest == forest;
+            isRes = curr->resForest == forest;
         }
     }
 }

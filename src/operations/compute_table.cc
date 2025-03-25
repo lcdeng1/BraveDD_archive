@@ -190,9 +190,36 @@ void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const E
 #endif
 }
 
-void ComputeTable::sweep()
+void ComputeTable::sweep(Forest* forest, int role)
 {
-    // TBD
+    // role: 0 for ans, 1 for key0, 2 for key1
+    uint16_t lvl = 0;
+    NodeHandle target = 0;
+    for (size_t i=0; i<table.size(); i++) {
+        if (table[i].isInUse) {
+            if (role == 0) {
+                lvl = table[i].res.getNodeLevel();
+                target = table[i].res.getNodeHandle();
+            } else if (role == 1) {
+                lvl = table[i].key[0].getNodeLevel();
+                target = table[i].key[0].getNodeHandle();
+            } else if (role == 2) {
+                lvl = table[i].key[1].getNodeLevel();
+                target = table[i].key[1].getNodeHandle();
+            } else {
+                std::cout << "[BRAVE_DD] ERROR!\t ComputeTable::sweep(): Unknown role value!" << std::endl;
+                exit(0);
+            }
+            // check target node: if marked continue; otherwise, flip Inuse flag
+            if ((lvl > 0) && !forest->getNode(lvl, target).isMarked()) {
+                table[i].isInUse = 0;
+            } else {
+                continue;
+            }
+        } else {
+            continue;
+        }
+    }
 }
 
 void ComputeTable::reportStat(std::ostream& out, int format) const

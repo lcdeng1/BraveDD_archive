@@ -191,11 +191,13 @@ class BRAVE_DD::UnaryList {
         if ((front->opType == opT) && (front->sourceForest == sourceF) && (front->targetType == targetT)) return front;
         return mtfUnary(opT, sourceF, targetT);
     }
+    inline void sweepCache(Forest* forest) { searchSweepCache(forest); }
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
     void searchRemove(UnaryOperation* uop);
     void searchRemove(Forest* forest);
+    void searchSweepCache(Forest* forest);
     UnaryOperation* mtfUnary(const UnaryOperationType opT, const Forest* sourceF, const Forest* targetF);
     UnaryOperation* mtfUnary(const UnaryOperationType opT, const Forest* sourceF, const OpndType targetT);
 
@@ -293,11 +295,14 @@ class BRAVE_DD::BinaryList {
         if ((front->opType == opT) && (front->source1Forest == source1F) && (front->source2Type == source2T) && (front->resForest == resF)) return front;
         return mtfBinary(opT, source1F, source2T, resF);
     }
+    inline void sweepCache(Forest* forest) { searchSweepCache(forest); }
+
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
     void searchRemove(BinaryOperation* bop);
     void searchRemove(Forest* forest);
+    void searchSweepCache(Forest* forest);
     BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const Forest* source2F, const Forest* resF);
     BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const OpndType source2T, const Forest* resF);
 
