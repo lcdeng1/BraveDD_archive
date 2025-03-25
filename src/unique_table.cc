@@ -63,7 +63,7 @@ void UniqueTable::SubTable::sweep()
         prev = 0;
         curr = table[i];
         while (curr) {
-            if (parent->getNode(level, table[0]).isMarked()) {
+            if (parent->getNode(level, curr).isMarked()) {
                 if (prev) {
                     parent->setNodeNext(level, prev, curr);
                 } else {

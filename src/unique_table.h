@@ -79,7 +79,11 @@ class BRAVE_DD::UniqueTable {
 
         /// Remove all unmarked nodes from the unique table
         inline void sweep(uint16_t level) {tables[level-1].sweep();}
-        void sweep();
+        inline void sweep() {
+            for (uint16_t k=0; k<tables.size(); k++) {
+                tables[k].sweep();
+            }
+        }
 
         /// Clear the nodeHanlde items in the table of the given variable level and reset the state.
         inline void clear(int varLvl) {return tables[varLvl-1].clear();}
