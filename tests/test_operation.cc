@@ -154,7 +154,7 @@ bool testOperation(uint16_t num, PredefForest bdd, BinaryOperationType opt)
     f2.setEdge(e2);
     if (opt == BinaryOperationType::BOP_INTERSECTION) {
         res = f1 & f2;
-    } else if (opt == BinaryOperationType::BOP_INTERSECTION) {
+    } else if (opt == BinaryOperationType::BOP_UNION) {
         res = f1 | f2;
     } else {
         std::cout << "Not implemented!" << std::endl;
@@ -255,7 +255,7 @@ int main(int argc, char** argv){
     int TESTS = 1000;
     uint16_t numVals = 10;
     PredefForest bdd = PredefForest::REXBDD;
-    BinaryOperationType opt = BinaryOperationType::BOP_INTERSECTION;
+    BinaryOperationType opt = BinaryOperationType::BOP_UNION;
     if ((argc == 3) || (argc == 4)) {
         bdd = (PredefForest)atoi(argv[1]);
         numVals = atoi(argv[2]);
