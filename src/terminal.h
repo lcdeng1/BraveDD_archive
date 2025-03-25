@@ -141,6 +141,14 @@ namespace BRAVE_DD {
         return makeTerminal(type, static_cast<const void*>(&value));
     }
 
+    static inline EdgeHandle makeTerminal(const int value) {
+        return makeTerminal(INT, value);
+    }
+
+    static inline EdgeHandle makeTerminal(const float value) {
+        return makeTerminal(FLOAT, value);
+    }
+
 }; // end of namespace
 
 #endif
