@@ -863,6 +863,7 @@ Edge BinaryOperation::computeINTERSECTION(const uint16_t lvl, const Edge& source
 #endif
     return ans;
 }
+
 Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
@@ -888,12 +889,12 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
     std::cout << "base case 1\n";
 #endif
         EdgeHandle constant = makeTerminal(INT, 0);
-        if (resForest->getSetting().getValType() == FLOAT) {
+        if (source1Forest->getSetting().getValType() == FLOAT) {
             constant = makeTerminal(FLOAT, 0.0f);
         }
         packRule(constant, RULE_X);
         ans.setEdgeHandle(constant);
-        ans = resForest->normalizeEdge(lvl, ans);
+        ans = source1Forest->normalizeEdge(lvl, ans);
         return ans;
     }
 
@@ -912,12 +913,12 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
     std::cout << "base case 2: redundant\n";
 #endif
             EdgeHandle constant = makeTerminal(INT, 1);
-            if (resForest->getSetting().getValType() == FLOAT) {
+            if (source1Forest->getSetting().getValType() == FLOAT) {
                 constant = makeTerminal(FLOAT, 1.0f);
             }
             packRule(constant, RULE_X);
             ans.setEdgeHandle(constant);
-            ans = resForest->normalizeEdge(lvl, ans);
+            ans = source1Forest->normalizeEdge(lvl, ans);
             return ans;
         }
     }
@@ -936,13 +937,13 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
         // not cached, computing needed
         std::vector<Edge> child(2);
         EdgeHandle constant = makeTerminal(INT, 0);
-        if (resForest->getSetting().getValType() == FLOAT) {
+        if (source1Forest->getSetting().getValType() == FLOAT) {
             constant = makeTerminal(FLOAT, 0.0f);
         }
         packRule(constant, RULE_X);
         for (size_t i=0; i<2; i++) {
             child[i].setEdgeHandle(constant);
-            child[i] = resForest->normalizeEdge(lvl, child[i]);
+            child[i] = source1Forest->normalizeEdge(m-1, child[i]);
         }
         // recursive computing
         Edge sRec, rRec, resRec;
@@ -956,9 +957,9 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
             rRec = source2Forest->cofact(m, r, i);
             resRec = computeIMAGE(m-1, sRec, rRec, isPre);
             // Union of BDDs operation required
-            BinaryOperation* un = BOPs.find(BinaryOperationType::BOP_UNION, resForest, resForest, resForest);
+            BinaryOperation* un = BOPs.find(BinaryOperationType::BOP_UNION, source1Forest, source1Forest, source1Forest);
             if (!un) {
-                un = BOPs.add(new BinaryOperation(BinaryOperationType::BOP_UNION, resForest, resForest, resForest));
+                un = BOPs.add(new BinaryOperation(BinaryOperationType::BOP_UNION, source1Forest, source1Forest, source1Forest));
             }
             child[s1Idx] = un->computeElmtWise(m-1, child[s1Idx], resRec);
 #ifdef BRAVE_DD_OPERATION_TRACE
@@ -969,14 +970,14 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
         }
         EdgeLabel root = 0;
         packRule(root, RULE_X);
-        ans = resForest->reduceEdge(m, root, m, child);
+        ans = source1Forest->reduceEdge(m, root, m, child);
         // cache
         cache.add(m, sCache, rCache, ans);
     }
     // merge with the incoming edge rule
     EdgeLabel incoming = 0;
-    packRule(incoming, (r.getRule() == RULE_I0)?s.getRule():RULE_X);
-    ans = resForest->mergeEdge(lvl, m, incoming, ans);
+    packRule(incoming, (r.getRule() == RULE_I0)?s.getRule():RULE_X);    // TBD for rex
+    ans = source1Forest->mergeEdge(lvl, m, incoming, ans);
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "after " << ((isPre)?"Pre":"Post") << "IMAGE: lvl: " << lvl << "; s: ";
     source1.print(std::cout);
@@ -996,6 +997,7 @@ Edge BinaryOperation::computeIMAGE(const uint16_t lvl, const Edge& source1, cons
 #endif
     return ans;
 }
+
 Edge BinaryOperation::operateLL(const uint16_t lvl, const Edge& e1, const Edge& e2)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
@@ -1025,7 +1027,7 @@ Edge BinaryOperation::operateLL(const uint16_t lvl, const Edge& e1, const Edge& 
         y = computeINTERSECTION(m1, y1, y2);
     }
     // more operations TBD
-    Edge ans = resForest->buildHalf(lvl, m1+1, x, y, 0);
+    Edge ans = resForest->buildHalf(lvl, m1+1, x, y, 1);
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "build Low with x: ";
     x.print(std::cout);
@@ -1039,6 +1041,7 @@ Edge BinaryOperation::operateLL(const uint16_t lvl, const Edge& e1, const Edge& 
     return ans;
 
 }
+
 Edge BinaryOperation::operateHH(const uint16_t lvl, const Edge& e1, const Edge& e2)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
@@ -1081,6 +1084,7 @@ Edge BinaryOperation::operateHH(const uint16_t lvl, const Edge& e1, const Edge& 
     return ans;
 
 }
+
 Edge BinaryOperation::operateLH(const uint16_t lvl, const Edge& e1, const Edge& e2)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
@@ -1152,6 +1156,7 @@ Edge BinaryOperation::operateLH(const uint16_t lvl, const Edge& e1, const Edge& 
 #endif
     return ans;
 }
+
 // ******************************************************************
 // *                                                                *
 // *                       BinaryList  methods                      *
