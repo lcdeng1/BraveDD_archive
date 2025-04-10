@@ -59,8 +59,8 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
 Node& NodeManager::SubManager::getNodeFromHandle(const NodeHandle h)
 {
     if (h>=firstUnalloc) {
-        std::cout << "[BRAVE_DD] ERROR!\t Invalid handle in node submanager; " 
-        << firstUnalloc-1 << "nodes are allocated" << std::endl;
+        std::cout << "[BRAVE_DD] ERROR!\t getNodeFromHandle(): Invalid handle in node submanager; " 
+        << firstUnalloc-1 << " slots are allocated" << std::endl;
         exit(0);
     }
     return nodes[h];
@@ -68,6 +68,7 @@ Node& NodeManager::SubManager::getNodeFromHandle(const NodeHandle h)
 
 uint32_t NodeManager::SubManager::getNumMarked() const
 {
+    if (firstUnalloc <= 1) return 0;
     uint32_t num = 0;
     for (uint32_t i=firstUnalloc-1; i>0; i--) {
         if (nodes[i].isMarked()) num++;
@@ -79,7 +80,7 @@ void NodeManager::SubManager::expand()
 {
     // Check if we can enlarge
     if (PRIMES[sizeIndex] >= UINT32_MAX) {  // MAX of uint32
-        std::cout << "[BRAVE_DD] ERROR!\t Unable to enlarge node submanager!" << std::endl;
+        std::cout << "[BRAVE_DD] ERROR!\t expand(): Unable to enlarge node submanager!" << std::endl;
         exit(0);
     }
     // Enlarge
@@ -108,7 +109,7 @@ void NodeManager::SubManager::sweep()
 {
     if (firstUnalloc == 1) return;
     /* Expand the unallocated portion as much as we  can */
-    while (firstUnalloc) {
+    while (firstUnalloc > 1) {
         if (nodes[firstUnalloc-1].isMarked()) {
             break;
         }
