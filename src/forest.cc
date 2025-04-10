@@ -821,6 +821,12 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
                 && (!isRuleEL(reducedRule) 
                     || (hasRuleTerminalOne(incomingRule) != hasRuleTerminalOne(reducedRule))))) {
         if (mt == PUSH_UP) {
+            // merge a constant edge to terminal
+            if (reduced.isConstantZero() || reduced.isConstantOne()) {
+                if (hasRuleTerminalOne(incomingRule) == reduced.isConstantOne()) {
+                    return reduced;
+                }
+            }
             // push-up one
             bool child = isRuleEH(incomingRule) ? 0 : 1;
             std::vector<Edge> childEdges(2);
@@ -840,6 +846,12 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
         }
     } else if (isRuleAL(incomingRule) || isRuleAH(incomingRule)) {
         if (mt == PUSH_UP) {
+            // merge a constant edge to terminal
+            if (reduced.isConstantZero() || reduced.isConstantOne()) {
+                if (hasRuleTerminalOne(incomingRule) == reduced.isConstantOne()) {
+                    return reduced;
+                }
+            }
             // push-up all
             std::vector<Edge> childEdges(2);
             bool child = (isRuleAL(incomingRule)) ? 0 : 1;
@@ -908,10 +920,10 @@ Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const 
     std::vector<Edge> child = down;
 #ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "reduce edge; beginlvl: "<< beginLevel << "; nodelvl: " << nodeLevel << std::endl;
-    child[0].print(std::cout);
-    std::cout << std::endl;
-    child[1].print(std::cout);
-    std::cout << std::endl;
+    for (size_t i=0; i<child.size(); i++) {
+        child[i].print(std::cout);
+        std::cout << std::endl;
+    }
 #endif
     /* push the flags or value down */
     CompSet ct = setting.getCompType();
@@ -1106,6 +1118,9 @@ void Forest::markNodes(const Edge& edge) const
     char numChild = (setting.isRelation()) ? 4 : 2;
     if (edge.getNodeLevel() > 0) {
         if (!getNode(edge).isMarked()) {
+#ifdef BRAVE_DD_FOREST_TRACE
+    std::cout << "marking node " << edge.getNodeHandle() << " at level " << edge.getNodeLevel() << std::endl;
+#endif
             getNode(edge).mark();
             for (char i=0; i<numChild; i++) {
                 markNodes(getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i));

@@ -296,7 +296,7 @@ class BRAVE_DD::Forest {
      * @brief Get the cofactor (edge) of an edge at level 'lvl' with respective of child 'index'. The operand 'edge'
      * can be a BDD or BMXD edge, and the operand 'index' can be 0-1 for BDD edge or 0-3 for BMXD edge.
      * 
-     * @param lvl 
+     * @param lvl           The parent node level of the cofactor (edge).
      * @param edge 
      * @param index 
      * @return Edge 
