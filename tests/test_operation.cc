@@ -264,8 +264,7 @@ int main(int argc, char** argv){
     
     // forest setting
     ForestSetting setting(bdd, numVals);
-    Forest* forest = new Forest(setting);
-    forest->getSetting().output(std::cout);
+    setting.output(std::cout);
 
     bool isPass = 0;
     // Randomly generate assignments and build two BDDs
@@ -279,6 +278,5 @@ int main(int argc, char** argv){
     } else {
         std::cout << "Test Pass!" << std::endl;
     }
-    delete forest;
     return 0;
 }

@@ -151,7 +151,7 @@ bool testImage(uint16_t num, PredefForest bdd, PredefForest bmxd)
             for (uint16_t k=1; k<=num; k++){
                 std::cout << to[k] << " ";
             }
-            std::cout << "\nvalue shoud be: " << valIntS1 << "; was: " << hasTo << std::endl;
+            std::cout << "\nvalue shoud be: " << hasTo << "; was: " << valIntS1 << std::endl;
 
             std::cout << std::endl;
 
