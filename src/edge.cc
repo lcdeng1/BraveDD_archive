@@ -97,10 +97,14 @@ bool Edge::isComplementTo(const Edge& e) const {
         if ((!isTerminalOne(handle) && !isTerminalZero(handle)) 
             || (!isTerminalOne(e.handle) && !isTerminalZero(e.handle))) {
             std::cout << "[BRAVE_DD] ERROR!\t Edge::isComplementTo(Edge e): Not supportted for terminal value > 1!"<< std::endl;
+            print(std::cout);
+            std::cout << std::endl;
+            e.print(std::cout);
+            std::cout << std::endl;
             exit(0);
         }
         return (((isTerminalOne(handle) ^ getComp()) != (isTerminalOne(e.handle) ^ e.getComp()))
-                && (this->getRule() == e.getRule()));
+                && (this->getRule() == compRule(e.getRule())));
     }
     if ((getNodeLevel() != e.getNodeLevel()) || (getNodeHandle() != e.getNodeHandle())) return false;
     if ((getSwap(0) != e.getSwap(0)) || (getSwap(1) != e.getSwap(1))) return false;
