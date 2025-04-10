@@ -3,8 +3,8 @@
 
 FOREST {
     TYPE RexBDD     // [Required] for predefined type
-    REDUCED true    // [Required] if this is reduced
-    LVLS 5          // [Required] number of levels (variables)
+    REDUCED true    // [Required] true if this is reduced, otherwise false
+    LVLS 5 x 1      // [Required] number of levels (variables)
     RANGE BOOL      // [Required] type of range
     NNUM 6          // [Required] total number of nonterminal nodes
     RNUM 16         // [Required] number of roots
