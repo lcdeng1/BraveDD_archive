@@ -287,17 +287,17 @@ void UnaryList::searchRemove(Forest* forest)
     if (!front || !forest) return;
     // check front first
     while (front && ((front->sourceForest == forest) || (front->targetForest == forest))) {
-        UnaryOperation* remove = front;
+        UnaryOperation* toRemove = front;
         front = front->next;
-        delete remove;
+        delete toRemove;
     }
     // check the remaining
     UnaryOperation* curr = front;
     while (curr && curr->next) {
         if ((curr->next->sourceForest == forest) || (curr->next->targetForest == forest)) {
-            UnaryOperation* remove = curr->next;
+            UnaryOperation* toRemove = curr->next;
             curr->next = curr->next->next;
-            delete remove;
+            delete toRemove;
         } else {
             curr = curr->next;
         }
@@ -1224,17 +1224,17 @@ void BinaryList::searchRemove(Forest* forest)
     if (!front) return;
     // check front first
     while (front && ((front->source1Forest == forest) || (front->source2Forest == forest) || (front->resForest == forest))) {
-        BinaryOperation* remove = front;
+        BinaryOperation* toRemove = front;
         front = front->next;
-        delete remove;
+        delete toRemove;
     }
     // check the remaining
     BinaryOperation* curr = front;
     while (curr && curr->next) {
         if ((curr->next->source1Forest == forest) || (curr->next->source2Forest == forest) || (curr->next->resForest == forest)) {
-            BinaryOperation* remove = curr->next;
+            BinaryOperation* toRemove = curr->next;
             curr->next = curr->next->next;
-            delete remove;
+            delete toRemove;
         } else {
             curr = curr->next;
         }
