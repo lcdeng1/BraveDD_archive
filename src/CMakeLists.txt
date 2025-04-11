@@ -6,7 +6,9 @@ file(GLOB_RECURSE HEADER_FILES "*.h")
 if (MSVC)
   add_compile_options(/W4 /WX)
 else()
-  add_compile_options(-Wall -Wextra -Wshadow -Wunused -Wno-c++11-extensions -Wno-unused-parameter)
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
+    add_compile_options(-Wall -Wextra -Wshadow -Wunused -Wno-c++11-extensions -Wno-unused-parameter)
+  endif()
 endif()
 
 # Create a library target
