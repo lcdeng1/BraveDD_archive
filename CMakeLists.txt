@@ -20,6 +20,8 @@ else()
   add_compile_options(-Wall -Wextra -Wshadow -Wunused -std=c++11)
   if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
     add_compile_options(-Wno-deprecated-copy-with-user-provided-copy -Wno-return-type)
+  else()
+    add_compile_options(-Wno-unused-parameter)
   endif()
 endif()
 
