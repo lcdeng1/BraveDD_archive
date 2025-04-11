@@ -452,11 +452,11 @@ class BRAVE_DD::Edge {
         inline void setEdgeHandle(EdgeHandle edge) {handle = edge;}
         inline void setRule(ReductionRule rule) {packRule(handle, rule);}
         inline void setComp(bool comp) {packComp(handle, comp);}
-        inline void setSwap(bool swap, bool isTo) {
+        inline void setSwap(bool swp, bool isTo) {
             if (isTo) {
-                packSwapTo(handle, swap);
+                packSwapTo(handle, swp);
             } else {
-                packSwap(handle, swap);
+                packSwap(handle, swp);
             }
         }
         inline void setValue(Value v) {value = v;}

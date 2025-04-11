@@ -172,9 +172,9 @@ class BRAVE_DD::UnaryList {
     }
     inline void remove(UnaryOperation* uop) {
         if (front == uop) {
-            UnaryOperation* remove = front;
+            UnaryOperation* toRemove = front;
             front = front->next;
-            delete remove;
+            delete toRemove;
             return;
         }
         searchRemove(uop);
@@ -276,9 +276,9 @@ class BRAVE_DD::BinaryList {
     }
     inline void remove(BinaryOperation* bop) {
         if (front == bop) {
-            BinaryOperation* remove = front;
+            BinaryOperation* toRemove = front;
             front = front->next;
-            delete remove;
+            delete toRemove;
             return;
         }
         searchRemove(bop);
