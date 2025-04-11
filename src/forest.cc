@@ -732,7 +732,7 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
     * --------------------------------------------------------------------------------------------*/
     if (((incomingRule == reducedRule) && (incomingSkip > 0) && (reducedSkip > 0)
             && (isRuleEL(reducedRule) || isRuleEH(reducedRule) || isRuleI(reducedRule) || (reducedRule == RULE_X)))
-        || ((incomingSkip == 0) && (reducedSkip >= 0))) {
+        || (incomingSkip == 0)) {
         merged = reduced;
         return normalizeEdge(beginLevel, merged);
     }

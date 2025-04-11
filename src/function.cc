@@ -301,7 +301,7 @@ Value Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aT
     bool isIdent = 1;
     /* evaluation starting from the target node level */
     uint16_t k = aFrom.size()-1;
-    while (k>=0) {
+    while (true) {
 #ifdef BRAVE_DD_TRACE
         std::cout<<"evaluate k: " << k;
         std::cout<<"; currt: ";
