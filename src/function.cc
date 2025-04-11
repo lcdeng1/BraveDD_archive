@@ -191,7 +191,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
     bool allOne = 1, existOne = 0;
     /* evaluation starting from the target node level */
     uint16_t k = assignment.size()-1;
-    while (k >= 0) {
+    while (true) {
 #ifdef BRAVE_DD_TRACE
         std::cout<<"evaluate k: " << k;
         std::cout<<"; currt: ";
