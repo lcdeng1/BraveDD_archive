@@ -13,7 +13,7 @@ using namespace BRAVE_DD;
 
 ComputeTable::ComputeTable()
 {
-    sizeIndex = 8;
+    sizeIndex = 17;
     numEnries = 0;
     table = std::vector<CacheEntry>(PRIMES[sizeIndex], CacheEntry());
     countHits = 0;
@@ -84,7 +84,7 @@ void ComputeTable::add(const uint16_t lvl, const Edge& a, const long& ans)
 {
     /* Check if we should enlage the table when  */
     uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
-    if ((numEnries > (size / 1.5)) && (numEnries < (uint64_t)0x01 << 60)) {
+    if (((numEnries * 4) > (size * 3)) && (numEnries < (uint64_t)0x01 << 60)) {
         sizeIndex++;
         size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
         enlarge(size);
@@ -105,7 +105,7 @@ void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& ans)
 {
     /* Check if we should enlage the table when  */
     uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
-    if ((numEnries > (size / 1.5)) && (numEnries < (uint64_t)0x01 << 60)) {
+    if (((numEnries * 4) > (size * 3)) && (numEnries < (uint64_t)0x01 << 60)) {
         sizeIndex++;
         size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
         enlarge(size);
@@ -147,7 +147,7 @@ void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const E
 #endif
     /* Check if we should enlage the table when  */
     uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
-    if ((numEnries > (size / 1.5)) && (numEnries < (uint64_t)0x01 << 60)) {
+    if (((numEnries * 4) > (size * 3)) && (numEnries < (uint64_t)0x01 << 60)) {
 #ifdef BRAVE_DD_CACHE_TRACE
     std::cout << "enlarge table: entries = " << numEnries << ", size = " << size << std::endl;
 #endif
@@ -213,6 +213,7 @@ void ComputeTable::sweep(Forest* forest, int role)
             // check target node: if marked continue; otherwise, flip Inuse flag
             if ((lvl > 0) && !forest->getNode(lvl, target).isMarked()) {
                 table[i].isInUse = 0;
+                numEnries--;
             } else {
                 continue;
             }
@@ -240,10 +241,16 @@ void ComputeTable::enlarge(uint64_t newSize)
     std::vector<CacheEntry> oldTable = table;
     // resize the table
     table.resize(newSize);
+    numEnries = 0;
     // rehash
     for (size_t i=0; i<oldTable.size(); i++) {
         if (oldTable[i].isInUse) {
-            table[oldTable[i].hash() % newSize] = oldTable[i];
+            if (!table[oldTable[i].hash() % newSize].isInUse) {
+                table[oldTable[i].hash() % newSize] = oldTable[i];
+                numEnries++;
+            } else {
+                continue;
+            }
         }
     }
     oldTable.clear();
