@@ -64,6 +64,7 @@ class BRAVE_DD::NodeManager {
 
     inline uint32_t numUsed(uint16_t lvl) const { return PRIMES[chunks[lvl-1].sizeIndex] - chunks[lvl-1].numFrees; }
     inline uint32_t numAlloc(uint16_t lvl) const { return chunks[lvl-1].firstUnalloc; }
+    inline uint32_t numMarked(uint16_t lvl) const { return chunks[lvl-1].getNumMarked(); }
 
     /*-------------------------------------------------------------*/
     private:
@@ -81,6 +82,9 @@ class BRAVE_DD::NodeManager {
             /// Find the node corresponding to a node handle
             Node& getNodeFromHandle(const NodeHandle h);
 
+            /// Get the number of marked nodes
+            uint32_t getNumMarked() const;
+
             /// Expand the nodes to next size (if possible)
             void expand();
             /// Shrink the nodes to previous size
@@ -88,13 +92,13 @@ class BRAVE_DD::NodeManager {
 
         // ========================================================
             friend class NodeManager;
-            Forest*     parent;         // Parent forest
-            Node*       nodes;          // Actual node storage; the 1st slot (nodes[0]) will not be used
-            int         sizeIndex;      // Index of prime number for size
-            uint32_t    firstUnalloc;   // Index of first unallocated slot
-            uint32_t    freeList;       // Header of the list of unused slots
-            uint32_t    numFrees;       // Number of free/unused slots
-            uint32_t    recycled;       // Last recycled node index
+            Forest*                 parent;         // Parent forest
+            std::vector<Node>       nodes;          // Actual node storage; the 1st slot (nodes[0]) will not be used
+            int                     sizeIndex;      // Index of prime number for size
+            uint32_t                firstUnalloc;   // Index of first unallocated slot
+            uint32_t                freeList;       // Header of the list of unused slots
+            uint32_t                numFrees;       // Number of free/unused slots
+            uint32_t                recycled;       // Last recycled node index
 
     }; // class SubManager
 
@@ -102,8 +106,8 @@ class BRAVE_DD::NodeManager {
 
 
     // ========================================================
-    Forest* parent;        // Parent Forest
-    SubManager* chunks;    // Chunks by levels
+    Forest*                     parent;     // Parent Forest
+    std::vector<SubManager>     chunks;     // Chunks by levels
 
 };
 

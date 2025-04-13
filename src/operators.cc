@@ -112,14 +112,12 @@ namespace BRAVE_DD {
     {
         Func out(e1.getForest());
         apply(INTERSECTION, e1, e2, out);
-        // implementations TBD
         return out;
     }
     Func operator|(const Func &e1, const Func &e2)
     {
         Func out(e1.getForest());
         apply(UNION, e1, e2, out);
-        // implementations TBD
         return out;
     }
     Func operator^(const Func &e1, const Func &e2)
@@ -158,12 +156,14 @@ namespace BRAVE_DD {
 
     Func operator&=(Func &e1, const Func &e2)
     {
-        // implementations TBD
+        Func out(e1.getForest());
+        apply(INTERSECTION, e1, e2, e1);
         return e1;
     }
     Func operator|=(Func &e1, const Func &e2)
     {
-        // implementations TBD
+        Func out(e1.getForest());
+        apply(UNION, e1, e2, e1);
         return e1;
     }
 

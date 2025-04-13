@@ -23,21 +23,18 @@ class BRAVE_DD::CacheEntry {
     /*-------------------------------------------------------------*/
     CacheEntry() {
         lvl = 0;
-        keySize = 2;
-        key = std::vector<Edge>(keySize);
+        key = std::vector<Edge>(2);
         isInUse = 0;
     }
     CacheEntry(const uint16_t level, const Edge& a) {
         lvl = level;
-        keySize = 1;
-        key = std::vector<Edge>(keySize);
+        key = std::vector<Edge>(1);
         key[0] = a;
         isInUse = 0;
     }
     CacheEntry(const uint16_t level, const Edge& a, const Edge& b) {
         lvl = level;
-        keySize = 2;
-        key = std::vector<Edge>(keySize);
+        key = std::vector<Edge>(2);
         key[0] = a;
         key[1] = b;
         isInUse = 0;
@@ -49,12 +46,19 @@ class BRAVE_DD::CacheEntry {
         isInUse = 1;
     }
 
+    inline void setResult(const long v) {
+        Value value;
+        value.setValue(v, LONG);
+        res.setValue(value);
+        isInUse = 1;
+    }
+
     inline uint64_t hash() const {
         hash_stream hs;
         hs.start(0);
         // push info
         hs.push(lvl);
-        for (char i=0; i<keySize; i++) {
+        for (char i=0; i<(char)key.size(); i++) {
             hs.push(key[i].getEdgeHandle());
         }
         // for edge valued, TBD
@@ -77,17 +81,15 @@ class BRAVE_DD::CacheEntry {
 
     inline bool equals(const CacheEntry& e) const {
         if (lvl != e.lvl) return 0;
-        for (char i=0; i<keySize; i++) {
+        for (char i=0; i<(char)key.size(); i++) {
             if (key[i] != e.key[i]) return 0;
         }
         return 1;
     }
 
-
     std::vector<Edge>   key;
     Edge                res;
     uint16_t            lvl;
-    char                keySize;
     bool                isInUse;
 };
 
@@ -105,13 +107,16 @@ class BRAVE_DD::ComputeTable {
     ComputeTable();
     ~ComputeTable();
 
+    bool check(const uint16_t lvl, const Edge& a, long& ans);
     bool check(const uint16_t lvl, const Edge& a, Edge& ans);
     bool check(const uint16_t lvl, const Edge& a, const Edge& b, Edge& ans);
 
+    void add(const uint16_t lvl, const Edge& a, const long& ans);
     void add(const uint16_t lvl, const Edge& a, const Edge& ans);
     void add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& ans);
 
-    void sweep();
+    // role: 0 for ans; 1 for key0; 2 for key1
+    void sweep(Forest* forest, int role);
 
     void reportStat(std::ostream& out, int format=0) const;
 

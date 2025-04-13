@@ -13,7 +13,7 @@ using namespace BRAVE_DD;
 
 ComputeTable::ComputeTable()
 {
-    sizeIndex = 0;
+    sizeIndex = 17;
     numEnries = 0;
     table = std::vector<CacheEntry>(PRIMES[sizeIndex], CacheEntry());
     countHits = 0;
@@ -22,6 +22,24 @@ ComputeTable::ComputeTable()
 ComputeTable::~ComputeTable()
 {
     table.clear();
+    std::vector<CacheEntry>().swap(table);
+}
+
+bool ComputeTable::check(const uint16_t lvl, const Edge& a, long& ans)
+{
+    CacheEntry entry(lvl, a);
+    uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
+    uint64_t id = entry.hash() % size;
+    if (table[id].isInUse) {
+        /* Valid entry, then check if match */
+        if ((table[id].lvl == lvl) && (table[id].key.size() == 1) && (table[id].key[0] == a)) {
+            countHits++;
+            table[id].res.getValue().getValueTo(&ans, LONG);
+            return 1;
+        }
+    }
+    /* Not cached */
+    return 0;
 }
 
 bool ComputeTable::check(const uint16_t lvl, const Edge& a, Edge& ans)
@@ -31,8 +49,7 @@ bool ComputeTable::check(const uint16_t lvl, const Edge& a, Edge& ans)
     uint64_t id = entry.hash() % size;
     if (table[id].isInUse) {
         /* Valid entry, then check if match */
-        if ((table[id].lvl == lvl) && (table[id].keySize == 1)
-            && (table[id].key[0] == a)) {
+        if ((table[id].lvl == lvl) && (table[id].key.size() == 1) && (table[id].key[0] == a)) {
             countHits++;
             ans = table[id].res;
             return 1;
@@ -52,7 +69,7 @@ bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, Edge&
 #endif
     if (table[id].isInUse) {
         /* Valid entry, then check if match */
-        if ((table[id].lvl == lvl) && (table[id].keySize == 2)
+        if ((table[id].lvl == lvl) && (table[id].key.size() == 2)
             && (table[id].key[0] == a) && (table[id].key[1] == b)) {
             countHits++;
             ans = table[id].res;
@@ -63,11 +80,32 @@ bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, Edge&
     return 0;
 }
 
+void ComputeTable::add(const uint16_t lvl, const Edge& a, const long& ans)
+{
+    /* Check if we should enlage the table when  */
+    uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
+    if (((numEnries * 4) > (size * 3)) && (numEnries < (uint64_t)0x01 << 60)) {
+        sizeIndex++;
+        size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
+        enlarge(size);
+    }
+    CacheEntry entry(lvl, a);
+    uint64_t id = entry.hash() % size;
+    /* new entry */
+    if (!table[id].isInUse) {
+        numEnries++;
+    } else {
+        countOverwrite++;
+    }
+    entry.setResult(ans);
+    table[id] = entry;
+}
+
 void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& ans)
 {
     /* Check if we should enlage the table when  */
     uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
-    if ((numEnries > (size / 1.5)) && (numEnries < (uint64_t)0x01 << 60)) {
+    if (((numEnries * 4) > (size * 3)) && (numEnries < (uint64_t)0x01 << 60)) {
         sizeIndex++;
         size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
         enlarge(size);
@@ -109,7 +147,7 @@ void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const E
 #endif
     /* Check if we should enlage the table when  */
     uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
-    if ((numEnries > (size / 1.5)) && (numEnries < (uint64_t)0x01 << 60)) {
+    if (((numEnries * 4) > (size * 3)) && (numEnries < (uint64_t)0x01 << 60)) {
 #ifdef BRAVE_DD_CACHE_TRACE
     std::cout << "enlarge table: entries = " << numEnries << ", size = " << size << std::endl;
 #endif
@@ -152,9 +190,37 @@ void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const E
 #endif
 }
 
-void ComputeTable::sweep()
+void ComputeTable::sweep(Forest* forest, int role)
 {
-    // TBD
+    // role: 0 for ans, 1 for key0, 2 for key1
+    uint16_t lvl = 0;
+    NodeHandle target = 0;
+    for (size_t i=0; i<table.size(); i++) {
+        if (table[i].isInUse) {
+            if (role == 0) {
+                lvl = table[i].res.getNodeLevel();
+                target = table[i].res.getNodeHandle();
+            } else if (role == 1) {
+                lvl = table[i].key[0].getNodeLevel();
+                target = table[i].key[0].getNodeHandle();
+            } else if (role == 2) {
+                lvl = table[i].key[1].getNodeLevel();
+                target = table[i].key[1].getNodeHandle();
+            } else {
+                std::cout << "[BRAVE_DD] ERROR!\t ComputeTable::sweep(): Unknown role value!" << std::endl;
+                exit(0);
+            }
+            // check target node: if marked continue; otherwise, flip Inuse flag
+            if ((lvl > 0) && !forest->getNode(lvl, target).isMarked()) {
+                table[i].isInUse = 0;
+                numEnries--;
+            } else {
+                continue;
+            }
+        } else {
+            continue;
+        }
+    }
 }
 
 void ComputeTable::reportStat(std::ostream& out, int format) const
@@ -178,8 +244,28 @@ void ComputeTable::enlarge(uint64_t newSize)
     // rehash
     for (size_t i=0; i<oldTable.size(); i++) {
         if (oldTable[i].isInUse) {
-            table[oldTable[i].hash() % newSize] = oldTable[i];
+            uint64_t newId = oldTable[i].hash() % newSize;
+            if (newId != i) {
+                // should move to a new slot
+                if (!table[newId].isInUse) {
+                    // new place is not occupied, then move to there
+                    table[newId] = oldTable[i];
+                } else {
+                    // new place is occupied, do nothing to give up this entry :-(
+                    continue;
+                }
+                // turn off the old place anyway
+                table[i].isInUse = 0;
+            } else {
+                // great! it does not have to move
+                continue;
+            }
         }
     }
     oldTable.clear();
+    // update num in use
+    numEnries = 0;
+    for (size_t i=0; i<table.size(); i++) {
+        if (table[i].isInUse) numEnries ++;
+    }
 }

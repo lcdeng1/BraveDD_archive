@@ -268,7 +268,7 @@ class BRAVE_DD::Reductions {
                 // Apply reduction rules: I0 (0), X (1)
                 rules[RULE_X] = 1;
                 rules[RULE_I0] = 1;
-                rules[RULE_I1] = 1;
+                // rules[RULE_I1] = 1;
             } else if (type == USER_DEFINED) {
                 // not change for user defined, it should be initialized later
             } else {

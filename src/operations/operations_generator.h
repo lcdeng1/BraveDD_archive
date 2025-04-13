@@ -54,6 +54,16 @@ namespace BRAVE_DD {
     BinaryOperation* GREATER_THAN(Forest* arg1, Forest* arg2, Forest* res);
     BinaryOperation* GREATER_THAN_EQUAL(Forest* arg1, Forest* arg2, Forest* res);
 
+    /**
+     * @brief Combine two functions into a single one, where the operands are BDDs
+     * and the result is an BMXD. Specifically, for BDD operands f and g, produces 
+     * BMXD h where h(xn, x'n, ..., x1, x'1) = f(xn, ..., x1) * g(x'n, ..., x'1).
+     * 
+     * @param arg1 
+     * @param arg2 
+     * @param res 
+     * @return
+     */
     BinaryOperation* CROSS(Forest* arg1, Forest* arg2, Forest* res);
     
     BinaryOperation* PRE_PLUS(Forest* arg1, Forest* arg2, Forest* res);
@@ -80,9 +90,9 @@ namespace BRAVE_DD {
     // *                                                                *
     // ******************************************************************
     //TBD
-    inline Func saturate(Func set, FuncArray forwards) {
-        //
-    }
+    // inline Func saturate(Func set, FuncArray forwards) {
+    //     //
+    // }
 }
 
 #endif

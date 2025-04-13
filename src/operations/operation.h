@@ -124,7 +124,6 @@ class BRAVE_DD::UnaryOperation : public Operation {
     protected:
     /*-------------------------------------------------------------*/
     virtual ~UnaryOperation();
-    // computing tables TBD
 
     /*-------------------------------------------------------------*/
     private:
@@ -173,11 +172,15 @@ class BRAVE_DD::UnaryList {
     }
     inline void remove(UnaryOperation* uop) {
         if (front == uop) {
+            UnaryOperation* toRemove = front;
             front = front->next;
+            delete toRemove;
             return;
         }
         searchRemove(uop);
     }
+    // find and remove the operation including the given forest
+    inline void remove(Forest* forest) { searchRemove(forest); }
     inline UnaryOperation* find(const UnaryOperationType opT, const Forest* sourceF, const Forest* targetF) {
         if (!front) return nullptr;
         if ((front->opType == opT) && (front->sourceForest == sourceF) && (front->targetForest == targetF)) return front;
@@ -188,10 +191,14 @@ class BRAVE_DD::UnaryList {
         if ((front->opType == opT) && (front->sourceForest == sourceF) && (front->targetType == targetT)) return front;
         return mtfUnary(opT, sourceF, targetT);
     }
+    inline void sweepCache(Forest* forest) { searchSweepCache(forest); }
+    void reportCacheStat(std::ostream& out, int format=0) const;
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
     void searchRemove(UnaryOperation* uop);
+    void searchRemove(Forest* forest);
+    void searchSweepCache(Forest* forest);
     UnaryOperation* mtfUnary(const UnaryOperationType opT, const Forest* sourceF, const Forest* targetF);
     UnaryOperation* mtfUnary(const UnaryOperationType opT, const Forest* sourceF, const OpndType targetT);
 
@@ -216,13 +223,13 @@ class BRAVE_DD::BinaryOperation : public Operation {
     protected:
     /*-------------------------------------------------------------*/
     virtual ~BinaryOperation();
-    // computing tables TBD
 
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
     /// Helper Methods ==============================================
     bool checkForestCompatibility() const;
+    Edge computeElmtWise(const uint16_t lvl, const Edge& source1, const Edge& source2);
     Edge computeUNION(const uint16_t lvl, const Edge& source1, const Edge& source2);
     Edge computeINTERSECTION(const uint16_t lvl, const Edge& source1, const Edge& source2);
     Edge computeIMAGE(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre = 0);
@@ -270,11 +277,15 @@ class BRAVE_DD::BinaryList {
     }
     inline void remove(BinaryOperation* bop) {
         if (front == bop) {
+            BinaryOperation* toRemove = front;
             front = front->next;
+            delete toRemove;
             return;
         }
         searchRemove(bop);
     }
+    // find and remove the operation including the given forest
+    inline void remove(Forest* forest) { searchRemove(forest); }
     inline BinaryOperation* find(const BinaryOperationType opT, const Forest* source1F, const Forest* source2F, const Forest* resF) {
         if (!front) return nullptr;
         if ((front->opType == opT) && (front->source1Forest == source1F) && (front->source2Forest == source2F) && (front->resForest == resF)) return front;
@@ -285,10 +296,15 @@ class BRAVE_DD::BinaryList {
         if ((front->opType == opT) && (front->source1Forest == source1F) && (front->source2Type == source2T) && (front->resForest == resF)) return front;
         return mtfBinary(opT, source1F, source2T, resF);
     }
+    inline void sweepCache(Forest* forest) { searchSweepCache(forest); }
+    void reportCacheStat(std::ostream& out, int format=0) const;
+
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
     void searchRemove(BinaryOperation* bop);
+    void searchRemove(Forest* forest);
+    void searchSweepCache(Forest* forest);
     BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const Forest* source2F, const Forest* resF);
     BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const OpndType source2T, const Forest* resF);
 

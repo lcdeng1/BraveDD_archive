@@ -92,7 +92,7 @@ Func colConstraint(const std::vector<std::vector<Func> >& board, int col)
     // At most one queen in the same column
     for (int i=0; i<N; i++) {
         for (int j=i+1; j<N; j++) {
-            constraint1 &= board[i][col] ^ board[j][col];
+            constraint1 &= !(board[i][col] & board[j][col]);
         }
     }
     // At least one queen in the same row
@@ -140,12 +140,14 @@ int main(int argc, const char** argv)
     /* Initialize BraveDD forest */
     ForestSetting setting(bdd_type, N*N);   // Set the BDD type and the number of variables
     Forest* forest = new Forest(setting);
+    setting.output(std::cout);
 
     /* Create BDD variables for each cell on the board */
     std::vector<std::vector<Func> > board(N, std::vector<Func>(N, Func(forest)));
     for (int i=0; i<N; i++) {
         for (int j=0; j<N; j++) {
-            board[i][j].variable(i * N + j);
+            board[i][j].variable(i * N + j + 1);
+            forest->registerFunc(board[i][j]); // register function
         }
     }
 
@@ -155,6 +157,14 @@ int main(int argc, const char** argv)
     for (int i=0; i<N; i++) {
         solution &= rowConstraint(board, i);
         solution &= colConstraint(board, i);
+        // mark nodes and GC
+        forest->registerFunc(solution);
+        forest->markAllFuncs();
+        std::cout << "GC " << i << std::endl;
+        forest->markSweep();
+
+        // deregister this func
+        forest->deregisterFunc(solution);
     }
     solution &= diagConstraint(board);
 
@@ -163,7 +173,10 @@ int main(int argc, const char** argv)
     std::cout << "Elapsed time: " << watch.get_last_seconds() << " seconds" << std::endl;
 
     /* Output */
-    std::cout << "Number of solutions: " << forest->count(solution, 1) << std::endl;
+    long num;
+    apply(CARDINALITY, solution, num);
+    std::cout << "Number of solutions: " << num << std::endl;
+    std::cout << "Number of nodes: " << forest->getNodeManUsed(solution) << std::endl;
 
     /* delete Forest */
     delete forest;

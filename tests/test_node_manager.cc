@@ -39,7 +39,7 @@ unsigned equilikely(unsigned a, unsigned b)
     return a + (unsigned)( (b-a+1) * uniform() );
 }
 
-void random_mark(Forest* forest, uint32_t* marklist, unsigned size)
+void random_mark(Forest* forest, std::vector<uint32_t>& marklist, unsigned size)
 {
     uint16_t level = forest->getSetting().getNumVars();
     for (uint32_t i=0; i<size; i++) {
@@ -62,7 +62,7 @@ void random_mark(Forest* forest, uint32_t* marklist, unsigned size)
     }
 }
 
-void alloc_mark_sweep(Forest* forest, unsigned num_a, unsigned num_m, uint32_t* marklist, unsigned size)
+void alloc_mark_sweep(Forest* forest, unsigned num_a, unsigned num_m, std::vector<uint32_t>& marklist, unsigned size)
 {
     int nodeSize = forest->getSetting().nodeSize();
     bool isRel = forest->getSetting().isRelation();
@@ -94,10 +94,11 @@ void alloc_mark_sweep(Forest* forest, unsigned num_a, unsigned num_m, uint32_t* 
         if (!marklist[i]) continue;
         forest->getNode(level, marklist[i]-1).mark();
     }
+    std::cout<<"sweep nodeman " << level << "\n";
     forest->sweepNodeMan(level);
 }
 
-unsigned max_marked_plus1(unsigned slots, uint32_t* marklist)
+unsigned max_marked_plus1(unsigned slots, std::vector<uint32_t>& marklist)
 {
     unsigned i, m=0;
     for (i=0; i<slots; i++) {
@@ -138,11 +139,12 @@ int main()
     unsigned marklistSize = allox[0];
     for (uint32_t i=0; allox[i]; i++) {
         if (i>0) marklistSize = allox[i] + marks[i-1];
-        uint32_t* marklist = (uint32_t*)malloc(marklistSize * sizeof(uint32_t));
+        std::vector<uint32_t> marklist = std::vector<uint32_t>(marklistSize, 0);
         alloc_mark_sweep(forest, allox[i], marks[i], marklist, marklistSize);
         check_equal("used nodes", marks[i], forest->getNodeManUsed(level));
         check_equal("first unalloc", max_marked_plus1(marks[i], marklist), forest->getNodeManAlloc(level));
-        free(marklist);
+        marklist.clear();
+        std::vector<uint32_t>().swap(marklist);
     }
 
     std::cout << "test passed!" << std::endl;

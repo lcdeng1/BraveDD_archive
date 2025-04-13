@@ -296,7 +296,7 @@ class BRAVE_DD::Forest {
      * @brief Get the cofactor (edge) of an edge at level 'lvl' with respective of child 'index'. The operand 'edge'
      * can be a BDD or BMXD edge, and the operand 'index' can be 0-1 for BDD edge or 0-3 for BMXD edge.
      * 
-     * @param lvl 
+     * @param lvl           The parent node level of the cofactor (edge).
      * @param edge 
      * @param index 
      * @return Edge 
@@ -311,7 +311,6 @@ class BRAVE_DD::Forest {
                 childIndex = 1 - childIndex;
             }
             Edge ans = getChildEdge(lvl, edge.getNodeHandle(), childIndex);
-            // complement
             if (edge.getComp()) ans.complement();
             if ((setting.getSwapType() == ALL) && edge.getSwap(0)) ans.swap();
             return ans;
@@ -379,7 +378,26 @@ class BRAVE_DD::Forest {
      * 
      */
     inline void markAllFuncs() const {
-        // TBD
+        for (size_t i=0; i<funcs.size(); i++) {
+            markNodes(funcs[i]);
+        }
+    }
+
+    inline void registerFunc(const Func& func) {
+        funcs.push_back(func);
+    }
+
+    inline void deregisterFunc(const Func& func) {
+        funcs.erase(std::remove(funcs.begin(), funcs.end(), func), funcs.end());
+    }
+
+    inline bool isFuncRegistered(const Func& func) {
+        auto it = std::find(funcs.begin(), funcs.end(), func);
+        return it != funcs.end();
+    }
+
+    inline size_t numFuncs() const {
+        return funcs.size();
     }
 
     /***************************** Cardinality **********************/
@@ -403,6 +421,11 @@ class BRAVE_DD::Forest {
     /************************* Garbage Collection *******************/
     void deleteNode(NodeHandle handle);
     inline void sweepNodeMan(uint16_t level) {nodeMan->sweep(level);}
+    /**
+     * @brief Assuming the necessary nodes are marked, 
+     * the unmarked nodes will be removed and the marked nodes will be unmarked
+     * 
+     */
     void markSweep();
     // TBD
 
@@ -410,12 +433,30 @@ class BRAVE_DD::Forest {
     inline uint32_t getNodeManUsed(const uint16_t level) const {
         return nodeMan->numUsed(level);
     }
+    inline uint64_t getNodeManUsed() const {
+        uint64_t total = 0;
+        for (uint16_t k=1; k<=setting.getNumVars(); k++) {
+            total += getNodeManUsed(k);
+        }
+        return total;
+    }
+    inline uint64_t getNodeManUsed(const Func& func) const {
+        unmark();
+        markNodes(func);
+        uint64_t num = 0;
+        for (uint16_t i=1; i<=func.getEdge().getNodeLevel(); i++) {
+            num += nodeMan->numMarked(i);
+        }
+        unmark();
+        return num;
+    }
     inline uint32_t getNodeManAlloc(const uint16_t level) const {
         return nodeMan->numAlloc(level);
     }
     inline uint32_t getUTEntriesNum(const uint16_t level) const {
         return uniqueTable->getNumEntries(level);
     }
+    void reportNodesNum(std::ostream& out) const;
     uint64_t getPeakNodes();    // largest result of getCurrentNodes(), since the last call to resetPeakNodes()
     uint64_t getCurrentNodes(); // number of nodes in UT, including disconnected
     void resetPeakNodes();
@@ -525,7 +566,7 @@ class BRAVE_DD::Forest {
         ForestSetting       setting;        // Specification setting of this forest.
         NodeManager*        nodeMan;        // Node manager.
         UniqueTable*        uniqueTable;    // Unique table.
-        Func*               funcs;          // Registry of Func edges.
+        std::vector<Func>   funcs;          // Registry of Func edges.
         FuncArray*          funcSets;       // Sets of Func used for I/O.
         Statistics*         stats;          // Performance measurement.
         int                 nodeSize;       // Number of uint32 slots for one Node storage.

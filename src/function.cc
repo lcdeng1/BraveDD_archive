@@ -18,16 +18,16 @@ Func::Func(Forest* f)
 {
     parent = f;
     name = "";
-    prevFunc = 0;
-    nextFunc = 0;
+    // prevFunc = 0;
+    // nextFunc = 0;
 }
 Func::Func(Forest* f, const Edge& e)
 :edge(e)
 {
     parent = f;
     name = "";
-    prevFunc = 0;
-    nextFunc = 0;
+    // prevFunc = 0;
+    // nextFunc = 0;
 }
 Func::~Func()
 {
@@ -57,23 +57,81 @@ void Func::falseFunc()
     edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
 }
 /* For dimention 1 and 2 */
-void Func::constant(Value val)
+void Func::constant(int val)
 {
     if (parent->setting.getEncodeMechanism() == TERMINAL) {
-        //
+        edge.handle = makeTerminal(INT, val);
+        packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
     } else {
-        //
+        // TBD
+    }
+}
+void Func::constant(float val)
+{
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
+        edge.handle = makeTerminal(FLOAT, val);
+        packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else {
+        // TBD
+    }
+}
+void Func::constant(SpecialValue val)
+{
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
+        edge.handle = makeTerminal(VOID, val);
+        packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else {
+        // TBD
     }
 }
 /* For dimention of 2 (Relation) */
 void Func::identity(std::vector<bool> dependance)
 {
-    // TBD
+    uint16_t N = parent->getSetting().getNumVars();
+    uint16_t top = 0;
+    std::vector<Edge> child(4);
+    Edge reduced;
+    reduced.handle = makeTerminal(1);
+    if ((parent->getSetting().getValType() == FLOAT) || (parent->getSetting().getValType() == DOUBLE)) {
+        reduced.handle = makeTerminal(1.0f);
+    }
+    reduced.setRule(RULE_I0);
+    EdgeLabel root  = 0;
+    packRule(root, RULE_I0);
+    for (uint16_t k=1; k<=N; k++) {
+        if (dependance[k] == 1) {
+            reduced = parent->mergeEdge(k-1, top, root, reduced);
+            for (size_t i=0; i<child.size(); i++) {
+                child[i] = reduced;
+            }
+            reduced = parent->reduceEdge(k, root, k, child);
+            top = k;
+        } else {
+            continue;
+        }
+    }
+    edge = parent->mergeEdge(N, top, root, reduced);
 }
 /* For dimention of 1 (Set) */
 void Func::variable(uint16_t lvl)
 {
-    // TBD
+    std::vector<Edge> child(2);
+    // edge valued TBD
+    child[0].handle = makeTerminal(INT, 0);
+    child[1].handle = makeTerminal(INT, 1);
+    if ((parent->getSetting().getValType() == FLOAT) || (parent->getSetting().getValType() == DOUBLE)) {
+        child[0].handle = makeTerminal(FLOAT, 0.0f);
+        child[1].handle = makeTerminal(FLOAT, 1.0f);
+    }
+    for (size_t i=0; i<child.size(); i++) {
+        packRule(child[i].handle, RULE_X);
+    }
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    edge = parent->reduceEdge(parent->getSetting().getNumVars(), root, lvl, child);
 }
 void Func::variable(uint16_t lvl, Value low, Value high)
 {
@@ -83,7 +141,23 @@ void Func::variable(uint16_t lvl, Value low, Value high)
 // Variable Func
 void Func::variable(uint16_t lvl, bool isPrime)
 {
-    // TBD
+    std::vector<Edge> child(4);
+    child[0].handle = makeTerminal(INT, 0);
+    child[1].handle = makeTerminal(INT, isPrime?1:0);
+    child[2].handle = makeTerminal(INT, isPrime?0:1);
+    child[3].handle = makeTerminal(INT, 1);
+    if ((parent->getSetting().getValType() == FLOAT) || (parent->getSetting().getValType() == DOUBLE)) {
+        child[0].handle = makeTerminal(FLOAT, 0.0f);
+        child[1].handle = makeTerminal(INT, isPrime?1.0f:0.0f);
+        child[2].handle = makeTerminal(INT, isPrime?0.0f:1.0f);
+        child[3].handle = makeTerminal(FLOAT, 1.0f);
+    }
+    for (size_t i=0; i<child.size(); i++) {
+        packRule(child[i].handle, RULE_X);
+    }
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    edge = parent->reduceEdge(parent->getSetting().getNumVars(), root, lvl, child);
 }
 void Func::variable(uint16_t lvl, bool isPrime, Value low, Value high)
 {
@@ -117,7 +191,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
     bool allOne = 1, existOne = 0;
     /* evaluation starting from the target node level */
     uint16_t k = assignment.size()-1;
-    while (k >= 0) {
+    while (true) {
 #ifdef BRAVE_DD_TRACE
         std::cout<<"evaluate k: " << k;
         std::cout<<"; currt: ";
@@ -227,7 +301,7 @@ Value Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aT
     bool isIdent = 1;
     /* evaluation starting from the target node level */
     uint16_t k = aFrom.size()-1;
-    while (k>=0) {
+    while (true) {
 #ifdef BRAVE_DD_TRACE
         std::cout<<"evaluate k: " << k;
         std::cout<<"; currt: ";

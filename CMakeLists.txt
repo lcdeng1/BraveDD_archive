@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 
 # Project name and version
-project(BraveDD VERSION 0.0.1)
+project(BraveDD VERSION 1.0.0)
 
 # Define metadata variables
 set(PROJECT_URL "https://github.com/asminer/brave_dd")
@@ -18,7 +18,15 @@ if (MSVC)
   add_compile_options(/W4 /WX)
 else()
   add_compile_options(-Wall -Wextra -Wshadow -Wunused -std=c++11)
+<<<<<<< HEAD
   #add_compile_options(-Wno-deprecated-copy-with-user-provided-copy -Wno-return-type)
+=======
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
+    add_compile_options(-Wno-deprecated-copy-with-user-provided-copy -Wno-return-type)
+  else()
+    add_compile_options(-Wno-unused-parameter)
+  endif()
+>>>>>>> eec85629135feda9f9c442e5271a0783ab8646ca
 endif()
 
 enable_testing()

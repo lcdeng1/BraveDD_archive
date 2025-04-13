@@ -71,14 +71,21 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         addReductionRule(RULE_X);
         addReductionRule(RULE_EL0);
         addReductionRule(RULE_EH0);
+        mergeType = PUSH_UP;
         name = "ESRBDD";
+    } else if (type == PredefForest::QBMXD) {
+        // setting for QBMxD
+        reductions = Reductions(QUASI_QUASI);
+        name = "QBMxD";
     } else if (type == PredefForest::FBMXD) {
         // setting for FBMxD
         reductions = Reductions(FULLY_FULLY);
+        mergeType = PUSH_UP;
         name = "FBMxD";
     } else if (type == PredefForest::IBMXD) {
         // setting for IBMxD
         reductions = Reductions(IDENTITY_IDENTITY);
+        mergeType = PUSH_UP;
         name = "IBMxD";
     } else if (type == PredefForest::ESRBMXD) {
         // setting for ESRBMxD
@@ -129,6 +136,7 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         addReductionRule(RULE_X);
         addReductionRule(RULE_EL0);
         addReductionRule(RULE_EH0);
+        mergeType = PUSH_UP;
         name = "ESRBDD";
     } else if (bddLower == "evbdd" || bddLower == "ev+bdd") {
         // setting for EV+BDD
@@ -138,13 +146,19 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         // setting for EV*BDD
     }
     // MxDs
-    else if (bddLower == "fbmxd") {
+    else if (bddLower == "qbmxd") {
+        // setting for QBMxD
+        reductions = Reductions(QUASI_QUASI);
+        name = "QBMxD";
+    } else if (bddLower == "fbmxd") {
         // setting for FBMxD
         reductions = Reductions(FULLY_FULLY);
+        mergeType = PUSH_UP;
         name = "FBMxD";
     } else if (bddLower == "ibmxd") {
         // setting for IBMxD
         reductions = Reductions(IDENTITY_IDENTITY);
+        mergeType = PUSH_UP;
         name = "IBMxD";
     } else if (bddLower == "esrbmxd") {
         // setting for ESRBMxD

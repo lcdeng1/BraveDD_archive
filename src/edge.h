@@ -452,13 +452,14 @@ class BRAVE_DD::Edge {
         inline void setEdgeHandle(EdgeHandle edge) {handle = edge;}
         inline void setRule(ReductionRule rule) {packRule(handle, rule);}
         inline void setComp(bool comp) {packComp(handle, comp);}
-        inline void setSwap(bool swap, bool isTo) {
+        inline void setSwap(bool swp, bool isTo) {
             if (isTo) {
-                packSwapTo(handle, swap);
+                packSwapTo(handle, swp);
             } else {
-                packSwap(handle, swap);
+                packSwap(handle, swp);
             }
         }
+        inline void setValue(Value v) {value = v;}
         inline void setLevel(uint16_t lvl) {packLevel(handle, lvl);}
 
         // unpack the x/y part of a long edge, only be used for BDDs edge

@@ -79,7 +79,11 @@ class BRAVE_DD::UniqueTable {
 
         /// Remove all unmarked nodes from the unique table
         inline void sweep(uint16_t level) {tables[level-1].sweep();}
-        void sweep();
+        inline void sweep() {
+            for (uint16_t k=0; k<tables.size(); k++) {
+                tables[k].sweep();
+            }
+        }
 
         /// Clear the nodeHanlde items in the table of the given variable level and reset the state.
         inline void clear(int varLvl) {return tables[varLvl-1].clear();}
@@ -154,16 +158,16 @@ class BRAVE_DD::UniqueTable {
                 void shrink();
             // ========================================================
                 friend class UniqueTable;
-                Forest*         parent;
-                NodeHandle*     table;
-                uint16_t        level;              // The level of stored nodes
-                int             sizeIndex;          // Table size at this level, index of PRIMES
-                uint64_t        numEntries;         // The number of nodes at this level
+                Forest*                     parent;
+                std::vector<NodeHandle>     table;
+                uint16_t                    level;              // The level of stored nodes
+                int                         sizeIndex;          // Table size at this level, index of PRIMES
+                uint64_t                    numEntries;         // The number of nodes at this level
         }; // class SubTable
 
         // ========================================================
-        Forest*         parent;     // Parent forest
-        SubTable*       tables;     // Subtables divided by levels
+        Forest*                     parent;     // Parent forest
+        std::vector<SubTable>       tables;     // Subtables divided by levels
 };
 
 

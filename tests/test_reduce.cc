@@ -255,5 +255,5 @@ int main(int argc, char** argv)
     } else {
         std::cout << "Test Pass!" << std::endl;
     }
-    return pass;
+    return !pass;
 }

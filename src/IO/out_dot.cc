@@ -250,9 +250,9 @@ void DotMaker::runDot(const std::string ext)
         std::cout << "[BRAVE_DD] Error!\t Failed to run dot and build file: "<< basename << "." << ext << std::endl;
         throw error(MISCELLANEOUS, __FILE__, __LINE__);
     }
-    std::string testcmd = "dot --version";
-    if (system(testcmd.c_str())) {
-        std::cout << "[BRAVE_DD] Error!\t Failed to run dot and build file: "<< basename << "." << ext << std::endl;
-        exit(1);
-    }
+    // std::string testcmd = "dot --version";
+    // if (system(testcmd.c_str())) {
+    //     std::cout << "[BRAVE_DD] Error!\t Failed to run dot and build file: "<< basename << "." << ext << std::endl;
+    //     exit(1);
+    // }
 }

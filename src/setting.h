@@ -14,6 +14,7 @@ namespace BRAVE_DD {
         FBDD,
         ZBDD,
         ESRBDD,
+        QBMXD,
         FBMXD,
         IBMXD,
         ESRBMXD

@@ -15,11 +15,7 @@ using namespace BRAVE_DD;
 NodeManager::SubManager::SubManager(Forest *f):parent(f)
 {
     sizeIndex = 0;
-    nodes = (Node*)malloc((PRIMES[sizeIndex] + 1) * sizeof(Node));
-    if (!nodes) {
-        std::cout << "[BRAVE_DD] ERROR!\t Malloc fail for submanager!"<< std::endl;
-        exit(0);
-    }
+    nodes = std::vector<Node>((PRIMES[sizeIndex] + 1), Node(parent->nodeSize));
     recycled = 0;
     firstUnalloc = 1;
     freeList = 0;
@@ -27,10 +23,11 @@ NodeManager::SubManager::SubManager(Forest *f):parent(f)
 }
 NodeManager::SubManager::~SubManager()
 {
-    for (uint32_t i=1; i<firstUnalloc; i++) {
-        nodes[i].~Node();
-    }
-    free(nodes);
+    // for (uint32_t i=1; i<firstUnalloc; i++) {
+    //     nodes[i].~Node();
+    // }
+    nodes.clear();
+    std::vector<Node>().swap(nodes);
 }
 
 NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
@@ -62,18 +59,28 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
 Node& NodeManager::SubManager::getNodeFromHandle(const NodeHandle h)
 {
     if (h>=firstUnalloc) {
-        std::cout << "[BRAVE_DD] ERROR!\t Invalid handle in node submanager; " 
-        << firstUnalloc-1 << "nodes are allocated" << std::endl;
+        std::cout << "[BRAVE_DD] ERROR!\t getNodeFromHandle(): Invalid handle in node submanager; " 
+        << firstUnalloc-1 << " slots are allocated" << std::endl;
         exit(0);
     }
     return nodes[h];
+}
+
+uint32_t NodeManager::SubManager::getNumMarked() const
+{
+    if (firstUnalloc <= 1) return 0;
+    uint32_t num = 0;
+    for (uint32_t i=firstUnalloc-1; i>0; i--) {
+        if (nodes[i].isMarked()) num++;
+    }
+    return num;
 }
 
 void NodeManager::SubManager::expand()
 {
     // Check if we can enlarge
     if (PRIMES[sizeIndex] >= UINT32_MAX) {  // MAX of uint32
-        std::cout << "[BRAVE_DD] ERROR!\t Unable to enlarge node submanager!" << std::endl;
+        std::cout << "[BRAVE_DD] ERROR!\t expand(): Unable to enlarge node submanager!" << std::endl;
         exit(0);
     }
     // Enlarge
@@ -84,34 +91,37 @@ void NodeManager::SubManager::expand()
     } else {
         newSize = PRIMES[sizeIndex] + 1;
     }
-    nodes = (Node*)realloc(nodes, newSize * sizeof(Node));
+    nodes.resize(newSize, Node(parent->nodeSize));
     numFrees += (newSize - PRIMES[sizeIndex-1] - 1);
 }
 
 void NodeManager::SubManager::shrink()
 {
+    uint32_t newSize = 1;
     sizeIndex--;
-    uint32_t newSize = PRIMES[sizeIndex] + 1;
-    nodes = (Node*)realloc(nodes, newSize * sizeof(Node));
+    if (sizeIndex >= 0) newSize = PRIMES[sizeIndex] + 1;
+    nodes.resize(newSize, Node(parent->nodeSize));
+    nodes.shrink_to_fit();
     numFrees -= (PRIMES[sizeIndex+1] + 1 - newSize);
 }
 
 void NodeManager::SubManager::sweep()
 {
-    if (!nodes) return;
+    if (firstUnalloc == 1) return;
     /* Expand the unallocated portion as much as we  can */
-    while (firstUnalloc) {
-        if ((nodes+firstUnalloc-1)->isMarked()) {
+    while (firstUnalloc > 1) {
+        if (nodes[firstUnalloc-1].isMarked()) {
             break;
         }
-        (nodes+firstUnalloc-1)->~Node();
+        nodes[firstUnalloc-1].~Node();
         firstUnalloc--;
     }
     numFrees = ((PRIMES[sizeIndex]>UINT32_MAX)? UINT32_MAX:PRIMES[sizeIndex]) + 1 - firstUnalloc;
     /* Check if we can shrink */
-    if (firstUnalloc < PRIMES[sizeIndex-1]) {
-        shrink();
-    }
+    // TBD
+    // if (firstUnalloc < PRIMES[sizeIndex-1]) {
+    //     shrink();
+    // }
     /* Rebuild the free list, by scanning all nodes backwards.
        Unmarked nodes are added to the list. */
     freeList = 0;
@@ -136,17 +146,19 @@ void NodeManager::SubManager::sweep()
 NodeManager::NodeManager(Forest *f):parent(f)
 {
     uint16_t lvls = f->getSetting().getNumVars();
-    chunks = (SubManager*)malloc(lvls * sizeof(SubManager));
-    for (uint32_t i=0; i<lvls; i++) {
-        new (&chunks[i]) SubManager(f);
+    // chunks = std::vector<SubManager>(lvls, SubManager(f));
+    chunks.reserve(lvls);
+    for (uint16_t i = 0; i < lvls; i++) {
+        chunks.emplace_back(f);  // Directly constructs SubManager
     }
 }
 NodeManager::~NodeManager()
 {
-    for (uint16_t i=0; i<parent->getSetting().getNumVars(); i++) {
-        chunks[i].~SubManager();
-    }
-    free(chunks);
+    // for (uint16_t i=0; i<parent->getSetting().getNumVars(); i++) {
+    //     chunks[i].~SubManager();
+    // }
+    chunks.clear();
+    std::vector<SubManager>().swap(chunks);
     parent = 0;
 }
 
@@ -157,7 +169,7 @@ void NodeManager::sweep(uint16_t lvl)
 
 void NodeManager::sweep()
 {
-    for (uint16_t k=0; k<parent->getSetting().getNumVars(); k++) {
+    for (uint16_t k=1; k<=parent->getSetting().getNumVars(); k++) {
         sweep(k);
     }
 }

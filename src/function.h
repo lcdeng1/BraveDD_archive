@@ -44,10 +44,12 @@ class BRAVE_DD::Func {
     void trueFunc();
     // Constant Func
     /* For dimention 1 and 2 */
-    void constant(Value val);
+    void constant(int val);
+    void constant(float val);
+    void constant(SpecialValue val);
     /* For dimention of 2 (Relation) */
-    void identity(std::vector<bool> dependance);
-    void identity(std::list<int> identities);   // levels staying identity
+    void identity(std::vector<bool> dependance);    // level k is identity if dependance[k]==0
+    void identity(std::list<int> identities);       // levels staying identity
     // Variable Func
     /* For dimention of 1 (Set) */
     void variable(uint16_t lvl);
@@ -58,6 +60,10 @@ class BRAVE_DD::Func {
 
     // Assignment operator
     // Func operator=(Func e);
+
+    inline bool operator==(const Func& f) const {
+        return equals(f);
+    }
 
 
     /************************* Within Operations ********************/
@@ -99,8 +105,8 @@ class BRAVE_DD::Func {
     Edge        edge;       // edge information
     std::string name;       // Optional, only used for I/O; defaults to empty string
     /* For the Funcs registry in the parent forest */
-    Func*       prevFunc;   // Previous Func edge in parent forest
-    Func*       nextFunc;   // Next Func edge in parent forest
+    // Func*       prevFunc;   // Previous Func edge in parent forest
+    // Func*       nextFunc;   // Next Func edge in parent forest
 };
 
 // ******************************************************************
