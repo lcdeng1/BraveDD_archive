@@ -241,17 +241,31 @@ void ComputeTable::enlarge(uint64_t newSize)
     std::vector<CacheEntry> oldTable = table;
     // resize the table
     table.resize(newSize);
-    numEnries = 0;
     // rehash
     for (size_t i=0; i<oldTable.size(); i++) {
         if (oldTable[i].isInUse) {
-            if (!table[oldTable[i].hash() % newSize].isInUse) {
-                table[oldTable[i].hash() % newSize] = oldTable[i];
-                numEnries++;
+            uint64_t newId = oldTable[i].hash() % newSize;
+            if (newId != i) {
+                // should move to a new slot
+                if (!table[newId].isInUse) {
+                    // new place is not occupied, then move to there
+                    table[newId] = oldTable[i];
+                } else {
+                    // new place is occupied, do nothing to give up this entry :-(
+                    continue;
+                }
+                // turn off the old place anyway
+                table[i].isInUse = 0;
             } else {
+                // great! it does not have to move
                 continue;
             }
         }
     }
     oldTable.clear();
+    // update num in use
+    numEnries = 0;
+    for (size_t i=0; i<table.size(); i++) {
+        if (table[i].isInUse) numEnries ++;
+    }
 }
