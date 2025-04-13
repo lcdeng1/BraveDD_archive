@@ -192,6 +192,7 @@ class BRAVE_DD::UnaryList {
         return mtfUnary(opT, sourceF, targetT);
     }
     inline void sweepCache(Forest* forest) { searchSweepCache(forest); }
+    void reportCacheStat(std::ostream& out, int format=0) const;
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
@@ -296,6 +297,7 @@ class BRAVE_DD::BinaryList {
         return mtfBinary(opT, source1F, source2T, resF);
     }
     inline void sweepCache(Forest* forest) { searchSweepCache(forest); }
+    void reportCacheStat(std::ostream& out, int format=0) const;
 
     /*-------------------------------------------------------------*/
     private:

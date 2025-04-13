@@ -336,6 +336,24 @@ void UnaryList::searchSweepCache(Forest* forest)
     }
 }
 
+void UnaryList::reportCacheStat(std::ostream& out, int format) const
+{
+    UnaryOperation* curr = front;
+    uint64_t n = 0;
+    out << "UnaryList:\n";
+    while (curr) {
+        out << "CT " << n << "=============================\n";
+        out << "Source Forest: " << curr->sourceForest << "\n";
+        out << "Result Forest: " << curr->targetForest << "\n";
+        out << "Operation Type: " << (int)curr->opType << "\n";
+        out << "----------------------------------\n";
+        curr->cache.reportStat(out, format);
+        curr = curr->next;
+        n++;
+    }
+}
+
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -1276,6 +1294,24 @@ void BinaryList::searchSweepCache(Forest* forest)
             isSource2 = curr->source2Forest == forest;
             isRes = curr->resForest == forest;
         }
+    }
+}
+
+void BinaryList::reportCacheStat(std::ostream& out, int format) const
+{
+    BinaryOperation* curr = front;
+    uint64_t n = 0;
+    out << "BinaryList:\n";
+    while (curr) {
+        out << "CT " << n << " =============================\n";
+        out << "Source1 Forest: " << curr->source1Forest << "\n";
+        out << "Source2 Forest: " << curr->source2Forest << "\n";
+        out << "Result Forest: " << curr->resForest << "\n";
+        out << "Operation Type: " << (int)curr->opType << "\n";
+        out << "----------------------------------\n";
+        curr->cache.reportStat(out, format);
+        curr = curr->next;
+        n++;
     }
 }
 
