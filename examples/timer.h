@@ -30,7 +30,7 @@ public:
 	inline void note_time()
 	{
 		gettimeofday(&curr_time, &time_zone);
-		last_interval = (curr_time.tv_sec - prev_time.tv_sec) * 1000000;
+		last_interval += (curr_time.tv_sec - prev_time.tv_sec) * 1000000;
 		last_interval += curr_time.tv_usec - prev_time.tv_usec;
 		prev_time = curr_time;
 	}
