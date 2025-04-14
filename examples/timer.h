@@ -27,6 +27,12 @@ public:
 		prev_time = curr_time;
 	}
 
+	inline void reset()
+	{
+		gettimeofday(&curr_time, &time_zone);
+		prev_time = curr_time;
+	}
+
 	inline void note_time()
 	{
 		gettimeofday(&curr_time, &time_zone);
