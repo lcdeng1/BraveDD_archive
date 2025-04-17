@@ -55,11 +55,17 @@ class BRAVE_DD::CacheEntry {
 
     inline uint64_t hash() const {
         hash_stream hs;
-        hs.start(0);
+        hs.start();
         // push info
         hs.push(lvl);
         for (char i=0; i<(char)key.size(); i++) {
-            hs.push(key[i].getEdgeHandle());
+            // hs.push(key[i].getEdgeHandle());
+            hs.push(key[i].getRule());
+            hs.push(key[i].getComp());
+            hs.push(key[i].getSwap(0));
+            hs.push(key[i].getSwap(1));
+            hs.push(key[i].getNodeLevel());
+            hs.push(key[i].getNodeHandle());
         }
         // for edge valued, TBD
         return (uint64_t)hs.finish64();
@@ -130,11 +136,13 @@ class BRAVE_DD::ComputeTable {
     void enlarge(uint64_t newSize);
 
     std::vector<CacheEntry>     table;
-    uint64_t                    numEnries;
-    int                         sizeIndex;
+    uint64_t                    numEntries;
+    uint64_t                    size;
 
+    uint64_t                    countCalls;
     uint64_t                    countHits;
     uint64_t                    countOverwrite;
+    size_t                      probingSteps;
 
 };
 
