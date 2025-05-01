@@ -13,9 +13,11 @@ using namespace BRAVE_DD;
 
 ComputeTable::ComputeTable()
 {
-    sizeIndex = 17;
-    numEnries = 0;
-    table = std::vector<CacheEntry>(PRIMES[sizeIndex], CacheEntry());
+    numEntries = 0;
+    size = 0x01<<18;
+    table = std::vector<CacheEntry>(size, CacheEntry());
+    probingSteps = 2;
+    countCalls = 0;
     countHits = 0;
     countOverwrite = 0;
 }
@@ -27,32 +29,43 @@ ComputeTable::~ComputeTable()
 
 bool ComputeTable::check(const uint16_t lvl, const Edge& a, long& ans)
 {
+    countCalls++;
     CacheEntry entry(lvl, a);
-    uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
     uint64_t id = entry.hash() % size;
-    if (table[id].isInUse) {
-        /* Valid entry, then check if match */
-        if ((table[id].lvl == lvl) && (table[id].key.size() == 1) && (table[id].key[0] == a)) {
-            countHits++;
-            table[id].res.getValue().getValueTo(&ans, LONG);
-            return 1;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
+    /* probing the entries*/
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (table[probId].isInUse) {
+            /* Valid entry, then check if match */
+            if ((table[probId].lvl == lvl) && (table[probId].key.size() == 1) && (table[probId].key[0] == a)) {
+                countHits++;
+                table[probId].res.getValue().getValueTo(&ans, LONG);
+                return 1;
+            }
         }
     }
+    
     /* Not cached */
     return 0;
 }
 
 bool ComputeTable::check(const uint16_t lvl, const Edge& a, Edge& ans)
 {
+    countCalls++;
     CacheEntry entry(lvl, a);
-    uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
     uint64_t id = entry.hash() % size;
-    if (table[id].isInUse) {
-        /* Valid entry, then check if match */
-        if ((table[id].lvl == lvl) && (table[id].key.size() == 1) && (table[id].key[0] == a)) {
-            countHits++;
-            ans = table[id].res;
-            return 1;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
+    /* probing the entries*/
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (table[probId].isInUse) {
+            /* Valid entry, then check if match */
+            if ((table[probId].lvl == lvl) && (table[probId].key.size() == 1) && (table[probId].key[0] == a)) {
+                countHits++;
+                ans = table[probId].res;
+                return 1;
+            }
         }
     }
     /* Not cached */
@@ -61,19 +74,24 @@ bool ComputeTable::check(const uint16_t lvl, const Edge& a, Edge& ans)
 
 bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, Edge& ans)
 {
+    countCalls++;
     CacheEntry entry(lvl, a, b);
-    uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
     uint64_t id = entry.hash() % size;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
 #ifdef BRAVE_DD_CACHE_TRACE
     std::cout << "checking in cache, id = " << id << "; size = " << size << std::endl;
 #endif
-    if (table[id].isInUse) {
-        /* Valid entry, then check if match */
-        if ((table[id].lvl == lvl) && (table[id].key.size() == 2)
-            && (table[id].key[0] == a) && (table[id].key[1] == b)) {
-            countHits++;
-            ans = table[id].res;
-            return 1;
+    /* probing the entries*/
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (table[probId].isInUse) {
+            /* Valid entry, then check if match */
+            if ((table[probId].lvl == lvl) && (table[probId].key.size() == 2)
+                && (table[probId].key[0] == a) && (table[probId].key[1] == b)) {
+                countHits++;
+                ans = table[probId].res;
+                return 1;
+            }
         }
     }
     /* Not cached */
@@ -83,44 +101,65 @@ bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, Edge&
 void ComputeTable::add(const uint16_t lvl, const Edge& a, const long& ans)
 {
     /* Check if we should enlage the table when  */
-    uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
-    if (((numEnries * 4) > (size * 3)) && (numEnries < (uint64_t)0x01 << 60)) {
-        sizeIndex++;
-        size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
+    if (((numEntries * 2) > (size * 1)) && (size < (uint64_t)0x01 << 62)) {
+        size *= 2;
         enlarge(size);
     }
     CacheEntry entry(lvl, a);
-    uint64_t id = entry.hash() % size;
-    /* new entry */
-    if (!table[id].isInUse) {
-        numEnries++;
-    } else {
-        countOverwrite++;
-    }
     entry.setResult(ans);
-    table[id] = entry;
+    uint64_t id = entry.hash() % size;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
+    /* insert new entry */
+    // while (table[id].isInUse) {
+    //     id = (id + 1) % size;
+    // }
+    // numEntries++;
+    // table[id] = entry;
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (!table[probId].isInUse) {
+            numEntries++;
+            table[probId] = entry;
+            break;
+        } else if (s == probingSteps - 1) {
+            countOverwrite++;
+            table[probId] = entry;
+        } else {
+            continue;
+        }
+    }
 }
 
 void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& ans)
 {
     /* Check if we should enlage the table when  */
-    uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
-    if (((numEnries * 4) > (size * 3)) && (numEnries < (uint64_t)0x01 << 60)) {
-        sizeIndex++;
-        size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
+    if (((numEntries * 2) > (size * 1)) && (size < (uint64_t)0x01 << 62)) {
+        size *= 2;
         enlarge(size);
     }
     CacheEntry entry(lvl, a);
-    uint64_t id = entry.hash() % size;
-    /* new entry */
-    if (!table[id].isInUse) {
-        numEnries++;
-    } else {
-        countOverwrite++;
-    }
-    /* overwrite */
     entry.setResult(ans);
-    table[id] = entry;
+    uint64_t id = entry.hash() % size;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
+    /* insert new entry */
+    // while (table[id].isInUse) {
+    //     id = (id + 1) % size;
+    // }
+    // numEntries++;
+    // table[id] = entry;
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (!table[probId].isInUse) {
+            numEntries++;
+            table[probId] = entry;
+            break;
+        } else if (s == probingSteps - 1) {
+            countOverwrite++;
+            table[probId] = entry;
+        } else {
+            continue;
+        }
+    }
 #ifdef BRAVE_DD_CACHE_TRACE
     std::cout << "entry ID = " << id << ": a: ";
     entry.key[0].print(std::cout);
@@ -146,32 +185,42 @@ void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const E
     std::cout << std::endl;
 #endif
     /* Check if we should enlage the table when  */
-    uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
-    if (((numEnries * 4) > (size * 3)) && (numEnries < (uint64_t)0x01 << 60)) {
+    if (((numEntries * 2) > (size * 1)) && (size < (uint64_t)0x01 << 62)) {
 #ifdef BRAVE_DD_CACHE_TRACE
-    std::cout << "enlarge table: entries = " << numEnries << ", size = " << size << std::endl;
+    std::cout << "enlarge table: entries = " << numEntries << ", size = " << size << std::endl;
 #endif
-        sizeIndex++;
-        size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
+        size *= 2;
         enlarge(size);
     }
     CacheEntry entry(lvl, a, b);
+    entry.setResult(ans);
 #ifdef BRAVE_DD_CACHE_TRACE
     std::cout << "compute hash\n";
 #endif
     uint64_t id = entry.hash() % size;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
 #ifdef BRAVE_DD_CACHE_TRACE
     std::cout << "compute hash done\n";
 #endif
-    /* new entry */
-    if (!table[id].isInUse) {
-        numEnries++;
-    } else {
-        countOverwrite++;
+    /* insert new entry */
+    // while (table[id].isInUse) {
+    //     id = (id + 1) % size;
+    // }
+    // numEntries++;
+    // table[id] = entry;
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (!table[probId].isInUse) {
+            numEntries++;
+            table[probId] = entry;
+            break;
+        } else if (s == probingSteps - 1) {
+            countOverwrite++;
+            table[probId] = entry;
+        } else {
+            continue;
+        }
     }
-    /* overwrite */
-    entry.setResult(ans);
-    table[id] = entry;
 #ifdef BRAVE_DD_CACHE_TRACE
     std::cout << "entry ID = " << id << ": a: ";
     entry.key[0].print(std::cout);
@@ -213,7 +262,7 @@ void ComputeTable::sweep(Forest* forest, int role)
             // check target node: if marked continue; otherwise, flip Inuse flag
             if ((lvl > 0) && !forest->getNode(lvl, target).isMarked()) {
                 table[i].isInUse = 0;
-                numEnries--;
+                numEntries--;
             } else {
                 continue;
             }
@@ -226,46 +275,45 @@ void ComputeTable::sweep(Forest* forest, int role)
 void ComputeTable::reportStat(std::ostream& out, int format) const
 {
     if (format == 0) {
-        uint64_t size = PRIMES[sizeIndex] ? PRIMES[sizeIndex] : ((uint64_t)0x01 << 60);
         out << "Computing Table Statistics: \n";
-        out << "Size: \t\t" << size << "\n";
-        out << "Ents: \t\t" << numEnries << "\n";
-        out << "Hits: \t\t" << countHits << "\n";
-        out << "OWs:  \t\t" << countOverwrite << "\n";
+        out << std::left << std::setw(10) << "Size:" << size << "\n";
+        out << std::left << std::setw(10) << "Ents:" << numEntries << "\n";
+        out << std::left << std::setw(10) << "Calls:" << countCalls << "\n";
+        out << std::left << std::setw(10) << "Hits:" << countHits << "\n";
+        out << std::left << std::setw(10) << "OWs:" << countOverwrite << "\n";
     }
 }
 
 void ComputeTable::enlarge(uint64_t newSize)
 {
-    // copy the old table
-    std::vector<CacheEntry> oldTable = table;
     // resize the table
-    table.resize(newSize);
+    std::vector<CacheEntry> newTable(newSize);
     // rehash
-    for (size_t i=0; i<oldTable.size(); i++) {
-        if (oldTable[i].isInUse) {
-            uint64_t newId = oldTable[i].hash() % newSize;
-            if (newId != i) {
-                // should move to a new slot
-                if (!table[newId].isInUse) {
-                    // new place is not occupied, then move to there
-                    table[newId] = oldTable[i];
+    for (size_t i=0; i<table.size(); i++) {
+        if (table[i].isInUse) {
+            uint64_t newId = table[i].hash() % newSize;
+            // uint64_t newId = table[i].hash() >> (64 - sizeBits);
+            // while (newTable[newId].isInUse) {
+            //     newId = (newId + 1) % newSize;
+            // }
+            // newTable[newId] = table[i];
+            for (size_t s=0; s<probingSteps; s++) {
+                size_t probId = (newId + s) % newSize;
+                if (!newTable[probId].isInUse) {
+                    newTable[probId] = table[i];
+                } else if (s == probingSteps - 1) {
+                    newTable[probId] = table[i];
                 } else {
-                    // new place is occupied, do nothing to give up this entry :-(
                     continue;
                 }
-                // turn off the old place anyway
-                table[i].isInUse = 0;
-            } else {
-                // great! it does not have to move
-                continue;
             }
         }
     }
-    oldTable.clear();
     // update num in use
-    numEnries = 0;
-    for (size_t i=0; i<table.size(); i++) {
-        if (table[i].isInUse) numEnries ++;
+    numEntries = 0;
+    for (size_t i=0; i<newTable.size(); i++) {
+        if (newTable[i].isInUse) numEntries++;
     }
+    // probingSteps = newSize;
+    table = std::move(newTable);
 }

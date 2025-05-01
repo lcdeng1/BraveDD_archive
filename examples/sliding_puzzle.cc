@@ -20,8 +20,9 @@ uint16_t bits;  // bits per position
 using PuzzleState = std::vector<std::vector<uint16_t> >; // 2D representation of the puzzle
 
 // Timers
-timer watch1, watch2, watch3;
+timer watchChain, watchBFS, watchBFS0;
 double timeLimit = 1800.0;
+bool isTimeLimitGlobal = 0;
 
 
 /**
@@ -365,8 +366,9 @@ bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& targ
         FF.falseFunc();
 
         // check if time out
-        watch1.note_time();
-        if (watch1.get_last_seconds() >= time) {
+        watchBFS.note_time();
+        if (watchBFS.get_last_seconds() >= time) {
+            target = SS;
             return 0;
         }
     }
@@ -411,8 +413,12 @@ bool SSG_chain(const Func& initial, const std::vector<Func>& relations, Func& ta
         forest2->markSweep();
 
         // check if time out
-        watch2.note_time();
-        if (watch2.get_last_seconds() >= time) return 0;
+        watchChain.note_time();
+        if (watchChain.get_last_seconds() >= time) {
+            // result the explored so far
+            target = SS;
+            return 0;
+        }
     }
     target = SS;
     return 1;
@@ -525,9 +531,18 @@ bool SSG(bool isPrint, Func& target, const double time)
             }
         }
 
+        // GC
+        forest1->registerFunc(states);
+        forest1->markAllFuncs();
+        forest1->markSweep();
+        forest1->deregisterFunc(states);
+
         // check if time out
-        watch3.note_time();
-        if (watch3.get_last_seconds() >= time) return 0;
+        watchBFS0.note_time();
+        if (watchBFS0.get_last_seconds() >= time) {
+            target = states;
+            return 0;
+        }
     }
     long card = 0;
     apply(CARDINALITY, states, card);
@@ -578,6 +593,10 @@ bool processArgs(int argc, const char** argv)
             if (strcmp("-t", argv[i])==0) {
                 timeLimit = std::stod(argv[i+1]);
                 i++;
+                continue;
+            }
+            if (strcmp("-tg", argv[i])==0) {
+                isTimeLimitGlobal = 1;
                 continue;
             }
         }
@@ -679,63 +698,74 @@ int main(int argc, const char** argv)
     /* flags if results are computed */
     bool getRes_BFS = 0, getRes_chain = 0, getRes_correct = 0;
     /* time (sec) of each method */
-    double time_BFS = 0.0, time_chain = 0.0, time_correct = 0.0;
+    double time_BFS = 0.0, time_chain = 0.0, time_correct = 0.0, newTimeLimit = timeLimit;
+    /* #state of each methods */
+    long state_BFS = 0, state_chain = 0, state_correct = 0;
+    /* #nodes of each methods */
+    uint64_t nodes_BFS = 0, nodes_chain = 0, nodes_correct = 0;
 
     /* Compute state space using saturation */
 
     /* Compute state space using chain search */
     Func states_chain(forest1);
     // Timer start
-    watch2.note_time();
-    if (SSG_chain(target, relations, states_chain, timeLimit)) {
-        watch2.note_time();
-        time_chain = watch2.get_last_seconds();
-        forest1->registerFunc(states_chain);
-        // report cache
-        UOPs.reportCacheStat(std::cout);
-        BOPs.reportCacheStat(std::cout);
+    watchChain.reset();
+    watchChain.note_time();
+    getRes_chain = SSG_chain(target, relations, states_chain, newTimeLimit);
+    watchChain.note_time();
+    // report cache
+    UOPs.reportCacheStat(std::cout);
+    BOPs.reportCacheStat(std::cout);
+    // record time
+    time_chain = watchChain.get_last_seconds();
+    // record #states
+    apply(CARDINALITY, states_chain, state_chain);
+    // record #nodes
+    nodes_chain = forest1->getNodeManUsed(states_chain);
 
-        std::cout << "chain done! Elapsed time: " << time_chain << " seconds" << std::endl;
-        std::cout << "\tresult edge: ";
-        states_chain.getEdge().print(std::cout);
-        std::cout << std::endl;
-        std::cout << "\tnumber of nodes: " << forest1->getNodeManUsed(states_chain) << std::endl;
-        apply(CARDINALITY, states_chain, num);
-        std::cout << "\tnumber of states: " << num << std::endl;
-        getRes_chain = 1;
-    }
+    // forest1->registerFunc(states_chain);
+    // reset the forest
+    forest1->markAllFuncs();
+    forest1->markSweep();
 
-    /* Compute state space using BFS search */
+    /* Update time limit */
+    if (!isTimeLimitGlobal) newTimeLimit = time_chain;
+
+    /* Compute state space using BFS */
     Func states_BFS(forest1);
     // Timer start
-    watch1.note_time();
-    if (SSG_BFS(target, relations, states_BFS, timeLimit)) {
-        watch1.note_time();
-        time_BFS = watch1.get_last_seconds();
-        forest1->registerFunc(states_BFS);
-        // report cache
-        UOPs.reportCacheStat(std::cout);
-        BOPs.reportCacheStat(std::cout);
+    watchBFS.reset();
+    watchBFS.note_time();
+    getRes_BFS = SSG_BFS(target, relations, states_BFS, newTimeLimit);
+    watchBFS.note_time();
+    // report cache
+    UOPs.reportCacheStat(std::cout);
+    BOPs.reportCacheStat(std::cout);
+    // record time
+    time_BFS = watchBFS.get_last_seconds();
+    // record #states
+    apply(CARDINALITY, states_BFS, state_BFS);
+    // record #nodes
+    nodes_BFS = forest1->getNodeManUsed(states_BFS);
 
-        std::cout << "BFS done! Elapsed time: " << time_BFS << " seconds" << std::endl;
-        std::cout << "\tresult edge: ";
-        states_BFS.getEdge().print(std::cout);
-        std::cout << std::endl;
-        std::cout << "\tnumber of nodes: " << forest1->getNodeManUsed(states_BFS) << std::endl;
-        apply(CARDINALITY, states_BFS, num);
-        std::cout << "\tnumber of states: " << num << std::endl;
-        getRes_BFS = 1;
-    }
+    // forest1->registerFunc(states_BFS);
+    // reset the forest
+    forest1->markAllFuncs();
+    forest1->markSweep();
 
-    // the correct answer
+    /* Compute state space using BFS without image */
     Func states(forest1);
-    watch3.note_time();
-    if ((N>2 || M>2) ? SSG(0, states, timeLimit) : SSG(1, states, timeLimit)) {
-        watch3.note_time();
-        time_correct = watch3.get_last_seconds();
-        std::cout << "Must correct done! Elapsed time: " << time_correct << " seconds" << std::endl;
-        getRes_correct = 1;
-    }
+    watchBFS0.reset();
+    watchBFS0.note_time();
+    getRes_correct = (N>2 || M>2) ? SSG(0, states, newTimeLimit) : SSG(1, states, (isTimeLimitGlobal) ? timeLimit : newTimeLimit);
+    watchBFS0.note_time();
+    // record time
+    time_correct = watchBFS0.get_last_seconds();
+    // record #states
+    apply(CARDINALITY, states, state_correct);
+    // record #nodes
+    nodes_correct = forest1->getNodeManUsed(states);
+
 
     // check with the correct answer
     if ((getRes_BFS && getRes_correct) && (states.getEdge() != states_BFS.getEdge())) {
@@ -844,28 +874,21 @@ int main(int argc, const char** argv)
     if (getRes_correct) {
         std::cout << "BFS (w/o image): \t" << time_correct << " seconds" << std::endl;
     } else {
-        std::cout << "BFS (w/0 image): \tTIME OUT" << std::endl;
+        std::cout << "BFS (w/o image): \tTIME OUT" << std::endl;
     }
-    std::cout << "\t\t\t\t[TIME OUT: " << timeLimit << " seconds]" << std::endl;
+    std::cout << "\t\t\t\t[TIME OUT: " << newTimeLimit << " seconds]" << std::endl;
 
+    /* report expored #states */
+    std::cout << "=======================| #States |========================" << std::endl;
+    std::cout << "chain: \t\t\t" << state_chain << std::endl;
+    std::cout << "BFS: \t\t\t" << state_BFS << std::endl;
+    std::cout << "BFS (w/o image): \t" << state_correct << std::endl;
     
     /* report nodes */
     std::cout << "=========================| Node |=========================" << std::endl;
-    if (getRes_chain) {
-        std::cout << "chain: \t\t\t" << forest1->getNodeManUsed(states_chain) << std::endl;
-    } else {
-        std::cout << "chain: \t\t\tInvalid" << std::endl;
-    }
-    if (getRes_BFS) {
-        std::cout << "BFS: \t\t\t" << forest1->getNodeManUsed(states_BFS) << std::endl;
-    } else {
-        std::cout << "BFS: \t\t\tInvalid" << std::endl;
-    }
-    if (getRes_correct) {
-        std::cout << "BFS (w/o image): \t" << forest1->getNodeManUsed(states) << std::endl;
-    } else {
-        std::cout << "BFS (w/0 image): \tInvalid" << std::endl;
-    }
+    std::cout << "chain: \t\t\t" << nodes_chain << std::endl;
+    std::cout << "BFS: \t\t\t" << nodes_BFS << std::endl;
+    std::cout << "BFS (w/o image): \t" << nodes_correct << std::endl;
 
     /* Compute state space using saturation */
     // Func states(forest1);
