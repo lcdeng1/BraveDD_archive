@@ -2,6 +2,7 @@
 #define BRAVE_DD_HASH_STREAM_H
 
 #include "error.h"
+#include <cstdint> // Add include for fixed-width types
 
 namespace BRAVE_DD {
   class hash_stream;
@@ -69,14 +70,13 @@ class BRAVE_DD::hash_stream {
 #endif
         return z[0];
     }
-    inline unsigned long finish64() {
+    inline uint64_t finish64() {
         final_mix();
 #ifdef DEBUG_HASH
         printf("hash_stream::finish: %u,%u\n", z[0], z[1]);
 #endif
-        unsigned long foo = z[0];
-        foo <<= 32;
-        foo |= z[1];
+        uint64_t foo = z[0];
+        foo = (foo << 32) | z[1]; // Fixed shift using 64-bit type
         return foo;
     }
     inline void push(unsigned v) {
@@ -298,7 +298,7 @@ class BRAVE_DD::hash_stream {
     //
     // Hash an array of unsigneds, return an unsigned long
     //
-    static inline unsigned long raw_hash64(const unsigned* k, int len) {
+    static inline uint64_t raw_hash64(const unsigned* k, int len) {
         unsigned a, b, c;
     //    a = b = c = 0xdeadbeef;
         a = b = 0;
@@ -326,9 +326,8 @@ class BRAVE_DD::hash_stream {
                   break;
         }
 
-        unsigned long answer = b;
-        answer <<= 32;
-        answer |= c;
+        uint64_t answer = static_cast<uint64_t>(b);
+        answer = (answer << 32) | static_cast<uint64_t>(c); // Fixed shift using 64-bit type
         return answer;
     }
 };

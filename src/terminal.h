@@ -31,12 +31,15 @@ namespace BRAVE_DD {
      * @return Value     – Output termianl value wrapper.
      */
     static inline Value getTerminalValue(const EdgeHandle& handle) {
-        if(unpackLevel(handle)>0) {
+        if(unpackLevel(handle) > 0) {
             std::cout << "[BRAVE_DD] ERROR!\t getTerminalValue(EdgeHandle): No value for nonterminal node!"<< std::endl;
             exit(0);
         }
+        
         Value val(0);
         NodeHandle data = unpackTarget(handle);
+        
+        // Check if any type flag is set
         if (handle & FLOAT_VALUE_FLAG_MASK) {
             // float value
             float value = *reinterpret_cast<float*>(&data);
@@ -50,10 +53,15 @@ namespace BRAVE_DD {
             SpecialValue value = *reinterpret_cast<SpecialValue*>(&data);
             val.setValue(value, VOID);
         } else {
-            // unknown value
-            std::cout << "[BRAVE_DD] ERROR!\t getTerminalValue(EdgeHandle): Unknown value for terminal node!"<< std::endl;
-            exit(0);
+            // No type flag - try to recover by assuming INT type
+            // This is a fix for nodes missing type flags
+            int value = static_cast<int>(data);
+            val.setValue(value, INT);
+            
+            // Add a warning but don't crash
+            std::cout << "[BRAVE_DD] WARNING! getTerminalValue(EdgeHandle): Missing type flag for terminal node. Assuming INT type."<< std::endl;
         }
+        
         return val;
     }
     

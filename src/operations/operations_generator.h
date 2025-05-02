@@ -93,6 +93,14 @@ namespace BRAVE_DD {
     // inline Func saturate(Func set, FuncArray forwards) {
     //     //
     // }
+
+    class OperationsGenerator {
+        public:
+            static void buildUnaryOperations(Forest* forest);
+            static void buildBinaryOperations(Forest* forest);
+            static void buildUnaryOperation(Forest* forest, UnaryOperationType opT, Forest* targetF);
+            static void buildBinaryOperation(Forest* forest, BinaryOperationType opT, Forest* targetF);
+    };
 }
 
 #endif

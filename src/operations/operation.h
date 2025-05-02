@@ -59,7 +59,8 @@ namespace BRAVE_DD {
         BOP_POSTIMAGE,
         BOP_VM,
         BOP_MV,
-        BOP_MM
+        BOP_MM,
+        BOP_UNION_ASSIGNMENTS  // New operation type for unionAssignments
     };
     class BinaryOperation;
     class BinaryList;
@@ -218,7 +219,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
 
     /* Main part: computation */
     void compute(const Func& source1, const Func& source2, Func& res);
-    void compute(const Func& source1, const ExplictFunc source2, Func& res);
+    void compute(const Func& source1, const ExplictFunc& source2, Func& res);
     /*-------------------------------------------------------------*/
     protected:
     /*-------------------------------------------------------------*/
@@ -251,7 +252,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
 
 // ******************************************************************
 // *                                                                *
-// *                       BinaryList  class                         *
+// *                       BinaryList  class                        *
 // *                                                                *
 // ******************************************************************
 
@@ -298,7 +299,6 @@ class BRAVE_DD::BinaryList {
     }
     inline void sweepCache(Forest* forest) { searchSweepCache(forest); }
     void reportCacheStat(std::ostream& out, int format=0) const;
-
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
@@ -307,7 +307,6 @@ class BRAVE_DD::BinaryList {
     void searchSweepCache(Forest* forest);
     BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const Forest* source2F, const Forest* resF);
     BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const OpndType source2T, const Forest* resF);
-
 };
 
 // ******************************************************************

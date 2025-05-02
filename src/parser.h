@@ -37,7 +37,6 @@ public:
    
     virtual void read_header(unsigned &ib, unsigned &ob, unsigned &minterms, FILE* debug = 0) = 0;
 
-  .
     virtual bool read_minterm(char* input_bits, char& out_terminal) = 0;
 
     void debug(bool show_header, bool show_minterms, bool show_summary);

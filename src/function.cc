@@ -1,6 +1,19 @@
 #include "function.h"
 #include "forest.h"
 #include "node.h"
+#include "brave_helpers.h"
+#include "terminal.h"
+#include "operations/operation.h"
+#include "operations/operations_generator.h"
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <utility>
+#include <cstring>
+#include <algorithm>
+#include <set>
+#include <vector>
+#include <map>
 
 using namespace BRAVE_DD;
 // ******************************************************************
@@ -293,7 +306,7 @@ Value Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aT
     CompSet ct = parent->getSetting().getCompType();
     /* tmp store edge info for "for" loop */
     Edge current = edge;
-    /* get target node info */
+        /* get target node info */
     NodeHandle targetHandle = current.getNodeHandle();
     uint16_t targetLvl = current.getNodeLevel();
     /* info to determine next child edge */
@@ -348,15 +361,15 @@ Value Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aT
             if (isComp) current.complement();
             /* update varibles */
             isIdent = 1;
-            targetHandle = current.getNodeHandle();
-            targetLvl = current.getNodeLevel();
+        targetHandle = current.getNodeHandle();
+        targetLvl = current.getNodeLevel();
 #ifdef BRAVE_DD_TRACE
             std::cout<<"next currt: k="<< k <<", targetlvl=" << targetLvl << "; ";
             current.print(std::cout, 0);
             std::cout << std::endl;
 #endif
             continue;
-        }
+            }
         // not reach the terminal cases of reduction rules, or got the next edge
         if (targetLvl == 0) {
             // value type INT, FLOAT, or VOID (special value)
@@ -383,12 +396,105 @@ Value Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aT
 }
 
 void Func::unionAssignments(const ExplictFunc& assignments) {
-    // check applicability based on setting TBD <== relation? levels?
-        // throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
-    std::cout<<"Not implemented..."<<std::endl;
-    // TBD
-}
+    try {
+        // Check if function is attached to a forest
+        if (!parent) {
+            std::cerr << "[BRAVE_DD] ERROR! unionAssignments: Function not attached to a forest" << std::endl;
+            return;
+        }
 
+        // Get the number of assignments
+        size_t numAssignments = assignments.size();
+        if (numAssignments == 0) {
+            // Nothing to do, return the original function
+            return;
+        }
+
+        // Get the number of bits to process (skip the 0th element)
+        int numBits = assignments.getNumBits();
+        if (numBits <= 0) {
+            throw error(ErrCode::MISCELLANEOUS, __FILE__, __LINE__);
+        }
+        
+        // Create a full new BDD instead of trying to modify the existing one
+        Func resultFunc(parent);
+        resultFunc.falseFunc();  // Start with a false function
+        
+        // Process each assignment individually
+        for (size_t i = 0; i < numAssignments; i++) {
+            const std::vector<bool>& assignment = assignments.getAssignment(i);
+            const Value& outcome = assignments.getOutcome(i);
+            
+            // Create a path for this assignment
+            // For simplicity, build each path level by level from the bottom up
+            uint16_t numVars = parent->getSetting().getNumVars();
+            
+            // Start with a terminal 1 node
+            Edge terminalOneEdge = makeTerminalEdge(parent, 1);
+            Edge terminalZeroEdge = createTerminalZero(parent);
+            
+            // Build the path from the bottom up
+            Edge currentEdge = terminalOneEdge;
+            
+            for (uint16_t level = 1; level <= numVars; level++) {
+                uint16_t varIndex = numVars - level + 1;  // Variable index (1-based)
+                
+                // Create a node at this level
+                std::vector<Edge> children(2);
+                
+                // Connect the path based on the assignment
+                if (assignment[varIndex]) {
+                    // Variable is 1 in the assignment
+                    children[0] = terminalZeroEdge;  // 0-child
+                    children[1] = currentEdge;       // 1-child
+                } else {
+                    // Variable is 0 in the assignment
+                    children[0] = currentEdge;       // 0-child
+                    children[1] = terminalZeroEdge;  // 1-child
+                }
+                
+                // Create the node
+                EdgeLabel label = 0;
+                packRule(label, RULE_X);
+                currentEdge = parent->reduceEdge(numVars, label, varIndex, children);
+            }
+            
+            // Now we have a BDD path for this assignment
+            // Add it to the result function using union operation
+            try {
+                BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_UNION, parent, parent, parent);
+                if (!bop) {
+                    bop = BOPs.add(new BinaryOperation(BinaryOperationType::BOP_UNION, parent, parent, parent));
+                }
+                
+                Func pathFunc(parent, currentEdge);
+                
+                // Union the current result with this path
+                if (i == 0) {
+                    resultFunc = pathFunc;  // First assignment - just use the path
+                } else {
+                    Func temp(parent);
+                    bop->compute(resultFunc, pathFunc, temp);
+                    resultFunc = temp;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[BRAVE_DD] ERROR in unionAssignments union operation: " << e.what() << std::endl;
+            }
+        }
+        
+        // Set the final result
+        edge = resultFunc.getEdge();
+        
+        // Ensure the result has proper type flags
+        edge = ensureTerminalTypeFlags(parent, edge);
+    }
+    catch (const std::exception& e) {
+        std::cerr << "[BRAVE_DD] ERROR in unionAssignments: " << e.what() << std::endl;
+    }
+    catch (...) {
+        std::cerr << "[BRAVE_DD] UNKNOWN ERROR in unionAssignments" << std::endl;
+    }
+}
 
 /* Expert function for union assignments TBD */
 Edge Func::unionAssignmentRecursive(uint16_t n, Edge& root, ExplictFunc assignments)
@@ -446,3 +552,118 @@ void FuncArray::add(Func f)
 {
     // TBD
 }
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                      ExplictFunc  methods                      *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+ExplictFunc::ExplictFunc()
+{
+    defaultVal.setValue(0, INT);
+}
+
+ExplictFunc::~ExplictFunc()
+{
+    // Nothing to clean up
+}
+
+void ExplictFunc::addAssignment(const std::vector<bool>& assignment, const Value& outcome)
+{
+    assignments.push_back(assignment);
+    outcomes.push_back(outcome);
+}
+
+const std::vector<std::vector<bool>>& ExplictFunc::getAssignments() const
+{
+    return assignments;
+}
+
+const std::vector<Value>& ExplictFunc::getOutcomes() const
+{
+    return outcomes;
+}
+
+Value ExplictFunc::getDefaultValue() const
+{
+    return defaultVal;
+}
+
+void ExplictFunc::setDefaultValue(const Value& val)
+{
+    defaultVal = val;
+}
+
+size_t ExplictFunc::size() const
+{
+    return assignments.size();
+}
+
+int ExplictFunc::getNumBits() const
+{
+    if (assignments.empty()) {
+        return 0;
+    }
+    return static_cast<int>(assignments[0].size());
+}
+
+const std::vector<bool>& ExplictFunc::getAssignment(int idx) const
+{
+    if (idx < 0 || idx >= static_cast<int>(assignments.size())) {
+        static std::vector<bool> empty;
+        std::cerr << "[BRAVE_DD] ERROR! ExplictFunc::getAssignment: Index out of bounds" << std::endl;
+        return empty;
+    }
+    return assignments[idx];
+}
+
+const Value& ExplictFunc::getOutcome(int idx) const
+{
+    if (idx < 0 || idx >= static_cast<int>(outcomes.size())) {
+        static Value empty;
+        std::cerr << "[BRAVE_DD] ERROR! ExplictFunc::getOutcome: Index out of bounds" << std::endl;
+        return empty;
+    }
+    return outcomes[idx];
+}
+
+char** ExplictFunc::getAllAssignmentsAsCharArray() const
+{
+    size_t numAssignments = assignments.size();
+    if (numAssignments == 0) {
+        return nullptr;
+    }
+
+    // Get the number of bits
+    size_t numBits = assignments[0].size() - 1; // Skip the 0th element
+    
+    // Allocate memory for the char** array
+    char** result = new char*[numAssignments];
+    
+    // Convert each assignment to a char array
+    for (size_t i = 0; i < numAssignments; i++) {
+        result[i] = new char[numBits + 1]; // +1 for null terminator
+        
+        // Skip the 0th element in assignments
+        for (size_t j = 0; j < numBits; j++) {
+            result[i][j] = assignments[i][j+1] ? '1' : '0';
+        }
+        result[i][numBits] = '\0'; // Null terminate
+    }
+    
+    return result;
+}
+
+void ExplictFunc::freeCharArray(char** array, int size) const
+{
+    if (array == nullptr) {
+        return;
+    }
+    
+    for (int i = 0; i < size; i++) {
+        delete[] array[i];
+    }
+    delete[] array;
+} 

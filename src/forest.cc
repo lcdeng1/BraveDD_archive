@@ -1,5 +1,6 @@
 #include "forest.h"
 #include "operations/operation.h"
+#include "operations/operations_generator.h"
 
 // #define BRAVE_DD_FOREST_TRACE
 
@@ -20,6 +21,10 @@ Forest::Forest(const ForestSetting& s):setting(s)
     nodeMan = new NodeManager(this);
     uniqueTable = new UniqueTable(this);
     stats = new Statistics();
+    
+    // Initialize operations
+    OperationsGenerator::buildUnaryOperations(this);
+    OperationsGenerator::buildBinaryOperations(this);
 }
 Forest::~Forest()
 {

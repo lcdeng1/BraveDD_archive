@@ -1,4 +1,8 @@
 #include "operations_generator.h"
+#include "operation.h"
+#include "../function.h"
+#include "../forest.h"
+#include "../brave_helpers.h"
 
 namespace BRAVE_DD {
     UnaryList UOPs;
@@ -78,4 +82,37 @@ BinaryOperation* BRAVE_DD::POST_IMAGE(Forest* arg1, Forest* arg2, Forest* res)
     if (bop) return bop;
     bop = new BinaryOperation(BinaryOperationType::BOP_POSTIMAGE, arg1, arg2, res);
     return BOPs.add(bop);
+}
+
+void OperationsGenerator::buildUnaryOperations(Forest* forest) {
+    // Build all unary operations for the forest
+    buildUnaryOperation(forest, UnaryOperationType::UOP_COPY, forest);
+    buildUnaryOperation(forest, UnaryOperationType::UOP_COMPLEMENT, forest);
+    buildUnaryOperation(forest, UnaryOperationType::UOP_CARDINALITY, nullptr);
+    // Add more unary operations as needed
+}
+
+void OperationsGenerator::buildBinaryOperations(Forest* forest) {
+    // Build all binary operations for the forest
+    buildBinaryOperation(forest, BinaryOperationType::BOP_UNION, forest);
+    buildBinaryOperation(forest, BinaryOperationType::BOP_INTERSECTION, forest);
+    // Add more binary operations as needed
+}
+
+void OperationsGenerator::buildUnaryOperation(Forest* forest, UnaryOperationType opT, Forest* targetF) {
+    // Check if the operation already exists
+    UnaryOperation* op = UOPs.find(opT, forest, targetF);
+    if (!op) {
+        // Create the unary operation
+        op = UOPs.add(new UnaryOperation(opT, forest, targetF));
+    }
+}
+
+void OperationsGenerator::buildBinaryOperation(Forest* forest, BinaryOperationType opT, Forest* targetF) {
+    // Check if the operation already exists
+    BinaryOperation* op = BOPs.find(opT, forest, forest, targetF);
+    if (!op) {
+        // Create the binary operation
+        op = BOPs.add(new BinaryOperation(opT, forest, forest, targetF));
+    }
 }
