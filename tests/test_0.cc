@@ -1,4 +1,4 @@
-#include "src/brave_dd.h"
+#include "brave_dd.h"
 
 using namespace BRAVE_DD;
 

@@ -14,6 +14,26 @@ endif()
 # Create a library target
 add_library(BraveDD ${SRC_FILES})
 
+# Find LZMA 
+find_package(LibLZMA REQUIRED)   
+
+# Find Boost 
+find_package(Boost CONFIG REQUIRED COMPONENTS filesystem)
+
+# Link LZMA 
+target_link_libraries(BraveDD
+    PUBLIC
+    LibLZMA::LibLZMA    
+)
+
+# Link ghc 
+target_link_libraries(BraveDD
+    PUBLIC
+    Boost::filesystem
+)
+
+#Link 
+
 # Add include directories
 target_include_directories(BraveDD
     PUBLIC

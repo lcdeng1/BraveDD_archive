@@ -1,9 +1,9 @@
-#include "src/parser.h"
+#include "parser.h"
 #include <iostream>
 #include <stdexcept>
-#include <filesystem>
+#include <boost/filesystem.hpp>
 
-namespace fs = std::filesystem;
+namespace fs = boost::filesystem;
 
 static int usage(const char* exe) {
     std::cerr << "Usage: " << exe << " (options) (infile)\n\n"
