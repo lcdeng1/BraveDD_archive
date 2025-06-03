@@ -39,11 +39,10 @@ ForestSetting::ForestSetting(const unsigned numVals)
     name = "RexBDD";
 }
 
-ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, const long maxRange)
-:domain(numVals), range(maxRange), flags(NO_SWAP, NO_COMP)
+ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, const EncodeMechanism encodeMechanism, const long maxRange)
+:domain(numVals), range(maxRange), flags(NO_SWAP, NO_COMP), encodingType(encodeMechanism)
 {
     // default setting
-    encodingType = TERMINAL;
     mergeType = NO_MERGE;
     if (type == PredefForest::REXBDD) {
         // setting for RexBDD
@@ -115,11 +114,10 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
     }
 }
 
-ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, const long maxRange)
-:domain(numVals), range(maxRange), flags(NO_SWAP, NO_COMP)
+ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, const EncodeMechanism encodeMechanism, const long maxRange)
+:domain(numVals), range(maxRange), flags(NO_SWAP, NO_COMP), encodingType(encodeMechanism)
 {
     // default setting
-    encodingType = TERMINAL;
     mergeType = NO_MERGE;
     // convert to all lower case
     std::string bddLower;
