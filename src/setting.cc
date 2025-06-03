@@ -39,10 +39,11 @@ ForestSetting::ForestSetting(const unsigned numVals)
     name = "RexBDD";
 }
 
-ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, const EncodeMechanism encodeMechanism, const long maxRange)
-:domain(numVals), range(maxRange), flags(NO_SWAP, NO_COMP), encodingType(encodeMechanism)
+ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, const long maxRange)
+:domain(numVals), range(maxRange), flags(NO_SWAP, NO_COMP)
 {
     // default setting
+    encodingType = TERMINAL;
     mergeType = NO_MERGE;
     if (type == PredefForest::REXBDD) {
         // setting for RexBDD
@@ -348,7 +349,7 @@ void ForestSetting::output(std::ostream& out, int format) const
         if (getEncodeMechanism()==EDGE_PLUSMOD) out<<": mod = "<<getMaxRange();
         out<<std::endl;
         // merge type
-        out<<"\tMege type:\t\t"<<mergeType2String(getMergeType(), isRelation())<<std::endl;
+        out<<"\tMerge type:\t\t"<<mergeType2String(getMergeType(), isRelation())<<std::endl;
         out<<"============================ Settings End ==========================="<<std::endl;
     } else if (format == 1) {
         //
