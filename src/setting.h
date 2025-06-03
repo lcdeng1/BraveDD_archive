@@ -136,7 +136,7 @@ class BRAVE_DD::ForestSetting {
          */
         ForestSetting(const unsigned numVals);
         ForestSetting(const PredefForest type, const unsigned numVals, const EncodeMechanism encodingType = TERMINAL, const long maxRange=1);
-        ForestSetting(const std::string& bdd, const unsigned numVals, const EncodeMechanism encodingType = TERMINAL, const long maxRange=1);
+        ForestSetting(const std::string& bdd, const unsigned numVals, const long maxRange=1);
         ~ForestSetting();
         //******************************************
         //  Getters for the type

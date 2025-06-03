@@ -114,10 +114,11 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
     }
 }
 
-ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, const EncodeMechanism encodeMechanism, const long maxRange)
-:domain(numVals), range(maxRange), flags(NO_SWAP, NO_COMP), encodingType(encodeMechanism)
+ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, const long maxRange)
+:domain(numVals), range(maxRange), flags(NO_SWAP, NO_COMP)
 {
     // default setting
+    encodingType = TERMINAL;
     mergeType = NO_MERGE;
     // convert to all lower case
     std::string bddLower;
@@ -199,18 +200,32 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         // setting for EV+QBDD
         reductions = Reductions(QUASI);
         name = "EVQBDD";
+        encodingType = EDGE_PLUS;
     } else if (bddLower == "ev%qbdd" || bddLower == "evmodqbdd") {
         // setting for EV%QBDD
+        reductions = Reductions(QUASI);
+        name = "EVMODQBDD";
+        encodingType = EDGE_PLUSMOD;
     } else if (bddLower == "ev*qbdd") {
-        // setting for EV*FBDD
+        // setting for EV*QBDD
+        reductions = Reductions(QUASI);
+        name = "EVSTARQBDD";
+        encodingType = EDGE_MULT;
     } else if (bddLower == "evfbdd" || bddLower == "ev+fbdd") {
         // setting for EV+FBDD
         reductions = Reductions(FULLY);
         name = "EVFBDD";
+        encodingType = EDGE_PLUS;
     } else if (bddLower == "ev%fbdd" || bddLower == "evmodfbdd") {
         // setting for EV%FBDD
+        reductions = Reductions(FULLY);
+        name = "EVMODFBDD";
+        encodingType = EDGE_PLUSMOD;
     } else if (bddLower == "ev*fbdd") {
         // setting for EV*FBDD
+        reductions = Reductions(FULLY);
+        name = "EVSTARFBDD";
+        encodingType = EDGE_MULT;
     }
     // MxDs
     else if (bddLower == "qbmxd") {
@@ -239,18 +254,32 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         // setting for EV+QBMxD
         reductions = Reductions(QUASI_QUASI);
         name = "EVQBMxD";
+        encodingType = EDGE_PLUS;
     } else if (bddLower == "ev%qbmxd" || bddLower == "evmodqbmxd") {
         // setting for EV%QBMxD
+        reductions = Reductions(QUASI_QUASI);
+        name = "EVMODQBMxD";
+        encodingType = EDGE_PLUSMOD;
     } else if (bddLower == "ev*qbmxd") {
         // setting for EV*QBMxD
+        reductions = Reductions(QUASI_QUASI);
+        name = "EVSTARQBMxD";
+        encodingType = EDGE_MULT;
     } else if (bddLower == "evfbmxd" || bddLower == "ev+fbmxd") {
         // setting for EV+FBMxD
         reductions = Reductions(FULLY_FULLY);
         name = "EVFBMxD";
+        encodingType = EDGE_PLUS;
     } else if (bddLower == "ev%fbmxd" || bddLower == "evmodfbmxd") {
         // setting for EV%FBMxD
+        reductions = Reductions(FULLY_FULLY);
+        name = "EVMODFBMxD";
+        encodingType = EDGE_PLUSMOD;
     } else if (bddLower == "ev*fmxd") {
         // setting for EV*FBMxD
+        reductions = Reductions(FULLY_FULLY);
+        name = "EVSTARQBMxD";
+        encodingType = EDGE_MULT;
     } else {
         // Unknown predefined BDD or BMxD
         std::cout << "[BRAVE_DD] ERROR!\t Unknown BDD/MxD: " << bdd << std::endl;
