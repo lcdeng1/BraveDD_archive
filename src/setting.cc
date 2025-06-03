@@ -197,12 +197,22 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         flags.setCompType(COMP);
         mergeType = PUSH_UP;
         name = "CESRBDD";
-    } else if (bddLower == "evbdd" || bddLower == "ev+bdd") {
-        // setting for EV+BDD
-    } else if (bddLower == "ev%bdd" || bddLower == "evmodbdd") {
-        // setting for EV%BDD
-    } else if (bddLower == "ev*bdd") {
-        // setting for EV*BDD
+    } else if (bddLower == "evqbdd" || bddLower == "ev+qbdd") {
+        // setting for EV+QBDD
+        reductions = Reductions(QUASI);
+        name = "EVQBDD";
+    } else if (bddLower == "ev%qbdd" || bddLower == "evmodqbdd") {
+        // setting for EV%QBDD
+    } else if (bddLower == "ev*qbdd") {
+        // setting for EV*FBDD
+    } else if (bddLower == "evfbdd" || bddLower == "ev+fbdd") {
+        // setting for EV+FBDD
+        reductions = Reductions(FULLY);
+        name = "EVFBDD";
+    } else if (bddLower == "ev%fbdd" || bddLower == "evmodfbdd") {
+        // setting for EV%FBDD
+    } else if (bddLower == "ev*fbdd") {
+        // setting for EV*FBDD
     }
     // MxDs
     else if (bddLower == "qbmxd") {
