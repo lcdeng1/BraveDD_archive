@@ -3,10 +3,9 @@
  * 
  */
 
-#include <iostream>
-#include <vector>
 #include <queue>
 #include <cmath>
+#include <iomanip>
 #include "brave_dd.h"
 #include "timer.h"
 
@@ -20,9 +19,19 @@ uint16_t bits;  // bits per position
 using PuzzleState = std::vector<std::vector<uint16_t> >; // 2D representation of the puzzle
 
 // Timers
-timer watchChain, watchBFS, watchBFS0;
+timer watchSat, watchChain, watchBFS, watchBFS0;
 double timeLimit = 1800.0;
 bool isTimeLimitGlobal = 0;
+bool isReportToFile = 0;
+
+/* flags if results are computed */
+bool getRes_Sat = 0, getRes_BFS = 0, getRes_chain = 0, getRes_correct = 0;
+/* time (sec) of each method */
+double time_Sat = 0.0, time_BFS = 0.0, time_chain = 0.0, time_correct = 0.0, newTimeLimit = timeLimit;
+/* #state of each methods */
+long state_Sat = 0, state_BFS = 0, state_chain = 0, state_correct = 0;
+/* #nodes of each methods */
+uint64_t nodes_Sat = 0, nodes_BFS = 0, nodes_chain = 0, nodes_correct = 0, nodes_rel = 0;
 
 
 /**
@@ -544,14 +553,15 @@ bool SSG(bool isPrint, Func& target, const double time)
             return 0;
         }
     }
-    long card = 0;
-    apply(CARDINALITY, states, card);
-    std::cout << "correct answer: ";
-    states.getEdge().print(std::cout);
-    std::cout << std::endl;
-    std::cout << "\tnumber of nodes: " << forest1->getNodeManUsed(states) << std::endl;
-    std::cout << "\tnumber of states: " << num << std::endl;
-    std::cout << "\tnumber of states(card): " << card << std::endl;
+    // long card = 0;
+    // apply(CARDINALITY, states, card);
+    // std::cout << "correct answer: ";
+    // states.getEdge().print(std::cout);
+    // std::cout << std::endl;
+    // std::cout << "\tnumber of nodes: " << forest1->getNodeManUsed(states) << std::endl;
+    // std::cout << "\tnumber of states: " << num << std::endl;
+    // std::cout << "\tnumber of states(card): " << card << std::endl;
+
     // long card_test = 0;
     // num = N*M*bits;
     // std::vector<bool> assign(num+1, 0);
@@ -599,6 +609,11 @@ bool processArgs(int argc, const char** argv)
                 isTimeLimitGlobal = 1;
                 continue;
             }
+            // option for report
+            if (strcmp("-f", argv[i])==0) {
+                isReportToFile = 1;
+                continue;
+            }
         }
         if (!setN) {
             N = atoi(argv[i]);
@@ -630,7 +645,61 @@ int usage(const char* who)
     std::cout << "\t            M: the number of board columns" << std::endl;
     std::cout << "\t[option]  -st: followed with the predefined type name of set BDD (dimention 1)" << std::endl;
     std::cout << "\t[option]  -rt: followed with the predefined type name of relation BDD (dimention 2)" << std::endl;
+    std::cout << "\t[option]  -t: followed with a run time threshold in seconds (default: 1800)" << std::endl;
+    std::cout << "\t[option]  -tg: switch to turn ON the run time threshold for every methods" << std::endl;
+    std::cout << "\t[option]  -f: switch to turn ON the result report to a file" << std::endl;
     return 1;
+}
+
+void report(std::ostream& out)
+{
+    int align = 30;
+    /* report time */
+    out << "=========================| Time |=========================" << std::endl;
+    out << std::left << std::setw(align);
+    if (getRes_Sat) {
+        out << "Saturation:" << time_Sat << " seconds" << std::endl;
+    } else {
+        out << "Saturation:" << "TIME OUT" << std::endl;
+    }
+    out << std::left << std::setw(align);
+    if (getRes_chain) {
+        out << "chain:" << time_chain << " seconds" << std::endl;
+    } else {
+        out << "chain:" << "TIME OUT" << std::endl;
+    }
+    out << std::left << std::setw(align);
+    if (getRes_BFS) {
+        out << "BFS:" << time_BFS << " seconds" << std::endl;
+    } else {
+        out << "BFS:" << "TIME OUT" << std::endl;
+    }
+    // out << std::left << std::setw(align);
+    // if (getRes_correct) {
+    //     out << "BFS (w/o image):" << time_correct << " seconds" << std::endl;
+    // } else {
+    //     out << "BFS (w/o image):" <<  "TIME OUT" << std::endl;
+    // }
+    out << std::left << std::setw(30);
+    out << "" << "[TIME OUT: " << newTimeLimit << " seconds]" << std::endl;
+
+    /* report expored #states */
+    out << "=========================| #States |======================" << std::endl;
+    out << std::left << std::setw(align) << "Saturation:" << state_Sat << std::endl;
+    out << std::left << std::setw(align) << "chain:" << state_chain << std::endl;
+    out << std::left << std::setw(align) << "BFS:" << state_BFS << std::endl;
+    // out << std::left << std::setw(align) << "BFS (w/o image):" << state_correct << std::endl;
+    
+    /* report nodes */
+    out << "=========================| Node |=========================" << std::endl;
+    out << std::left << std::setw(align) << "Saturation:" << nodes_Sat << std::endl;
+    out << std::left << std::setw(align) << "chain:" << nodes_chain << std::endl;
+    out << std::left << std::setw(align) << "BFS:" << nodes_BFS << std::endl;
+    // out << std::left << std::setw(align) << "BFS (w/o image):" << nodes_correct << std::endl;
+    out << std::left << std::setw(align) << "Relations:" << nodes_rel << std::endl;
+
+    /* the end */
+    out << "**********************************************************" << std::endl;
 }
 
 int main(int argc, const char** argv)
@@ -671,40 +740,77 @@ int main(int argc, const char** argv)
     forest1->registerFunc(target);
     // std::cout << "encode puzzle done" << std::endl;
     // std::cout << "\tnumber of nodes: " << forest1->getNodeManUsed(target) << std::endl;
-    long num = 0;
+    // long num = 0;
     // apply(CARDINALITY, target, num);
     // std::cout << "\tnumber of states: " << num << std::endl;
     /* Build forward functions */
     // each position takes 4 slots for down, up, left, right
     // some may be constant 0 because of invalid forward direction
     Func forward(forest2);
-    std::vector<Func> relations(4*M*N, Func(forest2));
+    // std::vector<Func> relations(4*M*N, Func(forest2));
+    std::vector<Func> relations;
     for (int position=1; position<=N*M; position++) {
         for (int direction = 1; direction<=4; direction++) {
+            if (((direction == 1) && (position > (N-1)*M)) 
+                || ((direction == 2) && (position <= M))
+                || ((direction == 3) && ((position%M == 1) || (M==1)))
+                || ((direction == 4) && ((position%M == 0) || (M==1)))) {
+                //invalid relation
+                continue;
+            }
             std::cout << "trans: position = " << position  << " direction: " << direction << std::endl;
             forward = trans(position, direction);
-            relations[4*(position-1)+direction-1] = forward;
+            relations.push_back(forward);
+            // relations[4*(position-1)+direction-1] = forward;
             forest2->registerFunc(forward);
-            std::cout << "trans done, number of nodes: " << forest2->getNodeManUsed(relations[4*(position-1)+direction-1]) << std::endl;
+            // std::cout << "trans done, number of nodes: " << forest2->getNodeManUsed(relations[4*(position-1)+direction-1]) << std::endl;
+            std::cout << "trans done, number of nodes: " << forest2->getNodeManUsed(forward) << std::endl;
             forward.getEdge().print(std::cout);
             std::cout << std::endl;
         }
     }
+    std::cout << "Number of valid relations: " << relations.size() << std::endl;
     // evaluate forward relation
-    if (!evalTrans(relations)) {
-        exit(0);
-    }
-
-    /* flags if results are computed */
-    bool getRes_BFS = 0, getRes_chain = 0, getRes_correct = 0;
-    /* time (sec) of each method */
-    double time_BFS = 0.0, time_chain = 0.0, time_correct = 0.0, newTimeLimit = timeLimit;
-    /* #state of each methods */
-    long state_BFS = 0, state_chain = 0, state_correct = 0;
-    /* #nodes of each methods */
-    uint64_t nodes_BFS = 0, nodes_chain = 0, nodes_correct = 0;
+    // if (!evalTrans(relations)) {
+    //     exit(0);
+    // }
+    // count nodes
+    nodes_rel = forest2->getNodeManUsed(relations);
 
     /* Compute state space using saturation */
+    Func states_Sat(forest1);
+    // Timer start
+    watchSat.reset();
+    watchSat.note_time();
+    apply(SATURATE, target, relations, states_Sat);
+    watchSat.note_time();
+    getRes_Sat = 1;
+    // report cache
+    UOPs.reportCacheStat(std::cout);
+    BOPs.reportCacheStat(std::cout);
+    // record time
+    time_Sat = watchSat.get_last_seconds();
+    // record #states
+    apply(CARDINALITY, states_Sat, state_Sat);
+    // record #nodes
+    nodes_Sat = forest1->getNodeManUsed(states_Sat);
+
+    forest1->registerFunc(states_Sat);
+    // report
+    int align0 = 30;
+    std::cout << "=========================| Time |=========================" << std::endl;
+    std::cout << std::left << std::setw(align0);
+    std::cout << "Saturation:" << time_Sat << " seconds" << std::endl;
+    std::cout << "=========================| #States |======================" << std::endl;
+    std::cout << std::left << std::setw(align0) << "Saturation:" << state_Sat << std::endl;
+    std::cout << "=========================| Node |=========================" << std::endl;
+    std::cout << std::left << std::setw(align0) << "Saturation:" << nodes_Sat << std::endl;
+    // reset the forest
+    forest1->markAllFuncs();
+    forest1->markSweep();
+
+    /* Update time limit */
+    if (!isTimeLimitGlobal) newTimeLimit = time_Sat;
 
     /* Compute state space using chain search */
     Func states_chain(forest1);
@@ -723,13 +829,13 @@ int main(int argc, const char** argv)
     // record #nodes
     nodes_chain = forest1->getNodeManUsed(states_chain);
 
-    // forest1->registerFunc(states_chain);
+    forest1->registerFunc(states_chain);
     // reset the forest
     forest1->markAllFuncs();
     forest1->markSweep();
 
     /* Update time limit */
-    if (!isTimeLimitGlobal) newTimeLimit = time_chain;
+    // if (!isTimeLimitGlobal) newTimeLimit = time_chain;
 
     /* Compute state space using BFS */
     Func states_BFS(forest1);
@@ -748,153 +854,152 @@ int main(int argc, const char** argv)
     // record #nodes
     nodes_BFS = forest1->getNodeManUsed(states_BFS);
 
-    // forest1->registerFunc(states_BFS);
+    forest1->registerFunc(states_BFS);
     // reset the forest
     forest1->markAllFuncs();
     forest1->markSweep();
 
-    /* Compute state space using BFS without image */
-    Func states(forest1);
-    watchBFS0.reset();
-    watchBFS0.note_time();
-    getRes_correct = (N>2 || M>2) ? SSG(0, states, newTimeLimit) : SSG(1, states, (isTimeLimitGlobal) ? timeLimit : newTimeLimit);
-    watchBFS0.note_time();
-    // record time
-    time_correct = watchBFS0.get_last_seconds();
-    // record #states
-    apply(CARDINALITY, states, state_correct);
-    // record #nodes
-    nodes_correct = forest1->getNodeManUsed(states);
+    // /* Compute state space using BFS without image */
+    // Func states(forest1);
+    // watchBFS0.reset();
+    // watchBFS0.note_time();
+    // getRes_correct = SSG(!(N>2 || M>2), states, newTimeLimit);
+    // watchBFS0.note_time();
+    // // record time
+    // time_correct = watchBFS0.get_last_seconds();
+    // // record #states
+    // apply(CARDINALITY, states, state_correct);
+    // // record #nodes
+    // nodes_correct = forest1->getNodeManUsed(states);
 
 
-    // check with the correct answer
-    if ((getRes_BFS && getRes_correct) && (states.getEdge() != states_BFS.getEdge())) {
-        std::cout << "[SSG Failed]: BFS is different from the correct!" << std::endl;
-        std::cout << "\tcorrect answer: ";
-        states.getEdge().print(std::cout);
-        std::cout << std::endl;
-        std::cout << "\tBFS answer: ";
-        states_BFS.getEdge().print(std::cout);
-        std::cout << std::endl;
-        // check if encode the same function
-        std::cout << "Checking if they're encoding different functions!" << std::endl;
-        num = N*M*bits;
-        std::vector<bool> assign(num+1, 0);
-        bool isDiff = 0;
-        for (long i=0; i<(1<<num); i++) {
-            for (uint16_t k=1; k<=num; k++) {
-                assign[k] = i&(1<<(k-1));
-            }
-            int valIntS, valIntBFS;
-            Value evalS = states.evaluate(assign);
-            Value evalBFS = states_BFS.evaluate(assign);
-            evalS.getValueTo(&valIntS, INT);
-            evalBFS.getValueTo(&valIntBFS, INT);
-            if (valIntS != valIntBFS) {
-                isDiff = 1;
-                break;
-            }
-        }
-        if (isDiff) {
-            std::cout << "\tDifferent functions!" << std::endl;
-        } else {
-            std::cout << "\tSame functions!" << std::endl;
-        }
-        // graph
-        DotMaker dot0(forest1, "states");
-        dot0.buildGraph(states);
-        dot0.runDot("pdf");
+    // // check with the correct answer
+    // if ((getRes_BFS && getRes_correct) && (states.getEdge() != states_BFS.getEdge())) {
+    //     std::cout << "[SSG Failed]: BFS is different from the correct!" << std::endl;
+    //     std::cout << "\tcorrect answer: ";
+    //     states.getEdge().print(std::cout);
+    //     std::cout << std::endl;
+    //     std::cout << "\tBFS answer: ";
+    //     states_BFS.getEdge().print(std::cout);
+    //     std::cout << std::endl;
+    //     // check if encode the same function
+    //     std::cout << "Checking if they're encoding different functions!" << std::endl;
+    //     num = N*M*bits;
+    //     std::vector<bool> assign(num+1, 0);
+    //     bool isDiff = 0;
+    //     for (long i=0; i<(1<<num); i++) {
+    //         for (uint16_t k=1; k<=num; k++) {
+    //             assign[k] = i&(1<<(k-1));
+    //         }
+    //         int valIntS, valIntBFS;
+    //         Value evalS = states.evaluate(assign);
+    //         Value evalBFS = states_BFS.evaluate(assign);
+    //         evalS.getValueTo(&valIntS, INT);
+    //         evalBFS.getValueTo(&valIntBFS, INT);
+    //         if (valIntS != valIntBFS) {
+    //             isDiff = 1;
+    //             break;
+    //         }
+    //     }
+    //     if (isDiff) {
+    //         std::cout << "\tDifferent functions!" << std::endl;
+    //     } else {
+    //         std::cout << "\tSame functions!" << std::endl;
+    //     }
+    //     // graph
+    //     DotMaker dot0(forest1, "states");
+    //     dot0.buildGraph(states);
+    //     dot0.runDot("pdf");
 
-        DotMaker dot1(forest1, "states_BFS");
-        dot1.buildGraph(states_BFS);
-        dot1.runDot("pdf");
-    }
+    //     DotMaker dot1(forest1, "states_BFS");
+    //     dot1.buildGraph(states_BFS);
+    //     dot1.runDot("pdf");
+    // }
 
-    if ((getRes_chain && getRes_correct) && (states.getEdge() != states_chain.getEdge())) {
-        std::cout << "[SSG Failed]: chain is different from the correct!" << std::endl;
-        std::cout << "\tcorrect answer: ";
-        states.getEdge().print(std::cout);
-        std::cout << std::endl;
-        std::cout << "\tchain answer: ";
-        states_chain.getEdge().print(std::cout);
-        std::cout << std::endl;
-        // check if encode the same function
-        std::cout << "Checking if they're encoding different functions!" << std::endl;
-        num = N*M*bits;
-        std::vector<bool> assign(num+1, 0);
-        bool isDiff = 0;
-        for (long i=0; i<(1<<num); i++) {
-            for (uint16_t k=1; k<=num; k++) {
-                assign[k] = i&(1<<(k-1));
-            }
-            int valIntS, valIntChain;
-            Value evalS = states.evaluate(assign);
-            Value evalChain = states_chain.evaluate(assign);
-            evalS.getValueTo(&valIntS, INT);
-            evalChain.getValueTo(&valIntChain, INT);
-            if (valIntS != valIntChain) {
-                isDiff = 1;
-                break;
-            }
-        }
-        if (isDiff) {
-            std::cout << "\tDifferent functions!" << std::endl;
-        } else {
-            std::cout << "\tSame functions!" << std::endl;
-        }
-        // graph
-        DotMaker dot0(forest1, "states");
-        dot0.buildGraph(states);
-        dot0.runDot("pdf");
+    // if ((getRes_chain && getRes_correct) && (states.getEdge() != states_chain.getEdge())) {
+    //     std::cout << "[SSG Failed]: chain is different from the correct!" << std::endl;
+    //     std::cout << "\tcorrect answer: ";
+    //     states.getEdge().print(std::cout);
+    //     std::cout << std::endl;
+    //     std::cout << "\tchain answer: ";
+    //     states_chain.getEdge().print(std::cout);
+    //     std::cout << std::endl;
+    //     // check if encode the same function
+    //     std::cout << "Checking if they're encoding different functions!" << std::endl;
+    //     num = N*M*bits;
+    //     std::vector<bool> assign(num+1, 0);
+    //     bool isDiff = 0;
+    //     for (long i=0; i<(1<<num); i++) {
+    //         for (uint16_t k=1; k<=num; k++) {
+    //             assign[k] = i&(1<<(k-1));
+    //         }
+    //         int valIntS, valIntChain;
+    //         Value evalS = states.evaluate(assign);
+    //         Value evalChain = states_chain.evaluate(assign);
+    //         evalS.getValueTo(&valIntS, INT);
+    //         evalChain.getValueTo(&valIntChain, INT);
+    //         if (valIntS != valIntChain) {
+    //             isDiff = 1;
+    //             break;
+    //         }
+    //     }
+    //     if (isDiff) {
+    //         std::cout << "\tDifferent functions!" << std::endl;
+    //     } else {
+    //         std::cout << "\tSame functions!" << std::endl;
+    //     }
+    //     // graph
+    //     DotMaker dot0(forest1, "states");
+    //     dot0.buildGraph(states);
+    //     dot0.runDot("pdf");
 
-        DotMaker dot1(forest1, "states_chain");
-        dot1.buildGraph(states_chain);
-        dot1.runDot("pdf");
-    }
+    //     DotMaker dot1(forest1, "states_chain");
+    //     dot1.buildGraph(states_chain);
+    //     dot1.runDot("pdf");
+    // }
 
     /* evaluate these results */
+    if ((getRes_Sat && getRes_chain) && states_Sat.getEdge() != states_chain.getEdge()) {
+        std::cout << "[SSG Failed]: Saturation and chain are different!" << std::endl;
+        exit(0);
+    }
     if ((getRes_BFS && getRes_chain) && states_BFS.getEdge() != states_chain.getEdge()) {
         std::cout << "[SSG Failed]: BFS and chain are different!" << std::endl;
         exit(0);
     }
-    std::cout << "Done!" << std::endl;
 
-    /* report time */
-    std::cout << "=========================| Time |=========================" << std::endl;
-    if (getRes_chain) {
-        std::cout << "chain: \t\t\t" << time_chain << " seconds" << std::endl;
+    // report result
+    if (!isReportToFile) {
+        std::cout << "Done!" << std::endl;
+        std::cout << "**********************************************************" << std::endl;
+        int align = 30;
+        std::cout << std::left << std::setw(align) << "Sliding puzzle:" << N << " x " << M  << std::endl;
+        std::cout << std::left << std::setw(align) << "Bits per position: " << bits << std::endl;
+        std::cout << std::left << std::setw(align) << "Level:" << forest1->getSetting().getNumVars() << std::endl;
+        std::cout << std::left << std::setw(align) << "The [Set] type:" << forest1->getSetting().getName() << std::endl;
+        std::cout << std::left << std::setw(align) << "The [Relation] type:" << forest2->getSetting().getName() << std::endl;
+        report(std::cout);
     } else {
-        std::cout << "chain: \t\t\tTIME OUT" << std::endl;
+        std::cout << "**********************************************************" << std::endl;
+        std::string fileName = forest1->getSetting().getName();
+        fileName += "_";
+        fileName += forest2->getSetting().getName();
+        fileName += "_";
+        fileName += std::to_string(N);
+        fileName += "_";
+        fileName += std::to_string(M);
+        fileName += ".txt";
+        std::ofstream file(fileName, std::ios::app);
+        if (!file) {
+            std::cerr << "Failed to open file " << fileName << std::endl;
+        } else {
+            report(file);
+            file.close();
+        }
+        std::cout << "Done!" << std::endl;
     }
-    if (getRes_BFS) {
-        std::cout << "BFS: \t\t\t" << time_BFS << " seconds" << std::endl;
-    } else {
-        std::cout << "BFS: \t\t\tTIME OUT" << std::endl;
-    }
-    if (getRes_correct) {
-        std::cout << "BFS (w/o image): \t" << time_correct << " seconds" << std::endl;
-    } else {
-        std::cout << "BFS (w/o image): \tTIME OUT" << std::endl;
-    }
-    std::cout << "\t\t\t\t[TIME OUT: " << newTimeLimit << " seconds]" << std::endl;
 
-    /* report expored #states */
-    std::cout << "=======================| #States |========================" << std::endl;
-    std::cout << "chain: \t\t\t" << state_chain << std::endl;
-    std::cout << "BFS: \t\t\t" << state_BFS << std::endl;
-    std::cout << "BFS (w/o image): \t" << state_correct << std::endl;
-    
-    /* report nodes */
-    std::cout << "=========================| Node |=========================" << std::endl;
-    std::cout << "chain: \t\t\t" << nodes_chain << std::endl;
-    std::cout << "BFS: \t\t\t" << nodes_BFS << std::endl;
-    std::cout << "BFS (w/o image): \t" << nodes_correct << std::endl;
-
-    /* Compute state space using saturation */
-    // Func states(forest1);
-    // states = saturate(target, forwards);
-    /* Compute distance */
-    // TBD
+    // clean
     delete forest1;
     delete forest2;
     return 0;
