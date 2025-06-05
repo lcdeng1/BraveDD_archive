@@ -384,7 +384,7 @@ class BRAVE_DD::Forest {
     }
 
     inline void registerFunc(const Func& func) {
-        funcs.push_back(func);
+        if (std::find(funcs.begin(), funcs.end(), func) == funcs.end()) funcs.push_back(func);
     }
 
     inline void deregisterFunc(const Func& func) {
@@ -445,6 +445,16 @@ class BRAVE_DD::Forest {
         markNodes(func);
         uint64_t num = 0;
         for (uint16_t i=1; i<=func.getEdge().getNodeLevel(); i++) {
+            num += nodeMan->numMarked(i);
+        }
+        unmark();
+        return num;
+    }
+    inline uint64_t getNodeManUsed(const std::vector<Func>& funs) const {
+        unmark();
+        for (size_t i=0; i<funs.size(); i++) markNodes(funs[i]);
+        uint64_t num = 0;
+        for (uint16_t i=1; i<=setting.getNumVars(); i++) {
             num += nodeMan->numMarked(i);
         }
         unmark();
@@ -563,6 +573,7 @@ class BRAVE_DD::Forest {
     friend class Func;
     friend class UnaryOperation;
     friend class BinaryOperation;
+    friend class SaturationOperation;
         ForestSetting       setting;        // Specification setting of this forest.
         NodeManager*        nodeMan;        // Node manager.
         UniqueTable*        uniqueTable;    // Unique table.
