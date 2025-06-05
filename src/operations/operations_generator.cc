@@ -1,8 +1,9 @@
 #include "operations_generator.h"
 
 namespace BRAVE_DD {
-    UnaryList UOPs;
-    BinaryList BOPs;
+    UnaryList       UOPs;
+    BinaryList      BOPs;
+    SaturationList  SOPs;
 }
 
 using namespace BRAVE_DD;
@@ -78,4 +79,26 @@ BinaryOperation* BRAVE_DD::POST_IMAGE(Forest* arg1, Forest* arg2, Forest* res)
     if (bop) return bop;
     bop = new BinaryOperation(BinaryOperationType::BOP_POSTIMAGE, arg1, arg2, res);
     return BOPs.add(bop);
+}
+
+// ... TBD
+
+// Saturation operation
+SaturationOperation* BRAVE_DD::SATURATE(Forest* set, Forest* relations, Forest* res)
+{
+    if (!set || !relations) return nullptr;
+    SaturationOperation* sop = SOPs.find(set, relations, res);
+    if (sop) return sop;
+    sop = new SaturationOperation(set, relations, res);
+    return SOPs.add(sop);
+}
+
+SaturationOperation* BRAVE_DD::PRE_SATURATE(Forest* set, Forest* relations, Forest* res)
+{
+    if (!set || !relations) return nullptr;
+    SaturationOperation* sop = SOPs.find(set, relations, res, 1);
+    if (sop) return sop;
+    sop = new SaturationOperation(set, relations, res);
+    sop->setDirection(1);
+    return SOPs.add(sop);
 }

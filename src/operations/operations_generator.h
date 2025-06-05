@@ -89,10 +89,8 @@ namespace BRAVE_DD {
     // *                      Saturation operations                     *
     // *                                                                *
     // ******************************************************************
-    //TBD
-    // inline Func saturate(Func set, FuncArray forwards) {
-    //     //
-    // }
+    SaturationOperation* SATURATE(Forest* set, Forest* relations, Forest* res);
+    SaturationOperation* PRE_SATURATE(Forest* set, Forest* relations, Forest* res);
 }
 
 #endif

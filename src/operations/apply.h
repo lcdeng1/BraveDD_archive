@@ -14,6 +14,8 @@ namespace BRAVE_DD {
     /* Binary */
     typedef BinaryOperation* (*BinaryBuiltin1)(Forest* arg1, Forest* arg2, Forest* res);
     typedef BinaryOperation* (*BinaryBuiltin2)(Forest* arg1, OpndType arg2, Forest* res);
+    /* Saturation */
+    typedef SaturationOperation* (*SaturationBuiltin)(Forest* arg1, Forest* arg2, Forest* res);
 
     // ******************************************************************
     // *                          Unary  apply                          *
@@ -45,6 +47,16 @@ namespace BRAVE_DD {
     {
         BinaryOperation* bop = bb(arg1.getForest(), OpndType::EXPLICIT_FUNC, res.getForest());
         bop->compute(arg1, arg2, res);
+    }
+    // ******************************************************************
+    // *                     Saturation  apply                          *
+    // ******************************************************************
+    inline void apply(SaturationBuiltin sb, const Func& set, const std::vector<Func>& relations, Func& res)
+    {
+        SaturationOperation* sop = sb(set.getForest(), relations[0].getForest(), res.getForest());
+        // set the relations used for this operation
+        sop->setRelations(relations);
+        sop->compute(set, res);
     }
 };
 

@@ -65,17 +65,16 @@ namespace BRAVE_DD {
     class BinaryList;
 
     /// Numerical operation
-
-    class NumericalOperation;
-    class NumericalList;
+    // class NumericalOperation;
+    // class NumericalList;
 
     /// Saturation
-
     class SaturationOperation;
     class SaturationList;
 
-    extern UnaryList UOPs;
-    extern BinaryList BOPs;
+    extern UnaryList        UOPs;
+    extern BinaryList       BOPs;
+    extern SaturationList   SOPs;
 };
 
 // ******************************************************************
@@ -135,7 +134,6 @@ class BRAVE_DD::UnaryOperation : public Operation {
     long computeCARD(const uint16_t lvl, const Edge& source);
     // list
     friend class UnaryList;
-    // UnaryList&          parent;
     UnaryOperation*     next;
     // arguments
     Forest*             sourceForest;
@@ -230,17 +228,17 @@ class BRAVE_DD::BinaryOperation : public Operation {
     /// Helper Methods ==============================================
     bool checkForestCompatibility() const;
     Edge computeElmtWise(const uint16_t lvl, const Edge& source1, const Edge& source2);
-    Edge computeUNION(const uint16_t lvl, const Edge& source1, const Edge& source2);
-    Edge computeINTERSECTION(const uint16_t lvl, const Edge& source1, const Edge& source2);
-    Edge computeIMAGE(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre = 0);
+    Edge computeUnion(const uint16_t lvl, const Edge& source1, const Edge& source2);
+    Edge computeIntersection(const uint16_t lvl, const Edge& source1, const Edge& source2);
+    Edge computeImage(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre = 0);
     // elementwise related
     Edge operateLL(const uint16_t lvl, const Edge& e1, const Edge& e2);
     Edge operateHH(const uint16_t lvl, const Edge& e1, const Edge& e2);
     Edge operateLH(const uint16_t lvl, const Edge& e1, const Edge& e2);
     // list
     friend class BinaryList;
-    // BinaryList&         parent;
     BinaryOperation*    next;
+    friend class SaturationOperation;
     // arguments
     Forest*             source1Forest;
     Forest*             source2Forest;
@@ -251,7 +249,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
 
 // ******************************************************************
 // *                                                                *
-// *                       BinaryList  class                         *
+// *                       BinaryList  class                        *
 // *                                                                *
 // ******************************************************************
 
@@ -307,7 +305,6 @@ class BRAVE_DD::BinaryList {
     void searchSweepCache(Forest* forest);
     BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const Forest* source2F, const Forest* resF);
     BinaryOperation* mtfBinary(const BinaryOperationType opT, const Forest* source1F, const OpndType source2T, const Forest* resF);
-
 };
 
 // ******************************************************************
@@ -338,21 +335,101 @@ class BRAVE_DD::BinaryList {
 // *                                                                *
 // ******************************************************************
 
-// class BRAVE_DD::SaturationOperation : public Operation {
-//     /*-------------------------------------------------------------*/
-//     public:
-//     /*-------------------------------------------------------------*/
-//     SaturationOperation();
-//     /*-------------------------------------------------------------*/
-//     protected:
-//     /*-------------------------------------------------------------*/
-//     virtual ~SaturationOperation();
-//     // computing tables TBD
+class BRAVE_DD::SaturationOperation : public Operation {
+    /*-------------------------------------------------------------*/
+    public:
+    /*-------------------------------------------------------------*/
+    SaturationOperation(Forest* source1, Forest* source2, Forest* res);
 
-//     /*-------------------------------------------------------------*/
-//     private:
-//     /*-------------------------------------------------------------*/
-// };
+    /* set relations */
+    void setRelations(const std::vector<Func>& rels);
+    /* set direction */
+    void setDirection(const bool dir);
+    /* Main part: computation */
+    void compute(const Func& source1, Func& res);
 
+    /*-------------------------------------------------------------*/
+    protected:
+    /*-------------------------------------------------------------*/
+    virtual ~SaturationOperation();
+    // computing table only for relation product
+    ComputeTable        cacheRel;
+
+    /*-------------------------------------------------------------*/
+    private:
+    /*-------------------------------------------------------------*/
+    /// Helper Methods ==============================================
+    bool checkForestCompatibility() const;
+    Edge computeSaturation(const uint16_t lvl, const Edge& source1, const size_t begin);
+    Edge computeImageSat(const uint16_t lvl, const Edge& source1, const Edge& trans, const size_t begin);
+    // sort relation functions
+    void sortRelations();
+    // locate the first event that its level lower than k, return -1 if not found
+    int indexOfTopLessThan(const uint16_t k);
+    // list
+    friend class SaturationList;
+    SaturationOperation*    next;
+    // arguments
+    Forest*                 source1Forest;
+    Forest*                 source2Forest;
+    Forest*                 resForest;
+    std::vector<Func>       relations;
+    bool                    isPre;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                     SaturationList  class                      *
+// *                                                                *
+// ******************************************************************
+
+class BRAVE_DD::SaturationList {
+    std::string name;
+    SaturationOperation* front;
+    /*-------------------------------------------------------------*/
+    public:
+    /*-------------------------------------------------------------*/
+    SaturationList(const std::string n = "");
+    inline void reset(const std::string n) {
+        front = nullptr;
+        name = n;
+    }
+    inline std::string getName() const {return name;}
+    inline bool isEmpty() const {return !front;}
+    inline SaturationOperation* add(SaturationOperation* sop) {
+        if (sop) {
+            sop->next = front;
+            front = sop;
+        }
+        return sop;
+    }
+    inline void remove(SaturationOperation* sop) {
+        if (front == sop) {
+            SaturationOperation* toRemove = front;
+            front = front->next;
+            delete toRemove;
+            return;
+        }
+        searchRemove(sop);
+    }
+    // find and remove the operation including the given forest
+    inline void remove(Forest* forest) { searchRemove(forest); }
+    inline SaturationOperation* find(const Forest* source1F, const Forest* source2F, const Forest* resF, const bool dir = 0) {
+        if (!front) return nullptr;
+        if ((front->source1Forest == source1F) && (front->source2Forest == source2F) && (front->resForest == resF) && (front->isPre == dir)) return front;
+        return mtfSaturation(source1F, source2F, resF);
+    }
+    inline void sweepCache(Forest* forest) { searchSweepCache(forest); }
+    void reportCacheStat(std::ostream& out, int format=0) const;
+
+    /*-------------------------------------------------------------*/
+    private:
+    /*-------------------------------------------------------------*/
+    /// Helper Methods ==============================================
+    void searchRemove(SaturationOperation* bop);
+    void searchRemove(Forest* forest);
+    void searchSweepCache(Forest* forest);
+    SaturationOperation* mtfSaturation(const Forest* source1F, const Forest* source2F, const Forest* resF);
+};
 
 #endif
