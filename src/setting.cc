@@ -121,10 +121,42 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         // setting for QBDD
         reductions = Reductions(QUASI);
         name = "QBDD";
+    } else if (bddLower == "cqbdd") {
+        // setting for QBDD
+        reductions = Reductions(QUASI);
+        flags.setCompType(COMP);
+        name = "CQBDD";
+    } else if (bddLower == "sqbdd") {
+        // setting for QBDD
+        reductions = Reductions(QUASI);
+        flags.setSwapType(ONE);
+        name = "SQBDD";
+    } else if (bddLower == "csqbdd") {
+        // setting for QBDD
+        reductions = Reductions(QUASI);
+        flags.setSwapType(ONE);
+        flags.setCompType(COMP);
+        name = "CSQBDD";
     } else if (bddLower == "fbdd") {
         // setting for FBDD
         reductions = Reductions(FULLY);
         name = "FBDD";
+    } else if (bddLower == "cfbdd") {
+        // setting for QBDD
+        reductions = Reductions(FULLY);
+        flags.setCompType(COMP);
+        name = "CFBDD";
+    } else if (bddLower == "sfbdd") {
+        // setting for QBDD
+        reductions = Reductions(FULLY);
+        flags.setSwapType(ONE);
+        name = "SFBDD";
+    } else if (bddLower == "csfbdd") {
+        // setting for QBDD
+        reductions = Reductions(FULLY);
+        flags.setSwapType(ONE);
+        flags.setCompType(COMP);
+        name = "CSFBDD";
     } else if (bddLower == "zbdd") {
         // setting for ZBDD
         reductions = Reductions(ZERO_SUP);
@@ -138,6 +170,17 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         addReductionRule(RULE_EH0);
         mergeType = PUSH_UP;
         name = "ESRBDD";
+    } else if (bddLower == "cesrbdd") {
+        // setting for ESRBDD
+        reductions = Reductions(USER_DEFINED);
+        addReductionRule(RULE_X);
+        addReductionRule(RULE_EL0);
+        addReductionRule(RULE_EH0);
+        addReductionRule(RULE_EL1);
+        addReductionRule(RULE_EH1);
+        flags.setCompType(COMP);
+        mergeType = PUSH_UP;
+        name = "CESRBDD";
     } else if (bddLower == "evbdd" || bddLower == "ev+bdd") {
         // setting for EV+BDD
     } else if (bddLower == "ev%bdd" || bddLower == "evmodbdd") {
