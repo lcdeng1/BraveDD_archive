@@ -35,6 +35,13 @@ Value::Value(float f)
     valueType = FLOAT;
     floatValue = f;
 }
+Value::Value(SpecialValue s) 
+{
+    valueType = VOID;
+    longValue = 0;
+    special = s;
+
+}
 
 void Value::print(std::ostream& out, int format) const
 {

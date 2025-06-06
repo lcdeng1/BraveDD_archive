@@ -80,7 +80,7 @@ void Func::constant(float val)
 }
 void Func::constant(SpecialValue val)
 {
-    if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
         edge.handle = makeTerminal(VOID, val);
         packRule(edge.handle, RULE_X);
         edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
