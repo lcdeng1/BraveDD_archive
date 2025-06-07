@@ -64,6 +64,11 @@ void Func::constant(int val)
         edge.handle = makeTerminal(INT, val);
         packRule(edge.handle, RULE_X);
         edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
+        edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
+        packRule(edge.handle, RULE_X);
+        edge.setValue(Value(val));
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
     } else {
         // TBD
     }
