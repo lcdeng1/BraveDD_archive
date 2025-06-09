@@ -243,7 +243,7 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
             parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
         }
     } else {
-        // for edge valued TBD
+        // for other edge valued TBD
     }
 }
 
