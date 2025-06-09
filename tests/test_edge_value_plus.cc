@@ -28,44 +28,22 @@ int main() {
 
     // -------------------------------------------------------------------
 
-    // ForestSetting setting = ForestSetting(10);
-    ForestSetting setting = ForestSetting("ev+qbdd", 1);
-
-
+    // Testing Constant function 5
+    ForestSetting setting = ForestSetting("ev+qbdd", 0);
     Forest* forest0 = new Forest(setting);
-    
     Func func0(forest0);
-
-    // func.constant(5);
     func0.constant(5);
 
-    int first_ev;
-    func0.getEdge().getValue().getValueTo(&first_ev,INT);
+    int dangling_edge;
+    func0.getEdge().getValue().getValueTo(&dangling_edge,INT);
 
-    DotMaker dot0(forest0,"omega");
+    assert(dangling_edge == 5 && "The constant function is embedded wrong");
+
+    DotMaker dot0(forest0,"constant_5");
     dot0.buildGraph(func0);
     dot0.runDot("pdf");
 
-    int last_ev;
-    func0.getEdge().getValue().getValueTo(&last_ev,INT);
-    std::cout<< "At the end " << last_ev << std::endl;
-
     delete forest0;
-
-    // Forest* forest1 = new Forest(setting);
-    
-    // Func func1(forest1);
-
-    // func.constant(5);
-    // func1.constant(SpecialValue::POS_INF);
-
-    // DotMaker dot1(forest1,"infty");
-    // dot1.buildGraph(func1);
-    // dot1.runDot("pdf");
-
-    // delete forest1;
-
-
 
     return 0;
 } 

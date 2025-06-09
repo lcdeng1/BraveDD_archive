@@ -65,13 +65,9 @@ void Func::constant(int val)
         packRule(edge.handle, RULE_X);
         edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
     } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
-        std::cout << "Should hit here" << std::endl;
         edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
         packRule(edge.handle, RULE_X);
         edge.setValue(Value(val));
-        int checkVal;
-        edge.getValue().getValueTo(&checkVal,INT);
-        std::cout << "The edge value has should be " << checkVal << std::endl;
         edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
     } else {
         // TBD

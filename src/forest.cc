@@ -357,9 +357,6 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
         }
         normalized = temp;
     }
-    int ev1;
-    edge.getValue().getValueTo(&ev1,INT);
-    std::cout << "EV at NE END " << ev1 << std::endl;
 
     return normalized;
 }
