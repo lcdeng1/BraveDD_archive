@@ -221,6 +221,30 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
             // unmark
             parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
         }
+    } else if (em == EDGE_PLUS) {
+        if (edge.getNodeLevel() == 0) {
+            EdgeHandle handle = edge.getEdgeHandle();
+            int ev;
+            edge.getValue().getValueTo(&ev,INT);
+            std::cout << "The ev should be in out.cc " << ev << std::endl;
+            outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
+            outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
+        } else {
+            outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
+            outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
+            <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
+            // build child edges of target node if it's marked
+            if (parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
+                for (char i=0; i<numChild; i++) {
+                    buildEdge(edge.getNodeLevel(),
+                                parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
+                                edge.getNodeHandle(),
+                                i);
+                }
+            }
+            // unmark
+            parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
+        }
     } else {
         // for edge valued TBD
     }

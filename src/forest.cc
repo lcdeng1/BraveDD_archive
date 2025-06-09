@@ -160,11 +160,11 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
 
 Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
 {
-#ifdef BRAVE_DD_FOREST_TRACE
+// #ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "normalize edge from level: " << level << "; ";
     edge.print(std::cout);
     std::cout << std::endl;
-#endif
+// #endif
     Edge normalized = edge;
     bool isCompAllowed = (setting.getCompType() != NO_COMP);
     ReductionRule rule = edge.getRule();
@@ -357,6 +357,9 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
         }
         normalized = temp;
     }
+    int ev1;
+    edge.getValue().getValueTo(&ev1,INT);
+    std::cout << "EV at NE END " << ev1 << std::endl;
 
     return normalized;
 }
