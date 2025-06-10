@@ -531,6 +531,16 @@ class BRAVE_DD::Forest {
     Edge reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down);
 
     /**
+     * @brief Reduce a node assuming the incoming edge is a short edge with edge value.
+     * 
+     * @param nodeLevel     The level of the unreduced node.
+     * @param edge          The Edge pointing to the node.
+     * @param down          The vector of child edges of the unreduced node.
+     * @return Edge         - Output: reduced edge.
+     */
+    Edge reduceNode(const uint16_t nodeLevel, const Edge edge, const std::vector<Edge>& down);
+
+    /**
      * @brief Merge the incoming edge having EdgeLabel "label", which is respect of 
      * level "lvl1", target to the node at level "lvl2"; edge "*reduced" represents 
      * the node at level "lvl2" after calling reduceNode method. Edge "*out" can not 

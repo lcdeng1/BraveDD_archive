@@ -224,6 +224,8 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
     } else if (em == EDGE_PLUS) {
         if (edge.getNodeLevel() == 0) {
             EdgeHandle handle = edge.getEdgeHandle();
+            int ev;
+            edge.getValue().getValueTo(&ev, INT);
             outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
             outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
         } else {
