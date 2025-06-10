@@ -176,140 +176,140 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
         return normalized;
     }
     /* case 1: AL/AH edges but only skip 1 level, normalize it to EL/EH */
-    // if (level - targetLvl == 1) {
-    //     if ((rule == RULE_AL0) && setting.hasReductionRule(RULE_EL0)) {
-    //         normalized.setRule(RULE_EL0);
-    //     } else if ((rule == RULE_AL1) && setting.hasReductionRule(RULE_EL1)) {
-    //         normalized.setRule(RULE_EL1);
-    //     } else if ((rule == RULE_AH0) && setting.hasReductionRule(RULE_EH0)) {
-    //         normalized.setRule(RULE_EH0);
-    //     } else if ((rule == RULE_AH1) && setting.hasReductionRule(RULE_EH1)) {
-    //         normalized.setRule(RULE_EH1);
-    //     }
-    // }
+    if (level - targetLvl == 1) {
+        if ((rule == RULE_AL0) && setting.hasReductionRule(RULE_EL0)) {
+            normalized.setRule(RULE_EL0);
+        } else if ((rule == RULE_AL1) && setting.hasReductionRule(RULE_EL1)) {
+            normalized.setRule(RULE_EL1);
+        } else if ((rule == RULE_AH0) && setting.hasReductionRule(RULE_EH0)) {
+            normalized.setRule(RULE_EH0);
+        } else if ((rule == RULE_AH1) && setting.hasReductionRule(RULE_EH1)) {
+            normalized.setRule(RULE_EH1);
+        }
+    }
     /* Case 2: target to terminal node */
-    // if (targetLvl == 0) {
-    //     Value termVal = getTerminalValue(edge.handle);
-    //     union {
-    //         int             valInt;
-    //         float           valFloat;
-    //         SpecialValue    valSp;
-    //     };
+    if (targetLvl == 0) {
+        Value termVal = getTerminalValue(edge.handle);
+        union {
+            int             valInt;
+            float           valFloat;
+            SpecialValue    valSp;
+        };
     //     // rule 1: forbidding swap flags to terminal node
-    //     normalized.setSwap(0,0);
-    //     normalized.setSwap(0,1);
-    //     // rule 2: forbidding terminal value > N/2, if complement flag allowed
-    //     if (setting.getCompType() != NO_COMP) {
-    //         if (termVal.getType() == INT) {
-    //             termVal.getValueTo(&valInt, INT);
-    //             if ((setting.getMaxRange() - valInt) <= (double)(setting.getMaxRange())/2) {
-    //                 normalized.handle = makeTerminal(INT, setting.getMaxRange() - valInt);
-    //                 std::cout << "rule0" << rule << std::endl;
-    //                 normalized.setRule(rule);
-    //                 normalized.setComp(!comp);
-    //             }
-    //         } else if (termVal.getType() == FLOAT) {
-    //             termVal.getValueTo(&valFloat, FLOAT);
-    //             if (valFloat >= (setting.getMaxRange()/2)) {
-    //                 normalized.handle = makeTerminal(FLOAT, setting.getMaxRange() - valInt);
-    //                 std::cout << "rule1" << rule << std::endl;
-    //                 normalized.setRule(rule);
-    //                 normalized.setComp(!comp);
-    //             }
-    //         } else if (termVal.getType() == VOID) {
-    //             termVal.getValueTo(&valSp, VOID);
-    //             if ((valSp == SpecialValue::POS_INF) && setting.hasNegInf()) {
-    //                 normalized.handle = makeTerminal(VOID, SpecialValue::NEG_INF);
-    //                 std::cout << "rule2" << rule << std::endl;
-    //                 normalized.setRule(rule);
-    //                 normalized.setComp(!comp);
-    //             }
-    //         }
-    //     } else if (comp) {
-    //         // this edge should not have complement flag
-    //         if (termVal.getType() == INT) {
-    //             termVal.getValueTo(&valInt, INT);
-    //             normalized.handle = makeTerminal(INT, setting.getMaxRange() - valInt);
-    //         } else if (termVal.getType() == FLOAT) {
-    //             termVal.getValueTo(&valFloat, FLOAT);
-    //             normalized.handle = makeTerminal(FLOAT, setting.getMaxRange() - valInt);
-    //         } else if (termVal.getType() == VOID) {
-    //             termVal.getValueTo(&valSp, VOID);
-    //             if (valSp == SpecialValue::POS_INF) {
-    //                 if (setting.hasNegInf()) {
-    //                     normalized.handle = makeTerminal(VOID, SpecialValue::NEG_INF);
-    //                 } else {
-    //                     std::cout << "[BRAVE_DD] ERROR!\t Normalize edge: Miss [Neg_Inf] in setting!" << std::endl;
-    //                     exit(0);
-    //                 }
-    //             } else if (valSp == SpecialValue::NEG_INF) {
-    //                 if (setting.hasPosInf()) {
-    //                     normalized.handle = makeTerminal(VOID, SpecialValue::POS_INF);
-    //                 } else {
-    //                     std::cout << "[BRAVE_DD] ERROR!\t Normalize edge: Miss [Pos_Inf] in setting!" << std::endl;
-    //                     exit(0);
-    //                 }
-    //             }
-    //         }
-    //         std::cout << "rule4" << rule << std::endl;
-    //         normalized.setRule(rule);
-    //         normalized.setComp(!comp);
-    //     }
+        normalized.setSwap(0,0);
+        normalized.setSwap(0,1);
+        // rule 2: forbidding terminal value > N/2, if complement flag allowed
+        if (setting.getCompType() != NO_COMP) {
+            if (termVal.getType() == INT) {
+                termVal.getValueTo(&valInt, INT);
+                if ((setting.getMaxRange() - valInt) <= (double)(setting.getMaxRange())/2) {
+                    normalized.handle = makeTerminal(INT, setting.getMaxRange() - valInt);
+                    std::cout << "rule0" << rule << std::endl;
+                    normalized.setRule(rule);
+                    normalized.setComp(!comp);
+                }
+            } else if (termVal.getType() == FLOAT) {
+                termVal.getValueTo(&valFloat, FLOAT);
+                if (valFloat >= (setting.getMaxRange()/2)) {
+                    normalized.handle = makeTerminal(FLOAT, setting.getMaxRange() - valInt);
+                    std::cout << "rule1" << rule << std::endl;
+                    normalized.setRule(rule);
+                    normalized.setComp(!comp);
+                }
+            } else if (termVal.getType() == VOID) {
+                termVal.getValueTo(&valSp, VOID);
+                if ((valSp == SpecialValue::POS_INF) && setting.hasNegInf()) {
+                    normalized.handle = makeTerminal(VOID, SpecialValue::NEG_INF);
+                    std::cout << "rule2" << rule << std::endl;
+                    normalized.setRule(rule);
+                    normalized.setComp(!comp);
+                }
+            }
+        } else if (comp) {
+            // this edge should not have complement flag
+            if (termVal.getType() == INT) {
+                termVal.getValueTo(&valInt, INT);
+                normalized.handle = makeTerminal(INT, setting.getMaxRange() - valInt);
+            } else if (termVal.getType() == FLOAT) {
+                termVal.getValueTo(&valFloat, FLOAT);
+                normalized.handle = makeTerminal(FLOAT, setting.getMaxRange() - valInt);
+            } else if (termVal.getType() == VOID) {
+                termVal.getValueTo(&valSp, VOID);
+                if (valSp == SpecialValue::POS_INF) {
+                    if (setting.hasNegInf()) {
+                        normalized.handle = makeTerminal(VOID, SpecialValue::NEG_INF);
+                    } else {
+                        std::cout << "[BRAVE_DD] ERROR!\t Normalize edge: Miss [Neg_Inf] in setting!" << std::endl;
+                        exit(0);
+                    }
+                } else if (valSp == SpecialValue::NEG_INF) {
+                    if (setting.hasPosInf()) {
+                        normalized.handle = makeTerminal(VOID, SpecialValue::POS_INF);
+                    } else {
+                        std::cout << "[BRAVE_DD] ERROR!\t Normalize edge: Miss [Pos_Inf] in setting!" << std::endl;
+                        exit(0);
+                    }
+                }
+            }
+            std::cout << "rule4" << rule << std::endl;
+            normalized.setRule(rule);
+            normalized.setComp(!comp);
+        }
     //     // rule 3: constant edge, if reduction rule X allowed and target to terminal 0 or 1
-    //     bool isTermOne = isTerminalOne(normalized.handle);
-    //     bool isTermZero = isTerminalZero(normalized.handle);
-    //     if (((rule != RULE_X) && (hasRuleTerminalOne(rule) == (normalized.getComp()^isTermOne)) && (isTermOne || isTermZero))
-    //         || ((rule == RULE_X) && (level - targetLvl > 0))
-    //         || (level - targetLvl == 0)) {
-    //         // it should be a long X anyway
-    //         normalized.setRule(RULE_X);
-    //         if (!setting.hasReductionRule(RULE_X) && (level - targetLvl > 0)) {
-    //             // long X is not allowed, try to find a legal reduction rule
-    //             for (int r=0; r<11; r++){
-    //                 if (setting.hasReductionRule((ReductionRule)r)
-    //                     && ((normalized.getComp()^isTermOne) == hasRuleTerminalOne((ReductionRule)r))) {    
-    //                     normalized.setRule((ReductionRule)r);
-    //                     std::cout << "rule5" << normalized.getRule() << std::endl;
-    //                     break;
-    //                 }
-    //             }
-    //         }
-    //     }
+        bool isTermOne = isTerminalOne(normalized.handle);
+        bool isTermZero = isTerminalZero(normalized.handle);
+        if (((rule != RULE_X) && (hasRuleTerminalOne(rule) == (normalized.getComp()^isTermOne)) && (isTermOne || isTermZero))
+            || ((rule == RULE_X) && (level - targetLvl > 0))
+            || (level - targetLvl == 0)) {
+            // it should be a long X anyway
+            normalized.setRule(RULE_X);
+            if (!setting.hasReductionRule(RULE_X) && (level - targetLvl > 0)) {
+                // long X is not allowed, try to find a legal reduction rule
+                for (int r=0; r<11; r++){
+                    if (setting.hasReductionRule((ReductionRule)r)
+                        && ((normalized.getComp()^isTermOne) == hasRuleTerminalOne((ReductionRule)r))) {    
+                        normalized.setRule((ReductionRule)r);
+                        std::cout << "rule5" << normalized.getRule() << std::endl;
+                        break;
+                    }
+                }
+            }
+        }
     //     // rule 4: EH edge at level 1 target to terminal 0 or 1, changed to EL
-    //     if ((level == 1)
-    //         && isRuleEH(normalized.getRule())
-    //         && (hasRuleTerminalOne(normalized.getRule()) != (normalized.getComp()^isTermOne))
-    //         && (isTermOne || isTermZero)) {
-    //         if ((normalized.getRule() == RULE_EH0) && setting.hasReductionRule(RULE_EL1)) {
-    //             if (termVal.getType() == INT) {
-    //                 normalized.handle = makeTerminal(INT, 0);
-    //             } else {
-    //                 normalized.handle = makeTerminal(FLOAT, 0.0f);
-    //             }
-    //             normalized.setRule(RULE_EL1);
-    //             std::cout << "rule6" << normalized.getRule() << std::endl;
-    //             normalized.setComp(0);
-    //         } else if ((normalized.getRule() == RULE_EH1) && setting.hasReductionRule(RULE_EL0)) {
-    //             if (isCompAllowed) {
-    //                 if (termVal.getType() == INT) {
-    //                     normalized.handle = makeTerminal(INT, 0);
-    //                 } else {
-    //                     normalized.handle = makeTerminal(FLOAT, 0.0f);
-    //                 }
-    //                 normalized.setComp(1);
-    //             } else{
-    //                 if (termVal.getType() == INT) {
-    //                     normalized.handle = makeTerminal(INT, 1);
-    //                 } else {
-    //                     normalized.handle = makeTerminal(FLOAT, 1.0f);
-    //                 }
-    //                 normalized.setComp(0);
-    //             }
-    //             normalized.setRule(RULE_EL0);
-    //             std::cout << "rule" << normalized.getRule() << std::endl;
-    //         }
-    //     }
-    // }
+        if ((level == 1)
+            && isRuleEH(normalized.getRule())
+            && (hasRuleTerminalOne(normalized.getRule()) != (normalized.getComp()^isTermOne))
+            && (isTermOne || isTermZero)) {
+            if ((normalized.getRule() == RULE_EH0) && setting.hasReductionRule(RULE_EL1)) {
+                if (termVal.getType() == INT) {
+                    normalized.handle = makeTerminal(INT, 0);
+                } else {
+                    normalized.handle = makeTerminal(FLOAT, 0.0f);
+                }
+                normalized.setRule(RULE_EL1);
+                std::cout << "rule6" << normalized.getRule() << std::endl;
+                normalized.setComp(0);
+            } else if ((normalized.getRule() == RULE_EH1) && setting.hasReductionRule(RULE_EL0)) {
+                if (isCompAllowed) {
+                    if (termVal.getType() == INT) {
+                        normalized.handle = makeTerminal(INT, 0);
+                    } else {
+                        normalized.handle = makeTerminal(FLOAT, 0.0f);
+                    }
+                    normalized.setComp(1);
+                } else{
+                    if (termVal.getType() == INT) {
+                        normalized.handle = makeTerminal(INT, 1);
+                    } else {
+                        normalized.handle = makeTerminal(FLOAT, 1.0f);
+                    }
+                    normalized.setComp(0);
+                }
+                normalized.setRule(RULE_EL0);
+                std::cout << "rule" << normalized.getRule() << std::endl;
+            }
+        }
+    }
     /* Case 3: long edge with reduction rule that is not allowed */
     rule = normalized.getRule();
     comp = normalized.getComp();
