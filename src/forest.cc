@@ -160,11 +160,11 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
 
 Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
 {
-// #ifdef BRAVE_DD_FOREST_TRACE
+#ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "normalize edge from level: " << level << "; ";
     edge.print(std::cout);
     std::cout << std::endl;
-// #endif
+#endif
     Edge normalized = edge;
     bool isCompAllowed = (setting.getCompType() != NO_COMP);
     ReductionRule rule = edge.getRule();
@@ -195,7 +195,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
             float           valFloat;
             SpecialValue    valSp;
         };
-    //     // rule 1: forbidding swap flags to terminal node
+        // rule 1: forbidding swap flags to terminal node
         normalized.setSwap(0,0);
         normalized.setSwap(0,1);
         // rule 2: forbidding terminal value > N/2, if complement flag allowed
@@ -267,7 +267,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                 // long X is not allowed, try to find a legal reduction rule
                 for (int r=0; r<11; r++){
                     if (setting.hasReductionRule((ReductionRule)r)
-                        && ((normalized.getComp()^isTermOne) == hasRuleTerminalOne((ReductionRule)r))) {    
+                        && ((normalized.getComp()^isTermOne) == hasRuleTerminalOne((ReductionRule)r))) {
                         normalized.setRule((ReductionRule)r);
                         std::cout << "rule5" << normalized.getRule() << std::endl;
                         break;
@@ -428,7 +428,6 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
                         if (setting.hasReductionRule((ReductionRule)r)
                             && ((child[0].getComp()^isTermOne0) == hasRuleTerminalOne((ReductionRule)r))) {
                             reduced = child[0];
-
                             reduced.setRule((ReductionRule)r);
                             isMatch = 1;
                             break;
