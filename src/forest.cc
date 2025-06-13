@@ -288,15 +288,11 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
             if (!setting.hasReductionRule(RULE_X) && (level - targetLvl > 0)) {
                 // long X is not allowed, try to find a legal reduction rule
                 for (int r=0; r<11; r++){
-                    // std::cout << "r: " << r << setting.hasReductionRule((ReductionRule)r) <<std::endl;
                     if (setting.hasReductionRule((ReductionRule)r)
                         && ((normalized.getComp()^isTermOne) == hasRuleTerminalOne((ReductionRule)r))) {
-                        // std::cout << "insdie r: " << r << setting.hasReductionRule((ReductionRule)r) << std::endl;
                         normalized.setRule((ReductionRule)r);
                         break;
                     }
-                    // std::cout << "HIT" << std::endl;
-                    // std::cout << "ope" << normalized.getRule() <<std::endl;;
                 }
             }
         }
@@ -350,9 +346,6 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                 for (size_t i=0; i<childEdges.size(); i++) {
                     childEdges[i] = temp;
                 }
-                int before;
-                edge.getValue().getValueTo(&before,INT);
-                std::cout << "before: " << before << std::endl;
                 temp = reduceNode(k, childEdges);            
             }
         } else if (isRuleEL(rule) || isRuleEH(rule) || isRuleAL(rule) || isRuleAH(rule)) {
@@ -702,11 +695,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
                 isMatch = 1;
             }
         }
-        Edge temp = normalizeNode(nodeLevel, child);
-        int mid;
-        temp.getValue().getValueTo(&mid,INT);
-        std::cout << "mid point" << mid << std::endl;
-        if (!isMatch) return temp;
+        if (!isMatch) return normalizeNode(nodeLevel, child);
 
     /* =================================================================================================
     * BMXD for "Relation" (Terminal encoding)
