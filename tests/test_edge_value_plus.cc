@@ -45,23 +45,43 @@ int main() {
 
     // delete forest0;
 
+    //-----------------------------------------------------------------------------
+
     // Testing constant function 5 with 5 variables
-    ForestSetting setting1 = ForestSetting("ev+qbdd", 1);
+    // ForestSetting setting1 = ForestSetting("ev+qbdd", 3);
+
+    // Forest* forest1 = new Forest(setting1);
+    // Func func1(forest1);
+    // func1.constant(5);
+
+    // int dangling_edge1;
+    // func1.getEdge().getValue().getValueTo(&dangling_edge1,INT);
+
+    // DotMaker dot1(forest1,"constant_5_3_vars");
+    // dot1.buildGraph(func1);
+    // dot1.runDot("pdf");
+
+    // delete forest1;
+    
+    //-----------------------------------------------------------------------------
+
+    ForestSetting setting1 = ForestSetting(PredefForest::QBDD, 3);
+    
     Forest* forest1 = new Forest(setting1);
-    Func func1(forest1);
-    func1.constant(5);
+    Func func1 =  Func(forest1);
+    func1.constant(0);
 
     int dangling_edge1;
     func1.getEdge().getValue().getValueTo(&dangling_edge1,INT);
 
+
     // assert(dangling_edge1 == 5 && "The constant function is embedded wrong");
 
-    DotMaker dot1(forest1,"constant_5_2_vars");
+    DotMaker dot1(forest1,"constant_0_3_vars_qbdd");
     dot1.buildGraph(func1);
     dot1.runDot("pdf");
 
     delete forest1;
-
 
     return 0;
 } 

@@ -1,7 +1,7 @@
 #include "forest.h"
 #include "operations/operation.h"
 
-// #define BRAVE_DD_FOREST_TRACE
+#define BRAVE_DD_FOREST_TRACE
 
 using namespace BRAVE_DD;
 // ******************************************************************
@@ -127,7 +127,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         child[1].print(std::cout);
         std::cout << std::endl;
 #endif
-        
+
         bool hasLvl = setting.getReductionSize() > 0;
         node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
         node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
@@ -142,7 +142,6 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         node.setChildEdge(3, child[3].getEdgeHandle(), 1, hasLvl);
 
     } else if(setting.isRelation() && (setting.getEncodeMechanism() == EDGE_PLUS)) {
-
     } else {
         // others, TBD
     }
@@ -204,7 +203,6 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                 termVal.getValueTo(&valInt, INT);
                 if ((setting.getMaxRange() - valInt) <= (double)(setting.getMaxRange())/2) {
                     normalized.handle = makeTerminal(INT, setting.getMaxRange() - valInt);
-                    std::cout << "rule0" << rule << std::endl;
                     normalized.setRule(rule);
                     normalized.setComp(!comp);
                 }
@@ -212,7 +210,6 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                 termVal.getValueTo(&valFloat, FLOAT);
                 if (valFloat >= (setting.getMaxRange()/2)) {
                     normalized.handle = makeTerminal(FLOAT, setting.getMaxRange() - valInt);
-                    std::cout << "rule1" << rule << std::endl;
                     normalized.setRule(rule);
                     normalized.setComp(!comp);
                 }
@@ -220,7 +217,6 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                 termVal.getValueTo(&valSp, VOID);
                 if ((valSp == SpecialValue::POS_INF) && setting.hasNegInf()) {
                     normalized.handle = makeTerminal(VOID, SpecialValue::NEG_INF);
-                    std::cout << "rule2" << rule << std::endl;
                     normalized.setRule(rule);
                     normalized.setComp(!comp);
                 }
@@ -251,11 +247,10 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                     }
                 }
             }
-            std::cout << "rule4" << rule << std::endl;
             normalized.setRule(rule);
             normalized.setComp(!comp);
         }
-    //     // rule 3: constant edge, if reduction rule X allowed and target to terminal 0 or 1
+        // rule 3: constant edge, if reduction rule X allowed and target to terminal 0 or 1
         bool isTermOne = isTerminalOne(normalized.handle);
         bool isTermZero = isTerminalZero(normalized.handle);
         if (((rule != RULE_X) && (hasRuleTerminalOne(rule) == (normalized.getComp()^isTermOne)) && (isTermOne || isTermZero))
@@ -269,13 +264,12 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                     if (setting.hasReductionRule((ReductionRule)r)
                         && ((normalized.getComp()^isTermOne) == hasRuleTerminalOne((ReductionRule)r))) {
                         normalized.setRule((ReductionRule)r);
-                        std::cout << "rule5" << normalized.getRule() << std::endl;
                         break;
                     }
                 }
             }
         }
-    //     // rule 4: EH edge at level 1 target to terminal 0 or 1, changed to EL
+        // rule 4: EH edge at level 1 target to terminal 0 or 1, changed to EL
         if ((level == 1)
             && isRuleEH(normalized.getRule())
             && (hasRuleTerminalOne(normalized.getRule()) != (normalized.getComp()^isTermOne))
@@ -287,7 +281,6 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                     normalized.handle = makeTerminal(FLOAT, 0.0f);
                 }
                 normalized.setRule(RULE_EL1);
-                std::cout << "rule6" << normalized.getRule() << std::endl;
                 normalized.setComp(0);
             } else if ((normalized.getRule() == RULE_EH1) && setting.hasReductionRule(RULE_EL0)) {
                 if (isCompAllowed) {
@@ -306,7 +299,6 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                     normalized.setComp(0);
                 }
                 normalized.setRule(RULE_EL0);
-                std::cout << "rule" << normalized.getRule() << std::endl;
             }
         }
     }
@@ -328,7 +320,6 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                     childEdges[i] = temp;
                 }
                 // as short incoming edge, reduceNode can be directly called
-                std::cout<<"\n Here is the issue \n" << std::endl;
                 temp = reduceNode(k, childEdges);
             }
         } else if (isRuleEL(rule) || isRuleEH(rule) || isRuleAL(rule) || isRuleAH(rule)) {
@@ -365,8 +356,6 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
         }
         normalized = temp;
     }
-
-    std::cout << normalized.getRule() << std::endl;
 
     return normalized;
 }
@@ -663,13 +652,6 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     * BDD for "Set" (Edge value encoding)
     * ================================================================================================*/
     } else if (!setting.isRelation() && setting.getEncodeMechanism() == EDGE_PLUS){
-        // flag for checking if match any allowed meta-reduciton rule 
-        // For EV just X and N-
-        /* ---------------------------------------------------------------------------------------------
-        * Forbidden patterns of nodes with both edges to terminals
-        * --------------------------------------------------------------------------------------------*/
-        if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {            
-        }
     /* =================================================================================================
     * BMXD for "Relation" (Terminal encoding)
     * ================================================================================================*/
@@ -914,7 +896,7 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
 }
 
 Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const uint16_t nodeLevel, const std::vector<Edge>& down, const Value& value)
-{
+{   
     /* check level */
     if (beginLevel < nodeLevel) {
         std::cout << "[BRAVE_DD] ERROR!\t reduceEdge(): Invalid level for incoming edge or target node!" << std::endl;
