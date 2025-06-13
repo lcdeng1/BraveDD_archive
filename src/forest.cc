@@ -1,7 +1,7 @@
 #include "forest.h"
 #include "operations/operation.h"
 
-#define BRAVE_DD_FOREST_TRACE
+// #define BRAVE_DD_FOREST_TRACE
 
 using namespace BRAVE_DD;
 // ******************************************************************
@@ -896,7 +896,7 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
 }
 
 Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const uint16_t nodeLevel, const std::vector<Edge>& down, const Value& value)
-{   
+{
     /* check level */
     if (beginLevel < nodeLevel) {
         std::cout << "[BRAVE_DD] ERROR!\t reduceEdge(): Invalid level for incoming edge or target node!" << std::endl;
