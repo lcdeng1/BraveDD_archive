@@ -132,7 +132,30 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
         node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
     } else if(!setting.isRelation() && (setting.getEncodeMechanism() == EDGE_PLUS)) {
-
+        bool hasLvl = setting.getReductionSize() > 0;
+        if (setting.getValType() == INT) {
+            int ev0, ev1;
+            child[0].getValue().getValueTo(&ev0, INT);
+            child[1].getValue().getValueTo(&ev1, INT);
+            int min = MIN(ev0, ev1);
+            child[0].setValue(Value(ev0 - min));
+            child[1].setValue(Value(ev1 - min));
+            node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
+            node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
+            ans.setValue(Value(min));
+        } else if (setting.getValType() == VOID) {
+            // TODO: Talk to Lichuan about this
+            int ev0, ev1;
+            child[0].getValue().getValueTo(&ev0, INT);
+            child[1].getValue().getValueTo(&ev1, INT);
+            std::cout << "ev0: " <<ev0 << "ev1: " <<ev1 <<std::endl;
+            int min = MIN(ev0, ev1);
+            child[0].setValue(Value(ev0 - min));
+            child[1].setValue(Value(ev1 - min));
+            node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
+            node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
+            ans.setValue(Value(min));
+        }
     } else if (setting.isRelation() && setting.getEncodeMechanism() == TERMINAL){
         // for relation BDD TBD
         bool hasLvl = setting.getReductionSize() > 0;
@@ -165,10 +188,14 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
     std::cout << std::endl;
 #endif
     Edge normalized = edge;
+    int init;
+    normalized.getValue().getValueTo(&init,INT);
+    std::cout << "at the be: " << init << std::endl; 
     bool isCompAllowed = (setting.getCompType() != NO_COMP);
     ReductionRule rule = edge.getRule();
     bool comp = edge.getComp();
     uint16_t targetLvl = edge.getNodeLevel();
+    
     /* Case 0: short edge to nonterminal node */
     if ((level == targetLvl) && (targetLvl > 0)) {
         normalized.setRule(RULE_X);
@@ -261,11 +288,15 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
             if (!setting.hasReductionRule(RULE_X) && (level - targetLvl > 0)) {
                 // long X is not allowed, try to find a legal reduction rule
                 for (int r=0; r<11; r++){
+                    // std::cout << "r: " << r << setting.hasReductionRule((ReductionRule)r) <<std::endl;
                     if (setting.hasReductionRule((ReductionRule)r)
                         && ((normalized.getComp()^isTermOne) == hasRuleTerminalOne((ReductionRule)r))) {
+                        // std::cout << "insdie r: " << r << setting.hasReductionRule((ReductionRule)r) << std::endl;
                         normalized.setRule((ReductionRule)r);
                         break;
                     }
+                    // std::cout << "HIT" << std::endl;
+                    // std::cout << "ope" << normalized.getRule() <<std::endl;;
                 }
             }
         }
@@ -319,8 +350,10 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                 for (size_t i=0; i<childEdges.size(); i++) {
                     childEdges[i] = temp;
                 }
-                // as short incoming edge, reduceNode can be directly called
-                temp = reduceNode(k, childEdges);
+                int before;
+                edge.getValue().getValueTo(&before,INT);
+                std::cout << "before: " << before << std::endl;
+                temp = reduceNode(k, childEdges);            
             }
         } else if (isRuleEL(rule) || isRuleEH(rule) || isRuleAL(rule) || isRuleAH(rule)) {
             bool child = (isRuleEL(rule) || isRuleAL(rule)) ? 0 : 1;
@@ -652,6 +685,29 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     * BDD for "Set" (Edge value encoding)
     * ================================================================================================*/
     } else if (!setting.isRelation() && setting.getEncodeMechanism() == EDGE_PLUS){
+        bool isMatch = 0;
+        if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {
+            bool isTermOmega0 = isTerminalOmega(child[0].getEdgeHandle());
+            bool isTermOmega1 = isTerminalOmega(child[1].getEdgeHandle());
+            bool isTermPosInf0 = isTerminalPosInf(child[0].getEdgeHandle());
+            bool isTermPosInf1 = isTerminalPosInf(child[1].getEdgeHandle());
+            /* ---------------------------------------------------------------------------------------------
+            * Redundant X
+            * --------------------------------------------------------------------------------------------*/ 
+            if((child[0].getEdgeHandle() == child[1].getEdgeHandle())
+                && (child[0].getValue() == child[1].getValue())
+                && (child[0].getRule() == RULE_X)
+                && setting.hasReductionRule(RULE_X)) {
+                reduced = child[0];
+                isMatch = 1;
+            }
+        }
+        Edge temp = normalizeNode(nodeLevel, child);
+        int mid;
+        temp.getValue().getValueTo(&mid,INT);
+        std::cout << "mid point" << mid << std::endl;
+        if (!isMatch) return temp;
+
     /* =================================================================================================
     * BMXD for "Relation" (Terminal encoding)
     * ================================================================================================*/
@@ -689,7 +745,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     /* =================================================================================================
     * BMXD for "Relation" (Edge value encoding)
     * ================================================================================================*/
-    } else if (setting.isRelation() && setting.getEncodeMechanism() != EDGE_PLUS) {
+    } else if (setting.isRelation() && setting.getEncodeMechanism() == EDGE_PLUS) {
         // TBD
     }
 
