@@ -183,10 +183,29 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         <<", it should be "<<parent->getSetting().getNumVars() << std::endl;
         exit(0);
     }
-    /* final answer */
-    Value ans(0);
     /* encode mechanism */
     EncodeMechanism encode = parent->getSetting().getEncodeMechanism();
+    /* value type*/
+    ValueType vt = parent->getSetting().getValType();
+    /* final answer */
+    Value ans;
+    if (encode == TERMINAL) {
+        ans = Value(0);
+        /* initialize edge value */
+    } else if (encode == EDGE_PLUS) {
+        if (vt == INT) {
+            ans = edge.getValue().getIntValue();
+        } else if (vt == LONG) {
+            ans = edge.getValue().getLongValue();
+        } else if(vt == FLOAT) {
+            ans = edge.getValue().getFloatValue();
+        } else if (vt == DOUBLE) {
+            ans = edge.getValue().getDoubleValue();
+        } else {
+            /* VOID (Special Value)*/
+            return edge.getValue();
+        }
+    }
     /* edge flags type */
     SwapSet st = parent->getSetting().getSwapType();
     CompSet ct = parent->getSetting().getCompType();
@@ -220,19 +239,27 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             }
             if (encode == TERMINAL) {
                 // terminal value, don't care the Value on edge
-                ValueType vt = (parent->getSetting().getValType() == INT
-                                || parent->getSetting().getValType() == LONG) ? INT : FLOAT;
                 if ((allOne && isRuleAH(incoming))
                     || ((!allOne) && isRuleEL(incoming))
                     || (existOne && isRuleEH(incoming))
                     || ((!existOne) && isRuleAL(incoming))) {
-                    if (vt == INT) ans.setValue(hasRuleTerminalOne(incoming)?1:0, INT);
+                    if (vt == INT || vt == LONG) ans.setValue(hasRuleTerminalOne(incoming)?1:0, INT);
                     else ans.setValue(hasRuleTerminalOne(incoming)?1.0f:0.0f, FLOAT);
                     return ans;
                 }
             } else if (encode == EDGE_PLUS) {
                 // edge values plus
-                // TBD
+                // TODO: (Jae) ask lichuan - only reduction rule allowed is X for ev
+                // If there is a long edge incoming that is not X this really should throw error 
+                // Actually if this is the case then it shows us that our normalization/reduction is not working
+                // But - if our normalization and reduction is working this is dead code.
+                // Discuss
+                // Unless ofc it is going to posinf
+                if (isTerminalOmega(current.getEdgeHandle())) {
+                    return current.getValue();
+                }
+                std::cout << "[BRAVE_DD] ERROR!\t evaluate(): Illegal patterns for EVBDD!" << std::endl;
+                exit(0);
             } else if (encode == EDGE_PLUSMOD) {
                 // edge values plus and modulo
                 // TBD
@@ -255,6 +282,10 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             existOne = 0;
             targetHandle = current.getNodeHandle();
             targetLvl = current.getNodeLevel();
+
+            /* cumulate the edge values*/
+            
+            
 #ifdef BRAVE_DD_TRACE
             std::cout<<"next currt: k="<< k <<", targetlvl=" << targetLvl << "; ";
             current.print(std::cout, 0);
