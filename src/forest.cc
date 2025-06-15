@@ -133,6 +133,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
     } else if(!setting.isRelation() && (setting.getEncodeMechanism() == EDGE_PLUS)) {
         bool hasLvl = setting.getReductionSize() > 0;
+        //TODO: I really dont like this but this is the most readable way?? ask lichuan as well
         if (setting.getValType() == INT) {
             int ev0, ev1;
             child[0].getValue().getValueTo(&ev0, INT);
@@ -143,18 +144,38 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
             ans.setValue(Value(min));
-        } else if (setting.getValType() == VOID) {
-            // TODO: Talk to Lichuan about this
-            int ev0, ev1;
-            child[0].getValue().getValueTo(&ev0, INT);
-            child[1].getValue().getValueTo(&ev1, INT);
-            std::cout << "ev0: " <<ev0 << "ev1: " <<ev1 <<std::endl;
-            int min = MIN(ev0, ev1);
+        } else if (setting.getValType() == LONG) {
+            long ev0, ev1;
+            child[0].getValue().getValueTo(&ev0, LONG);
+            child[1].getValue().getValueTo(&ev1, LONG);
+            long min = MIN(ev0, ev1);
             child[0].setValue(Value(ev0 - min));
             child[1].setValue(Value(ev1 - min));
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
             ans.setValue(Value(min));
+        } else if (setting.getValType() == FLOAT) {
+            float ev0, ev1;
+            child[0].getValue().getValueTo(&ev0, FLOAT);
+            child[1].getValue().getValueTo(&ev1, FLOAT);
+            float min = MIN(ev0, ev1);
+            child[0].setValue(Value(ev0 - min));
+            child[1].setValue(Value(ev1 - min));
+            node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
+            node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
+            ans.setValue(Value(min));
+        } else if (setting.getValType() == DOUBLE) {
+            double ev0, ev1;
+            child[0].getValue().getValueTo(&ev0, LONG);
+            child[1].getValue().getValueTo(&ev1, LONG);
+            double min = MIN(ev0, ev1);
+            child[0].setValue(Value(ev0 - min));
+            child[1].setValue(Value(ev1 - min));
+            node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
+            node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
+            ans.setValue(Value(min));
+        } else if (setting.getValType() == VOID) {
+            // TODO: Talk to Lichuan about this
         }
     } else if (setting.isRelation() && setting.getEncodeMechanism() == TERMINAL){
         // for relation BDD TBD
@@ -188,9 +209,6 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
     std::cout << std::endl;
 #endif
     Edge normalized = edge;
-    int init;
-    normalized.getValue().getValueTo(&init,INT);
-    std::cout << "at the be: " << init << std::endl; 
     bool isCompAllowed = (setting.getCompType() != NO_COMP);
     ReductionRule rule = edge.getRule();
     bool comp = edge.getComp();

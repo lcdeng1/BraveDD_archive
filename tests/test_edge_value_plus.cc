@@ -48,40 +48,41 @@ int main() {
     //-----------------------------------------------------------------------------
 
     // Testing constant function 5 with 5 variables
-    // ForestSetting setting1 = ForestSetting("ev+qbdd", 3);
+    
+    //-----------------------------------------------------------------------------
 
+    // ForestSetting setting1 = ForestSetting(PredefForest::QBDD, 3);
+    
     // Forest* forest1 = new Forest(setting1);
-    // Func func1(forest1);
-    // func1.constant(5);
+    // Func func1 =  Func(forest1);
+    // func1.constant(0);
 
     // int dangling_edge1;
     // func1.getEdge().getValue().getValueTo(&dangling_edge1,INT);
 
-    // DotMaker dot1(forest1,"constant_5_3_vars");
+
+    // DotMaker dot1(forest1,"constant_0_3_vars_qbdd");
     // dot1.buildGraph(func1);
     // dot1.runDot("pdf");
 
     // delete forest1;
-    
-    //-----------------------------------------------------------------------------
 
-    ForestSetting setting1 = ForestSetting(PredefForest::QBDD, 3);
-    
-    Forest* forest1 = new Forest(setting1);
-    Func func1 =  Func(forest1);
-    func1.constant(0);
+    // std::cout << "\n\n\n\\n\n##################" << std::endl;
+    // std::cout << "##################" << std::endl;
+    // std::cout << "##################\\n\n\n\n\n" << std::endl;
 
-    int dangling_edge1;
-    func1.getEdge().getValue().getValueTo(&dangling_edge1,INT);
+    ForestSetting setting2 = ForestSetting("ev+qbdd", 5);
+    setting2.setValType(INT);
 
+    Forest* forest2 = new Forest(setting2);
+    Func func2(forest2);
+    func2.constant(5);
 
-    // assert(dangling_edge1 == 5 && "The constant function is embedded wrong");
+    DotMaker dot2(forest2,"evqbdd");
+    dot2.buildGraph(func2);
+    dot2.runDot("pdf");
 
-    DotMaker dot1(forest1,"constant_0_3_vars_qbdd");
-    dot1.buildGraph(func1);
-    dot1.runDot("pdf");
-
-    delete forest1;
+    delete forest2;
 
     return 0;
 } 

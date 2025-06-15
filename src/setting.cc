@@ -199,6 +199,7 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         reductions = Reductions(QUASI);
         name = "EVQBDD";
         encodingType = EDGE_PLUS;
+        //TODO: (Jae): Do we allow NINTEGERS?
         range = Range(RangeType::NNINTEGER,VOID);
         range.setPosInf(1);
     } else if (bddLower == "ev%qbdd" || bddLower == "evmodqbdd") {
@@ -207,6 +208,12 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         // setting for EV*QBDD
     } else if (bddLower == "evfbdd" || bddLower == "ev+fbdd") {
         // setting for EV+FBDD
+        reductions = Reductions(FULLY);
+        name = "EVFBDD";
+        encodingType = EDGE_PLUS;
+        //TODO: (Jae): Do we allow NINTEGERS?
+        range = Range(RangeType::NNINTEGER,VOID);
+        range.setPosInf(1);
     }
     // MxDs
     else if (bddLower == "qbmxd") {
