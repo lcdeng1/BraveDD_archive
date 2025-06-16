@@ -1,5 +1,6 @@
 #include "forest.h"
 #include "operations/operation.h"
+#include "operations/operations_generator.h"
 
 // #define BRAVE_DD_FOREST_TRACE
 
@@ -20,6 +21,10 @@ Forest::Forest(const ForestSetting& s):setting(s)
     nodeMan = new NodeManager(this);
     uniqueTable = new UniqueTable(this);
     stats = new Statistics();
+    
+    // Initialize operations
+    OperationsGenerator::buildUnaryOperations(this);
+    OperationsGenerator::buildBinaryOperations(this);
 }
 Forest::~Forest()
 {
@@ -142,6 +147,8 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         bool hasLvl = setting.getReductionSize() > 0;
         node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
         node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
+    } else if(!setting.isRelation() && (setting.getEncodeMechanism() == EDGE_PLUS)) {
+
     } else if (setting.isRelation() && setting.getEncodeMechanism() == TERMINAL){
         // for relation BDD TBD
         bool hasLvl = setting.getReductionSize() > 0;
@@ -149,6 +156,8 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         node.setChildEdge(1, child[1].getEdgeHandle(), 1, hasLvl);
         node.setChildEdge(2, child[2].getEdgeHandle(), 1, hasLvl);
         node.setChildEdge(3, child[3].getEdgeHandle(), 1, hasLvl);
+
+    } else if(setting.isRelation() && (setting.getEncodeMechanism() == EDGE_PLUS)) {
 
     } else {
         // others, TBD

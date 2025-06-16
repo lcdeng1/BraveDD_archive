@@ -34,7 +34,7 @@ class BRAVE_DD::Func {
     inline bool isSameForest(const Func &e) const {return parent == e.getForest();}
 
     inline std::string getName() const {return name;}
-    inline void setEdge(Edge& e) {edge = e;}
+    inline void setEdge(const Edge& e) {edge = e;}
     inline void setName(std::string l) {name = l;}
 
     /**************************** Make Func *************************/
@@ -154,13 +154,42 @@ class BRAVE_DD::ExplictFunc {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
+    ExplictFunc();
+    ~ExplictFunc();
+
+    // Add an assignment with its outcome value
+    void addAssignment(const std::vector<bool>& minterm, const Value& outcome);
+    
+    // Getters for assignments and outcomes
+    const std::vector<std::vector<bool>>& getAssignments() const;
+    const std::vector<Value>& getOutcomes() const;
+    
+    // Default value handling
+    Value getDefaultValue() const;
+    void setDefaultValue(const Value& val);
+    
+    // Get number of assignments
+    size_t size() const;
+    
+    // Get number of bits in assignments
+    int getNumBits() const;
+    
+    // Get specific assignment and outcome
+    const std::vector<bool>& getAssignment(int idx) const;
+    const Value& getOutcome(int idx) const;
+    
+    // Convert assignments to char arrays for radix scan
+    char** getAllAssignmentsAsCharArray() const;
+    
+    // Free memory from char array conversion
+    void freeCharArray(char** array, int size) const;
 
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-    std::vector<std::vector<bool> >     assignments;
-    std::vector<Value>                  outcomes;
-    Value                               defaultVal;
+    std::vector<std::vector<bool>>     assignments;
+    std::vector<Value>                 outcomes;
+    Value                              defaultVal;
 };
 
 #endif

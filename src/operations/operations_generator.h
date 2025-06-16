@@ -91,6 +91,14 @@ namespace BRAVE_DD {
     // ******************************************************************
     SaturationOperation* SATURATE(Forest* set, Forest* relations, Forest* res);
     SaturationOperation* PRE_SATURATE(Forest* set, Forest* relations, Forest* res);
+
+    class OperationsGenerator {
+        public:
+            static void buildUnaryOperations(Forest* forest);
+            static void buildBinaryOperations(Forest* forest);
+            static void buildUnaryOperation(Forest* forest, UnaryOperationType opT, Forest* targetF);
+            static void buildBinaryOperation(Forest* forest, BinaryOperationType opT, Forest* targetF);
+    };
 }
 
 #endif

@@ -1,5 +1,7 @@
 #include "operation.h"
 #include "../IO/out_dot.h"
+#include "../brave_helpers.h"
+#include "../terminal.h"
 
 // #define BRAVE_DD_OPERATION_TRACE
 // #define BRAVE_DD_PRINT_RELATIONS
@@ -158,7 +160,7 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
     // base cases:
     if (lvl == 0) {
         if (targetForest->getSetting().getEncodeMechanism() == TERMINAL) {
-            return source.getComp() ^ isTerminalOne(source.getEdgeHandle());
+            return source.getComp() ^ brave_helpers::isTerminalOne(source.getEdgeHandle());
             // other value TBD
         } // other encodings TBD
     }
@@ -428,7 +430,7 @@ void BinaryOperation::compute(const Func& source1, const Func& source2, Func& re
     // cache.reportStat(std::cout);
 }
 
-void BinaryOperation::compute(const Func& source1, const ExplictFunc source2, Func& res)
+void BinaryOperation::compute(const Func& source1, const ExplictFunc& source2, Func& res)
 {
     if (!checkForestCompatibility()) {
         throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
@@ -929,7 +931,10 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
     std::cout << "checking base case 2\n";
 #endif
     if (r.getNodeLevel() == 0) {
-        if ((r.getRule() == RULE_I0) && (isTerminalOne(r.getEdgeHandle()) || isTerminalZero(r.getEdgeHandle())) && (r.getComp() ^ isTerminalOne(r.getEdgeHandle()))) {
+        if ((r.getRule() == RULE_I0) && 
+            (brave_helpers::isTerminalOne(r.getEdgeHandle()) || 
+             brave_helpers::isTerminalZero(r.getEdgeHandle())) && 
+            (r.getComp() ^ brave_helpers::isTerminalOne(r.getEdgeHandle()))) {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 2: identity\n";
 #endif
@@ -1249,7 +1254,7 @@ void BinaryList::searchRemove(BinaryOperation* bop)
 
 void BinaryList::searchRemove(Forest* forest)
 {
-    if (!front) return;
+    if (!front || !forest) return;
     // check front first
     while (front && ((front->source1Forest == forest) || (front->source2Forest == forest) || (front->resForest == forest))) {
         BinaryOperation* toRemove = front;
