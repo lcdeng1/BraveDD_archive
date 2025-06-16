@@ -82,6 +82,17 @@ int main() {
     dot2.buildGraph(func2);
     dot2.runDot("pdf");
 
+    std::vector<bool> ass = {0,0,0,0,0,0};
+
+    Value res = func2.evaluate(ass);
+
+    int tot;
+    res.getValueTo(&tot,INT);
+
+    std::cout << "HERE: " << tot << std::endl;
+
+
+
     delete forest2;
 
     return 0;

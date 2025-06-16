@@ -183,29 +183,12 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         <<", it should be "<<parent->getSetting().getNumVars() << std::endl;
         exit(0);
     }
+    /* final answer */
+    Value ans(0);
     /* encode mechanism */
     EncodeMechanism encode = parent->getSetting().getEncodeMechanism();
     /* value type*/
     ValueType vt = parent->getSetting().getValType();
-    /* final answer */
-    Value ans;
-    if (encode == TERMINAL) {
-        ans = Value(0);
-        /* initialize edge value */
-    } else if (encode == EDGE_PLUS) {
-        if (vt == INT) {
-            ans = edge.getValue().getIntValue();
-        } else if (vt == LONG) {
-            ans = edge.getValue().getLongValue();
-        } else if(vt == FLOAT) {
-            ans = edge.getValue().getFloatValue();
-        } else if (vt == DOUBLE) {
-            ans = edge.getValue().getDoubleValue();
-        } else {
-            /* VOID (Special Value)*/
-            return edge.getValue();
-        }
-    }
     /* edge flags type */
     SwapSet st = parent->getSetting().getSwapType();
     CompSet ct = parent->getSetting().getCompType();
@@ -221,6 +204,24 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
     bool allOne = 1, existOne = 0;
     /* evaluation starting from the target node level */
     uint16_t k = assignment.size()-1;
+
+    /* initialized edge value for EVBDD*/
+    union {
+        int             evInt;
+        long            evLong;
+        float           evFloat;
+        double          evDouble;
+    };
+    if (encode == EDGE_PLUS) {
+        Value cv = current.getValue();
+        if (vt == INT) ans = Value(cv.getIntValue());
+        else if (vt == LONG) ans = Value(cv.getLongValue());
+        else if (vt == FLOAT) ans= Value(cv.getFloatValue());
+        else if (vt == DOUBLE) ans = Value(cv.getDoubleValue());
+        /* if it is VOID -> value is omega or posInf return current value*/
+        else return cv;
+    }
+
     while (true) {
 #ifdef BRAVE_DD_TRACE
         std::cout<<"evaluate k: " << k;
@@ -255,9 +256,9 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 // But - if our normalization and reduction is working this is dead code.
                 // Discuss
                 // Unless ofc it is going to posinf
-                if (isTerminalOmega(current.getEdgeHandle())) {
-                    return current.getValue();
-                }
+                // if (isTerminalPosInf(current.getEdgeHandle())) {
+                //     return getTerminalValue(current.getEdgeHandle());
+                // }
                 std::cout << "[BRAVE_DD] ERROR!\t evaluate(): Illegal patterns for EVBDD!" << std::endl;
                 exit(0);
             } else if (encode == EDGE_PLUSMOD) {
@@ -284,7 +285,15 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             targetLvl = current.getNodeLevel();
 
             /* cumulate the edge values*/
-            
+            if (encode == EDGE_PLUS) {
+                // if (isTerminalPosInf(current.getEdgeHandle())) 
+                //     return getTerminalValue(current.getEdgeHandle());
+                Value cv = current.getValue();
+                if (vt == INT) ans = Value(cv.getIntValue() + ans.getIntValue());
+                else if (vt == LONG) ans = Value(cv.getIntValue() + ans.getIntValue());
+                else if (vt == FLOAT) ans = Value(cv.getIntValue() + ans.getIntValue());
+                else if (vt == DOUBLE) ans = Value(cv.getIntValue() + ans.getIntValue());
+            }
             
 #ifdef BRAVE_DD_TRACE
             std::cout<<"next currt: k="<< k <<", targetlvl=" << targetLvl << "; ";
@@ -296,8 +305,8 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         // not reach the terminal cases of reduction rules, or got the next edge
         if (targetLvl == 0) {
             // value type INT, FLOAT, or VOID (special value)
-            ans = getTerminalValue(current.handle);
             if (current.getComp() && ct != NO_COMP) {
+                ans = getTerminalValue(current.handle);
                 if (ans.valueType == INT) {
                     int terminalVal = *reinterpret_cast<int*>(&targetHandle);
                     terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
@@ -309,7 +318,18 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 } else if (ans.valueType == VOID) {
                     // special value: NegInf => PosInf?
                     // TBD
+
                 }
+            }
+            if(encode == EDGE_PLUS) {
+                Value cv = current.getValue();
+
+                if (vt == INT) ans = Value(cv.getIntValue() + ans.getIntValue());
+                else if (vt == LONG) ans = Value(cv.getIntValue() + ans.getIntValue());
+                else if (vt == FLOAT) ans = Value(cv.getIntValue() + ans.getIntValue());
+                else if (vt == DOUBLE) ans = Value(cv.getIntValue() + ans.getIntValue());
+
+                if(isTerminalPosInf(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
             }
             return ans;
         }
