@@ -73,11 +73,46 @@ void Func::constant(int val)
         // TBD
     }
 }
+void Func::constant(long val)
+{
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
+        edge.handle = makeTerminal(LONG, val);
+        packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
+        edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
+        packRule(edge.handle, RULE_X);
+        edge.setValue(Value(val));
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else {
+        // TBD
+    }
+}
 void Func::constant(float val)
 {
     if (parent->setting.getEncodeMechanism() == TERMINAL) {
         edge.handle = makeTerminal(FLOAT, val);
         packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
+        edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
+        packRule(edge.handle, RULE_X);
+        edge.setValue(Value(val));
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else {
+        // TBD
+    }
+}
+void Func::constant(double val)
+{
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
+        edge.handle = makeTerminal(FLOAT, val);
+        packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
+        edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
+        packRule(edge.handle, RULE_X);
+        edge.setValue(Value(val));
         edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
     } else {
         // TBD
@@ -213,11 +248,12 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         double          evDouble;
     };
     if (encode == EDGE_PLUS) {
+        // TODO: Ask Lichuan do we need long and double?
         Value cv = current.getValue();
-        if (vt == INT) ans = Value(cv.getIntValue());
-        else if (vt == LONG) ans = Value(cv.getLongValue());
-        else if (vt == FLOAT) ans= Value(cv.getFloatValue());
-        else if (vt == DOUBLE) ans = Value(cv.getDoubleValue());
+        if (vt == INT) evInt = targetLvl == 0 ? 0 : cv.getIntValue();
+        else if (vt == LONG) evLong = targetLvl == 0 ? 0 : cv.getLongValue();
+        else if (vt == FLOAT) evFloat = targetLvl == 0 ? 0.0 : cv.getFloatValue();
+        else if (vt == DOUBLE) evDouble = targetLvl == 0 ? 0.0 : cv.getDoubleValue();
         /* if it is VOID -> value is omega or posInf return current value*/
         else return cv;
     }
@@ -256,9 +292,8 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 // But - if our normalization and reduction is working this is dead code.
                 // Discuss
                 // Unless ofc it is going to posinf
-                // if (isTerminalPosInf(current.getEdgeHandle())) {
-                //     return getTerminalValue(current.getEdgeHandle());
-                // }
+                // THis may change as we may not give X rules to inf
+                if ((targetLvl == 0) && (isTerminalPosInf(current.getEdgeHandle()))) return getTerminalValue(current.getEdgeHandle());
                 std::cout << "[BRAVE_DD] ERROR!\t evaluate(): Illegal patterns for EVBDD!" << std::endl;
                 exit(0);
             } else if (encode == EDGE_PLUSMOD) {
@@ -289,10 +324,10 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 // if (isTerminalPosInf(current.getEdgeHandle())) 
                 //     return getTerminalValue(current.getEdgeHandle());
                 Value cv = current.getValue();
-                if (vt == INT) ans = Value(cv.getIntValue() + ans.getIntValue());
-                else if (vt == LONG) ans = Value(cv.getIntValue() + ans.getIntValue());
-                else if (vt == FLOAT) ans = Value(cv.getIntValue() + ans.getIntValue());
-                else if (vt == DOUBLE) ans = Value(cv.getIntValue() + ans.getIntValue());
+                if (vt == INT) evInt += cv.getIntValue();
+                else if (vt == LONG) evLong += cv.getLongValue();
+                else if (vt == FLOAT) evFloat += cv.getFloatValue();
+                else if (vt == DOUBLE) evDouble += cv.getDoubleValue();
             }
             
 #ifdef BRAVE_DD_TRACE
@@ -305,8 +340,8 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         // not reach the terminal cases of reduction rules, or got the next edge
         if (targetLvl == 0) {
             // value type INT, FLOAT, or VOID (special value)
+            if (encode == TERMINAL) ans = getTerminalValue(current.handle);
             if (current.getComp() && ct != NO_COMP) {
-                ans = getTerminalValue(current.handle);
                 if (ans.valueType == INT) {
                     int terminalVal = *reinterpret_cast<int*>(&targetHandle);
                     terminalVal = parent->getSetting().getMaxRange() - terminalVal; // complement if needed
@@ -323,12 +358,10 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             }
             if(encode == EDGE_PLUS) {
                 Value cv = current.getValue();
-
-                if (vt == INT) ans = Value(cv.getIntValue() + ans.getIntValue());
-                else if (vt == LONG) ans = Value(cv.getIntValue() + ans.getIntValue());
-                else if (vt == FLOAT) ans = Value(cv.getIntValue() + ans.getIntValue());
-                else if (vt == DOUBLE) ans = Value(cv.getIntValue() + ans.getIntValue());
-
+                    if (vt == INT) ans = Value(cv.getIntValue() + evInt);
+                    else if (vt == LONG) ans = Value(cv.getLongValue() + evLong);
+                    else if (vt == FLOAT) ans = Value(cv.getFloatValue() + evFloat);
+                    else if (vt == DOUBLE) ans = Value(cv.getDoubleValue() + evDouble);               
                 if(isTerminalPosInf(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
             }
             return ans;

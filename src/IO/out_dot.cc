@@ -156,6 +156,8 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
     CompSet cs = parent->getSetting().getCompType();
     SwapSet ss = parent->getSetting().getSwapType();
     EncodeMechanism em = parent->getSetting().getEncodeMechanism();
+    ValueType vt = parent->getSetting().getValType();
+
     char numChild = (parent->getSetting().isRelation()) ? 4 : 2;
     /* edge lable */
     std::string label = "";
@@ -222,27 +224,98 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
             parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
         }
     } else if (em == EDGE_PLUS) {
+        if(vt == INT) {
             int ev;
-            edge.getValue().getValueTo(&ev, INT);
-        if (edge.getNodeLevel() == 0) {
-            EdgeHandle handle = edge.getEdgeHandle();
-            outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
-            outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
-        } else {
-            outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
-            outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
-            <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
-            // build child edges of target node if it's marked
-            if (parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
-                for (char i=0; i<numChild; i++) {
-                    buildEdge(edge.getNodeLevel(),
-                                parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
-                                edge.getNodeHandle(),
-                                i);
+            edge.getValue().getValueTo(&ev,INT);
+            if (edge.getNodeLevel() == 0) {
+                EdgeHandle handle = edge.getEdgeHandle();
+                outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
+                outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
+            } else {
+                outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
+                outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
+                <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
+                // build child edges of target node if it's marked
+                if (parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
+                    for (char i=0; i<numChild; i++) {
+                        buildEdge(edge.getNodeLevel(),
+                                    parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
+                                    edge.getNodeHandle(),
+                                    i);
+                    }
                 }
+                // unmark
+                parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
             }
-            // unmark
-            parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
+        } else if (vt == LONG) {
+            long ev;
+            edge.getValue().getValueTo(&ev,LONG);
+            if (edge.getNodeLevel() == 0) {
+                EdgeHandle handle = edge.getEdgeHandle();
+                outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
+                outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
+            } else {
+                outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
+                outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
+                <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
+                // build child edges of target node if it's marked
+                if (parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
+                    for (char i=0; i<numChild; i++) {
+                        buildEdge(edge.getNodeLevel(),
+                                    parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
+                                    edge.getNodeHandle(),
+                                    i);
+                    }
+                }
+                // unmark
+                parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
+            }
+        } else if (vt == FLOAT) {
+            float ev;
+            edge.getValue().getValueTo(&ev,FLOAT);
+            if (edge.getNodeLevel() == 0) {
+                EdgeHandle handle = edge.getEdgeHandle();
+                outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
+                outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
+            } else {
+                outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
+                outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
+                <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
+                // build child edges of target node if it's marked
+                if (parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
+                    for (char i=0; i<numChild; i++) {
+                        buildEdge(edge.getNodeLevel(),
+                                    parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
+                                    edge.getNodeHandle(),
+                                    i);
+                    }
+                }
+                // unmark
+                parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
+            }
+        } else if (vt == DOUBLE) {
+            double ev;
+            edge.getValue().getValueTo(&ev,DOUBLE);
+            if (edge.getNodeLevel() == 0) {
+                EdgeHandle handle = edge.getEdgeHandle();
+                outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
+                outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
+            } else {
+                outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
+                outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
+                <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
+                // build child edges of target node if it's marked
+                if (parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
+                    for (char i=0; i<numChild; i++) {
+                        buildEdge(edge.getNodeLevel(),
+                                    parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
+                                    edge.getNodeHandle(),
+                                    i);
+                    }
+                }
+                // unmark
+                parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
+            }
         }
     } else {
         // for other edge valued TBD

@@ -44,7 +44,9 @@ class BRAVE_DD::Func {
     // Constant Func
     /* For dimention 1 and 2 */
     void constant(int val);
+    void constant(long val);
     void constant(float val);
+    void constant(double val);
     void constant(SpecialValue val);
     /* For dimention of 2 (Relation) */
     void identity(std::vector<bool> dependance);    // level k is identity if dependance[k]==0

@@ -41,7 +41,7 @@ namespace BRAVE_DD {
         
         // Check if any type flag is set
         if (handle & FLOAT_VALUE_FLAG_MASK) {
-            // float value
+            // float valueo';p
             float value = *reinterpret_cast<float*>(&data);
             val.setValue(value, FLOAT);
         } else if (handle & INT_VALUE_FLAG_MASK) {

@@ -139,43 +139,45 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             child[0].getValue().getValueTo(&ev0, INT);
             child[1].getValue().getValueTo(&ev1, INT);
             int min = MIN(ev0, ev1);
+            ans.setValue(Value(min));
             child[0].setValue(Value(ev0 - min));
             child[1].setValue(Value(ev1 - min));
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
-            ans.setValue(Value(min));
         } else if (setting.getValType() == LONG) {
             long ev0, ev1;
             child[0].getValue().getValueTo(&ev0, LONG);
             child[1].getValue().getValueTo(&ev1, LONG);
             long min = MIN(ev0, ev1);
+            ans.setValue(Value(min));
             child[0].setValue(Value(ev0 - min));
             child[1].setValue(Value(ev1 - min));
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
-            ans.setValue(Value(min));
         } else if (setting.getValType() == FLOAT) {
             float ev0, ev1;
             child[0].getValue().getValueTo(&ev0, FLOAT);
             child[1].getValue().getValueTo(&ev1, FLOAT);
             float min = MIN(ev0, ev1);
+            ans.setValue(Value(min));
             child[0].setValue(Value(ev0 - min));
             child[1].setValue(Value(ev1 - min));
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
-            ans.setValue(Value(min));
         } else if (setting.getValType() == DOUBLE) {
             double ev0, ev1;
-            child[0].getValue().getValueTo(&ev0, LONG);
-            child[1].getValue().getValueTo(&ev1, LONG);
+            child[0].getValue().getValueTo(&ev0, DOUBLE);
+            child[1].getValue().getValueTo(&ev1, DOUBLE);
             double min = MIN(ev0, ev1);
+            ans.setValue(Value(min));
             child[0].setValue(Value(ev0 - min));
             child[1].setValue(Value(ev1 - min));
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
-            ans.setValue(Value(min));
+            
         } else if (setting.getValType() == VOID) {
             // TODO: Talk to Lichuan about this
+            // When would be the setting be VOID beside the constnat inf func
         }
     } else if (setting.isRelation() && setting.getEncodeMechanism() == TERMINAL){
         // for relation BDD TBD
@@ -209,6 +211,10 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
     std::cout << std::endl;
 #endif
     Edge normalized = edge;
+    // std::cout << "normalize edge at level : " << level << std::endl;
+    // double ev;
+    // edge.getValue().getValueTo(&ev, DOUBLE);
+    // std::cout << "edge value : "<< ev << std::endl; 
     bool isCompAllowed = (setting.getCompType() != NO_COMP);
     ReductionRule rule = edge.getRule();
     bool comp = edge.getComp();
@@ -364,7 +370,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                 for (size_t i=0; i<childEdges.size(); i++) {
                     childEdges[i] = temp;
                 }
-                temp = reduceNode(k, childEdges);            
+                temp = reduceNode(k, childEdges);
             }
         } else if (isRuleEL(rule) || isRuleEH(rule) || isRuleAL(rule) || isRuleAH(rule)) {
             bool child = (isRuleEL(rule) || isRuleAL(rule)) ? 0 : 1;
@@ -697,6 +703,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     * ================================================================================================*/
     } else if (!setting.isRelation() && setting.getEncodeMechanism() == EDGE_PLUS){
         bool isMatch = 0;
+        // TODO Figure this part out
         if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {
             bool isTermOmega0 = isTerminalOmega(child[0].getEdgeHandle());
             bool isTermOmega1 = isTerminalOmega(child[1].getEdgeHandle());
