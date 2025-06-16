@@ -1,26 +1,20 @@
-#include "parser.h"
-#include <iostream>
-#include <stdexcept>
-#include <boost/filesystem.hpp>
+#include "brave_dd.h"
 
-namespace fs = boost::filesystem;
+using namespace BRAVE_DD;
 
 static int usage(const char* exe) {
     std::cerr << "Usage: " << exe << " (options) (infile)\n\n"
               << "Options:\n"
-              << "  -h : don't show header\n"
-              << "  -H : show header\n"
-              << "  -m : don't show minterms\n"
-              << "  -M : show minterms\n"
-              << "  -s : don't show summary\n"
-              << "  -S : show summary\n\n";
+              << "  -h : show header\n"
+              << "  -m : show minterms\n";
+            //   << "  -s : show summary\n\n";
     return 1;
 }
 
 int main(int argc, const char** argv) {
-    bool show_header   = true;
-    bool show_minterms = true;
-    bool show_summary  = true;
+    bool showHeader   = false;
+    bool showMinterms = false;
+    // bool showSummary  = false;
     const char* infile = nullptr;
 
     // 1) Parse command-line arguments
@@ -40,65 +34,35 @@ int main(int argc, const char** argv) {
                 return usage(argv[0]);
             }
             switch (argv[i][1]) {
-                case 'h': show_header   = false; break;
-                case 'H': show_header   = true;  break;
-                case 'm': show_minterms = false; break;
-                case 'M': show_minterms = true;  break;
-                case 's': show_summary  = false; break;
-                case 'S': show_summary  = true;  break;
+                case 'h': showHeader   = true;  break;
+                case 'm': showMinterms = true;  break;
+                // case 's': showSummary  = true;  break;
                 default : return usage(argv[0]);
             }
         }
     }
 
     // 2) Open and parse the file (or stdin if none provided)
-    parser* P = nullptr;
-    try {
-        if (infile) {
-            fs::path filePath = fs::absolute(infile);
+    FileReader FR(infile);
+    ParserPla parserPla(&FR);
 
-            // Check if file exists
-            if (!fs::exists(filePath)) {
-                throw std::runtime_error(
-                    "Error: File not found -> " + filePath.string()
-                );
-            }
-
-            // Ignore ".bin" files
-            if (filePath.extension() == ".bin") {
-                throw std::runtime_error(
-                    "Ignoring '.bin' files -> " + filePath.string()
-                );
-            }
-
-            // Attempt to create the parser
-            P = new_parser(filePath.string().c_str());
-            if (!P) {
-                throw std::runtime_error(
-                    "Couldn't open input file: " + filePath.string()
-                );
-            }
-            std::cerr << "Input from: " << filePath << "\n";
-        }
-        else {
-            // No file given; default to reading from stdin as a PLA
-            P = new_parser('p', ' ');
-            if (!P) {
-                throw std::runtime_error("Couldn't initialize parser for stdin.");
-            }
-            std::cerr << "Input from stdin\n";
-        }
-
-        // 3) Run the parser’s debug logic
-        P->debug(show_header, show_minterms, show_summary);
-
-        // Clean up
-        delete P;
+    // 3) Run the parser’s debug logic
+    parserPla.readHeader();
+    if (showHeader) {
+        std::cout << "Number of inbits: " << parserPla.getInBits() << std::endl;
+        std::cout << "Number of outbits: " << parserPla.getOutBits() << std::endl;
+        std::cout << "Number of asmts: " << parserPla.getNum() << std::endl;
     }
-    catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
-        delete P;  // Make sure we clean up if parser was partially constructed
-        return 1;
+    std::vector<char> assignment(parserPla.getInBits());
+    char out = 0;
+    for (;;) {
+        if (!parserPla.readAssignment(assignment, out)) break;
+        if (showMinterms) {
+            for (size_t i=0; i<assignment.size(); i++) {
+                std::cout << assignment[i] << " ";
+            }
+            std::cout << "\t" << out << std::endl;
+        }
     }
 
     return 0;
