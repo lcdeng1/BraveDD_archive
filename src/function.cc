@@ -321,8 +321,6 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
 
             /* cumulate the edge values*/
             if (encode == EDGE_PLUS) {
-                // if (isTerminalPosInf(current.getEdgeHandle())) 
-                //     return getTerminalValue(current.getEdgeHandle());
                 Value cv = current.getValue();
                 if (vt == INT) evInt += cv.getIntValue();
                 else if (vt == LONG) evLong += cv.getLongValue();
