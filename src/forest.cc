@@ -138,6 +138,8 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             int ev0, ev1;
             child[0].getValue().getValueTo(&ev0, INT);
             child[1].getValue().getValueTo(&ev1, INT);
+            std::cout << "0 child: " << ev0 << std::endl;
+            std::cout << "1 child: " << ev1 << std::endl;
             int min = MIN(ev0, ev1);
             ans.setValue(Value(min));
             child[0].setValue(Value(ev0 - min));
@@ -177,7 +179,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             
         } else if (setting.getValType() == VOID) {
             // TODO: Talk to Lichuan about this
-            // When would be the setting be VOID beside the constnat inf func
+            // When would be the setting be VOID beside the constant inf func
         }
     } else if (setting.isRelation() && setting.getEncodeMechanism() == TERMINAL){
         // for relation BDD TBD
@@ -705,17 +707,23 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
         bool isMatch = 0;
         // TODO Figure this part out
         if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {
-            bool isTermOmega0 = isTerminalOmega(child[0].getEdgeHandle());
-            bool isTermOmega1 = isTerminalOmega(child[1].getEdgeHandle());
             bool isTermPosInf0 = isTerminalPosInf(child[0].getEdgeHandle());
             bool isTermPosInf1 = isTerminalPosInf(child[1].getEdgeHandle());
             /* ---------------------------------------------------------------------------------------------
+            * Edge heading to Pos Inf
+            * --------------------------------------------------------------------------------------------*/ 
+            if (isTermPosInf0 && isTermPosInf1) {
+                reduced = child[0];
+                isMatch = 1;
+            }
+            /* ---------------------------------------------------------------------------------------------
             * Redundant X
             * --------------------------------------------------------------------------------------------*/ 
-            if((child[0].getEdgeHandle() == child[1].getEdgeHandle())
+            if(((child[0].getEdgeHandle() == child[1].getEdgeHandle())
                 && (child[0].getValue() == child[1].getValue())
                 && (child[0].getRule() == RULE_X)
-                && setting.hasReductionRule(RULE_X)) {
+                && setting.hasReductionRule(RULE_X))
+                || (isTermPosInf0 && isTermPosInf1)) {
                 reduced = child[0];
                 isMatch = 1;
             }

@@ -57,6 +57,49 @@ void test_constant_fully_int_function() {
     delete forest;
     std::cout << "Finished fully constant int function" << std::endl;
 }
+void test_infinite_quasi_function() {
+    std::cout << "Testing quasi infinite int function" << std::endl;
+    ForestSetting setting = ForestSetting("ev+qbdd", 3);
+    setting.setValType(INT);
+
+    Forest* forest = new Forest(setting);
+    Func func(forest);
+    func.constant(SpecialValue::POS_INF);
+
+    printGraph(forest, func, "pos_inf_quasi");
+
+    std::vector<bool> assignment = {0,0,0,0};
+    Value res = func.evaluate(assignment);
+
+    SpecialValue eval;
+    res.getValueTo(&eval, VOID);
+    assert(eval == SpecialValue::POS_INF);
+
+    delete forest;
+    std::cout << "Finished quasi infinite int function" << std::endl;
+}
+
+void test_infinite_fully_function() {
+    std::cout << "Testing fully infinite int function" << std::endl;
+    ForestSetting setting = ForestSetting("ev+fbdd", 3);
+    setting.setValType(INT);
+
+    Forest* forest = new Forest(setting);
+    Func func(forest);
+    func.constant(SpecialValue::POS_INF);
+
+    printGraph(forest, func, "pos_inf_fully");
+
+    std::vector<bool> assignment = {0,0,0,0};
+    Value res = func.evaluate(assignment);
+    
+    SpecialValue eval;
+    res.getValueTo(&eval, VOID);
+    assert(eval == SpecialValue::POS_INF);
+
+    delete forest;
+    std::cout << "Finished fully infinite int function" << std::endl;
+}
 
 void test_constant_quasi_long_function() {
     std::cout << "Testing quasi constant int function" << std::endl;
@@ -196,16 +239,22 @@ int main() {
     /* Testing constant function with int value */
     std::cout << "Starting ev+ tests with more detailed debug output" << std::endl;
 
-    // test_constant_quasi_int_function();
-    // std::cout <<std::endl;
-    // test_constant_fully_int_function();
-    // std::cout <<std::endl;
+    test_constant_quasi_int_function();
+    std::cout <<std::endl;
+    test_constant_fully_int_function();
+    std::cout <<std::endl;
+    test_infinite_quasi_function();
+    std::cout <<std::endl;
+    test_infinite_fully_function();
+    std::cout <<std::endl;
+
+    // TODO: Ask Lichuan about double - the use case when do we use double ? How do we avoid precision issues?
     // test_constant_quasi_float_function();
     // std::cout <<std::endl;
     // test_constant_fully_float_function();
     // std::cout <<std::endl;
-    test_constant_quasi_double_function();
-    std::cout <<std::endl;
+    // test_constant_quasi_double_function();
+    // std::cout <<std::endl;
     // test_constant_fully_double_function();
     // std::cout <<std::endl;
 
