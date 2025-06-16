@@ -35,7 +35,6 @@ void test_constant_quasi_int_function() {
     delete forest;
     std::cout << "Finished quasi constant int function" << std::endl;
 }
-
 void test_constant_fully_int_function() {
     std::cout << "Testing fully constant int function" << std::endl;
     ForestSetting setting = ForestSetting("ev+fbdd", 3);
@@ -78,7 +77,6 @@ void test_infinite_quasi_function() {
     delete forest;
     std::cout << "Finished quasi infinite int function" << std::endl;
 }
-
 void test_infinite_fully_function() {
     std::cout << "Testing fully infinite int function" << std::endl;
     ForestSetting setting = ForestSetting("ev+fbdd", 3);
@@ -99,6 +97,27 @@ void test_infinite_fully_function() {
 
     delete forest;
     std::cout << "Finished fully infinite int function" << std::endl;
+}
+void test_quasi_int_function() {
+    std::cout << "Testing quasi constant int function" << std::endl;
+    ForestSetting setting = ForestSetting("ev+qbdd", 3);
+    setting.setValType(INT);
+
+    Forest* forest = new Forest(setting);
+    Func func(forest);
+    func.constant(5);
+
+    printGraph(forest, func, "quasi_int");
+
+    std::vector<bool> assignment = {0,0,0,0};
+    Value res = func.evaluate(assignment);
+    int dangling_ev, eval;
+    func.getEdge().getValue().getValueTo(&dangling_ev, INT);
+    res.getValueTo(&eval,INT);
+    assert(dangling_ev == 5);
+    assert((eval == dangling_ev));
+    delete forest;
+    std::cout << "Finished quasi constant int function" << std::endl;
 }
 
 void test_constant_quasi_long_function() {
@@ -122,7 +141,6 @@ void test_constant_quasi_long_function() {
     delete forest;
     std::cout << "Finished quasi constant int function" << std::endl;
 }
-
 void test_constant_fully_long_function() {
     std::cout << "Testing fully constant int function" << std::endl;
     ForestSetting setting = ForestSetting("ev+fbdd", 3);
@@ -166,7 +184,6 @@ void test_constant_quasi_float_function() {
     delete forest;
     std::cout << "Finished quasi constant float function" << std::endl;
 }
-
 void test_constant_fully_float_function() {
     std::cout << "Testing fully constant float function" << std::endl;
     ForestSetting setting = ForestSetting("ev+fbdd", 3);
@@ -211,7 +228,6 @@ void test_constant_quasi_double_function() {
     delete forest;
     std::cout << "Finished quasi constant double function" << std::endl;
 }
-
 void test_constant_fully_double_function() {
     std::cout << "Testing fully constant double function" << std::endl;
     ForestSetting setting = ForestSetting("ev+fbdd", 3);

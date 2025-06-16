@@ -138,8 +138,6 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             int ev0, ev1;
             child[0].getValue().getValueTo(&ev0, INT);
             child[1].getValue().getValueTo(&ev1, INT);
-            std::cout << "0 child: " << ev0 << std::endl;
-            std::cout << "1 child: " << ev1 << std::endl;
             int min = MIN(ev0, ev1);
             ans.setValue(Value(min));
             child[0].setValue(Value(ev0 - min));

@@ -293,7 +293,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 // Discuss
                 // Unless ofc it is going to posinf
                 // THis may change as we may not give X rules to inf
-                if ((targetLvl == 0) && (isTerminalPosInf(current.getEdgeHandle()))) return getTerminalValue(current.getEdgeHandle());
+                // if ((targetLvl == 0) && (isTerminalPosInf(current.getEdgeHandle()))) return getTerminalValue(current.getEdgeHandle());
                 std::cout << "[BRAVE_DD] ERROR!\t evaluate(): Illegal patterns for EVBDD!" << std::endl;
                 exit(0);
             } else if (encode == EDGE_PLUSMOD) {

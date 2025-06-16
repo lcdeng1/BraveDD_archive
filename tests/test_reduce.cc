@@ -220,6 +220,27 @@ bool buildRelForest(uint16_t num, PredefForest bmxd)
     return ans;
 }
 
+bool buildEvForest(uint16_t num, PredefForest evbdd) {
+    if (num > 5) return 0;
+    ForestSetting setting(evbdd, num);
+    // TODO : see if we need to test any other types
+    setting.setValType(INT);
+    Forest* forest = new Forest(setting);
+    forest->getSetting().output(std::cout);
+    bool ans = 0;
+    // variables
+    std::vector<std::vector<bool> > vars(1<<num, std::vector<bool>(num+1, false));
+    for (int i=0; i<(1<<num); i++) {
+        for (uint16_t k=1; k<=num; k++){
+            vars[i][k] = i & (1<<(k-1));
+        }
+    }
+    // function values
+    Func function(forest);
+    std::vector<std::vector<bool> > funs(1<<(1<<num), std::vector<bool>(1<<num, false));
+
+}
+
 int main(int argc, char** argv)
 {
     uint16_t num;
@@ -243,9 +264,14 @@ int main(int argc, char** argv)
     bool pass = 0;
     if (bdd < PredefForest::FBMXD) {
         pass = buildSetForest(num, bdd);
-    } else {
+    } else if (bdd < PredefForest::EVQBDD) {
         for (int i=0; i<TESTS; i++) {
             pass = buildRelForest(num, bdd);
+            if (!pass) break;
+        }
+    } else {
+        for (int i=0; i<TESTS; i++) {
+            pass = buildEvForest(num, bdd);
             if (!pass) break;
         }
     }
