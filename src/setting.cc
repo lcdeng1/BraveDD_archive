@@ -96,18 +96,15 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         // setting for EV+QBDD
         reductions = Reductions(QUASI);
         name = "EVQBDD";
+        encodingType = EDGE_PLUS;
+        range = Range(RangeType::NNINTEGER,VOID);
+        range.setPosInf(1);
     } else if (type == PredefForest::EVFBDD) {
         // setting for EVFBDD
-        reductions = Reductions(FULLY);
-        name = "EVFBDD";
     } else if (type == PredefForest::EVQBMXD) {
         // setting for EVQBMxD
-        reductions = Reductions(QUASI_QUASI);
-        name = "EVQBMxD";
     } else if (type == PredefForest::EVFBMXDs) {
         // setting for EVFBMxD
-        reductions = Reductions(FULLY_FULLY);
-        name = "EVFBMxD";
     } else {
         // Unknown predefined BDD or BMxD
         std::cout << "[BRAVE_DD] ERROR!\t Unknown BDD/MxD!" << std::endl;
@@ -197,12 +194,26 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         flags.setCompType(COMP);
         mergeType = PUSH_UP;
         name = "CESRBDD";
-    } else if (bddLower == "evbdd" || bddLower == "ev+bdd") {
-        // setting for EV+BDD
-    } else if (bddLower == "ev%bdd" || bddLower == "evmodbdd") {
-        // setting for EV%BDD
-    } else if (bddLower == "ev*bdd") {
-        // setting for EV*BDD
+    } else if (bddLower == "evqbdd" || bddLower == "ev+qbdd") {
+        // setting for EV+QBDD
+        reductions = Reductions(QUASI);
+        name = "EVQBDD";
+        encodingType = EDGE_PLUS;
+        //TODO: (Jae): Do we allow NINTEGERS?
+        range = Range(RangeType::NNINTEGER,VOID);
+        range.setPosInf(1);
+    } else if (bddLower == "ev%qbdd" || bddLower == "evmodqbdd") {
+        // setting for EV%QBDD
+    } else if (bddLower == "ev*qbdd") {
+        // setting for EV*QBDD
+    } else if (bddLower == "evfbdd" || bddLower == "ev+fbdd") {
+        // setting for EV+FBDD
+        reductions = Reductions(FULLY);
+        name = "EVFBDD";
+        encodingType = EDGE_PLUS;
+        //TODO: (Jae): Do we allow NINTEGERS?
+        range = Range(RangeType::NNINTEGER,VOID);
+        range.setPosInf(1);
     }
     // MxDs
     else if (bddLower == "qbmxd") {
@@ -229,20 +240,8 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         // setting for MTBMxD
     } else if (bddLower == "evbqmxd" || bddLower == "ev+bqmxd") {
         // setting for EV+QBMxD
-        reductions = Reductions(QUASI_QUASI);
-        name = "EVQBMxD";
-    } else if (bddLower == "ev%qbmxd" || bddLower == "evmodqbmxd") {
-        // setting for EV%QBMxD
-    } else if (bddLower == "ev*qbmxd") {
-        // setting for EV*QBMxD
     } else if (bddLower == "evfbmxd" || bddLower == "ev+fbmxd") {
         // setting for EV+FBMxD
-        reductions = Reductions(FULLY_FULLY);
-        name = "EVFBMxD";
-    } else if (bddLower == "ev%fbmxd" || bddLower == "evmodfbmxd") {
-        // setting for EV%FBMxD
-    } else if (bddLower == "ev*fmxd") {
-        // setting for EV*FBMxD
     } else {
         // Unknown predefined BDD or BMxD
         std::cout << "[BRAVE_DD] ERROR!\t Unknown BDD/MxD: " << bdd << std::endl;
@@ -311,7 +310,7 @@ void ForestSetting::output(std::ostream& out, int format) const
         if (getEncodeMechanism()==EDGE_PLUSMOD) out<<": mod = "<<getMaxRange();
         out<<std::endl;
         // merge type
-        out<<"\tMege type:\t\t"<<mergeType2String(getMergeType(), isRelation())<<std::endl;
+        out<<"\tMerge type:\t\t"<<mergeType2String(getMergeType(), isRelation())<<std::endl;
         out<<"============================ Settings End ==========================="<<std::endl;
     } else if (format == 1) {
         //

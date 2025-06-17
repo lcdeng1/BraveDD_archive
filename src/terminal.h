@@ -41,7 +41,7 @@ namespace BRAVE_DD {
         
         // Check if any type flag is set
         if (handle & FLOAT_VALUE_FLAG_MASK) {
-            // float value
+            // float valueo';p
             float value = *reinterpret_cast<float*>(&data);
             val.setValue(value, FLOAT);
         } else if (handle & INT_VALUE_FLAG_MASK) {
@@ -107,6 +107,28 @@ namespace BRAVE_DD {
             ans = (valFloat == 0.0f);
         }
         return ans;
+    }
+
+    // TODO: (jae) test
+    static inline bool isTerminalOmega(const EdgeHandle& handle) {
+        Value val = getTerminalValue(handle);
+        SpecialValue valSpecial;
+        if (val.getType() == VOID) {
+            val.getValueTo(&valSpecial, VOID);
+            return (valSpecial == SpecialValue::OMEGA);
+        }  
+        return 0;
+    }
+
+    // TODO: (jae) test
+    static inline bool isTerminalPosInf(const EdgeHandle& handle) {
+        Value val = getTerminalValue(handle);
+        SpecialValue valSpecial;
+        if (val.getType() == VOID) {
+            val.getValueTo(&valSpecial, VOID);
+            return (valSpecial == SpecialValue::POS_INF);
+        }  
+        return 0;
     }
     /**
      * @brief Make a plain EdgeHandle target to terminal node, by giving the terminal value and type.
