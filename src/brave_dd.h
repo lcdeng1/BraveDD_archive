@@ -14,7 +14,6 @@
 #include "node_manager.h"
 #include "unique_table.h"
 #include "forest.h"
-#include "lib_manager.h"
 #include "operators.h"
 #include "operations/apply.h"
 #include "IO/out_dot.h"
