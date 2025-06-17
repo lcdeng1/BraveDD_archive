@@ -12,7 +12,6 @@ namespace BRAVE_DD {
     // *                        Unary operations                        *
     // *                                                                *
     // ******************************************************************
-    class UnaryOperation;
 
     UnaryOperation* COPY(Forest* arg, Forest* res);
     UnaryOperation* CARDINALITY(Forest* arg, OpndType res);
@@ -34,7 +33,6 @@ namespace BRAVE_DD {
     // *                        Binary operations                       *
     // *                                                                *
     // ******************************************************************
-    class BinaryOperation;
     
     // elementwise
     BinaryOperation* UNION(Forest* arg1, Forest* arg2, Forest* res);
@@ -89,16 +87,10 @@ namespace BRAVE_DD {
     // *                      Saturation operations                     *
     // *                                                                *
     // ******************************************************************
+
     SaturationOperation* SATURATE(Forest* set, Forest* relations, Forest* res);
     SaturationOperation* PRE_SATURATE(Forest* set, Forest* relations, Forest* res);
 
-    class OperationsGenerator {
-        public:
-            static void buildUnaryOperations(Forest* forest);
-            static void buildBinaryOperations(Forest* forest);
-            static void buildUnaryOperation(Forest* forest, UnaryOperationType opT, Forest* targetF);
-            static void buildBinaryOperation(Forest* forest, BinaryOperationType opT, Forest* targetF);
-    };
 }
 
 #endif

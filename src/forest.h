@@ -402,10 +402,9 @@ class BRAVE_DD::Forest {
 
     /***************************** Cardinality **********************/
     uint64_t countNodes();   // all Funcs
-    uint64_t countNodes(FuncArray funcs);
+    uint64_t countNodes(Func func);
     uint64_t countNodesAtLevel(uint16_t lvl);
     uint64_t countNodesAtLevel(uint16_t lvl, Func func);
-    uint64_t countNodesAtLevel(uint16_t lvl, FuncArray funcs);
 
     uint64_t mass(Func func);
 
@@ -474,9 +473,7 @@ class BRAVE_DD::Forest {
 
     /****************************** I/O *****************************/
     // for transform files
-    void exportFunc(std::ostream& out, FuncArray func);
     void exportForest(std::ostream& out);
-    FuncArray importFunc(std::istream& in);
     void importForest(std::istream& in);
     
     // TBD
@@ -574,13 +571,12 @@ class BRAVE_DD::Forest {
     friend class UnaryOperation;
     friend class BinaryOperation;
     friend class SaturationOperation;
-        ForestSetting       setting;        // Specification setting of this forest.
-        NodeManager*        nodeMan;        // Node manager.
-        UniqueTable*        uniqueTable;    // Unique table.
-        std::vector<Func>   funcs;          // Registry of Func edges.
-        FuncArray*          funcSets;       // Sets of Func used for I/O.
-        Statistics*         stats;          // Performance measurement.
-        int                 nodeSize;       // Number of uint32 slots for one Node storage.
+    ForestSetting       setting;        // Specification setting of this forest.
+    NodeManager*        nodeMan;        // Node manager.
+    UniqueTable*        uniqueTable;    // Unique table.
+    std::vector<Func>   funcs;          // Registry of Func edges.
+    Statistics*         stats;          // Performance measurement.
+    int                 nodeSize;       // Number of uint32 slots for one Node storage.
 };
 
 

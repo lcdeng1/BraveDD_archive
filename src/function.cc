@@ -306,7 +306,7 @@ Value Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aT
     CompSet ct = parent->getSetting().getCompType();
     /* tmp store edge info for "for" loop */
     Edge current = edge;
-        /* get target node info */
+    /* get target node info */
     NodeHandle targetHandle = current.getNodeHandle();
     uint16_t targetLvl = current.getNodeLevel();
     /* info to determine next child edge */
@@ -361,15 +361,15 @@ Value Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aT
             if (isComp) current.complement();
             /* update varibles */
             isIdent = 1;
-        targetHandle = current.getNodeHandle();
-        targetLvl = current.getNodeLevel();
+            targetHandle = current.getNodeHandle();
+            targetLvl = current.getNodeLevel();
 #ifdef BRAVE_DD_TRACE
             std::cout<<"next currt: k="<< k <<", targetlvl=" << targetLvl << "; ";
             current.print(std::cout, 0);
             std::cout << std::endl;
 #endif
             continue;
-            }
+        }
         // not reach the terminal cases of reduction rules, or got the next edge
         if (targetLvl == 0) {
             // value type INT, FLOAT, or VOID (special value)
@@ -526,31 +526,6 @@ Edge Func::unionAssignmentRecursive(uint16_t n, Edge& root, ExplictFunc assignme
     /* reduce */
     // parent->reduceEdge
     return ans;
-}
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                         FuncArray  methods                     *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-FuncArray::FuncArray()
-{
-    //
-}
-FuncArray::FuncArray(Forest* f, int size)
-{
-    //
-}
-FuncArray::~FuncArray()
-{
-    //
-}
-
-void FuncArray::add(Func f)
-{
-    // TBD
 }
 
 // ******************************************************************

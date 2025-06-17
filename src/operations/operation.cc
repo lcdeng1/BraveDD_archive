@@ -1,7 +1,5 @@
 #include "operation.h"
 #include "../IO/out_dot.h"
-#include "../brave_helpers.h"
-#include "../terminal.h"
 
 // #define BRAVE_DD_OPERATION_TRACE
 // #define BRAVE_DD_PRINT_RELATIONS
@@ -160,7 +158,7 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
     // base cases:
     if (lvl == 0) {
         if (targetForest->getSetting().getEncodeMechanism() == TERMINAL) {
-            return source.getComp() ^ brave_helpers::isTerminalOne(source.getEdgeHandle());
+            return source.getComp() ^ isTerminalOne(source.getEdgeHandle());
             // other value TBD
         } // other encodings TBD
     }
@@ -931,10 +929,7 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
     std::cout << "checking base case 2\n";
 #endif
     if (r.getNodeLevel() == 0) {
-        if ((r.getRule() == RULE_I0) && 
-            (brave_helpers::isTerminalOne(r.getEdgeHandle()) || 
-             brave_helpers::isTerminalZero(r.getEdgeHandle())) && 
-            (r.getComp() ^ brave_helpers::isTerminalOne(r.getEdgeHandle()))) {
+        if ((r.getRule() == RULE_I0) && (isTerminalOne(r.getEdgeHandle()) || isTerminalZero(r.getEdgeHandle())) && (r.getComp() ^ isTerminalOne(r.getEdgeHandle()))) {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 2: identity\n";
 #endif

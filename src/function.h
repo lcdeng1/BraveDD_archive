@@ -7,7 +7,6 @@
 
 namespace BRAVE_DD {
     class Func;
-    class FuncArray;
     class ExplictFunc;
 };
 
@@ -104,43 +103,6 @@ class BRAVE_DD::Func {
     Forest*     parent;     // parent forest
     Edge        edge;       // edge information
     std::string name;       // Optional, only used for I/O; defaults to empty string
-    /* For the Funcs registry in the parent forest */
-    // Func*       prevFunc;   // Previous Func edge in parent forest
-    // Func*       nextFunc;   // Next Func edge in parent forest
-};
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                        FuncArray class                         *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-class BRAVE_DD::FuncArray {
-    /*-------------------------------------------------------------*/
-    public:
-    /*-------------------------------------------------------------*/
-    FuncArray();
-    FuncArray(Forest* f, int size);
-    ~FuncArray();
-
-    inline Forest* getForest() const {return parent;};
-    inline bool isAttachedTo(const Forest* p) const {return getForest() == p;}
-    inline bool isSameForestSet(const FuncArray &e) const {return parent == e.getForest();}
-    
-    /// Attach to a forest.
-    void attach(Forest* p);
-    /// Detach from the forest.
-    inline void detach() {attach(nullptr);}
-    void add(Func f);
-
-
-    /*-------------------------------------------------------------*/
-    private:
-    /*-------------------------------------------------------------*/
-    friend class Forest;
-    Forest*     parent;     // parent forest
-    Func*       set;        // set of the Funcs
 };
 
 // ******************************************************************
