@@ -1,9 +1,4 @@
-#include "../src/function.h"
-#include "../src/forest.h"
-#include "../src/brave_helpers.h"
-#include "../src/operations/operation.h"
-#include <iostream>
-#include <vector>
+#include "brave_dd.h"
 
 using namespace BRAVE_DD;
 
@@ -400,7 +395,7 @@ int main() {
     setting.setName("RexBDD");
     Forest* F = new Forest(setting);
     
-    ForestHandle forestHandle = registerForest(F);
+    // ForestHandle forestHandle = registerForest(F);
     
     // Create a function
     Func func(F);
