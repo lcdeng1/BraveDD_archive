@@ -331,14 +331,29 @@ class BRAVE_DD::Node {
         }
     }
 
-    inline uint32_t edgeValue(char child) const {
-        uint32_t val = 0;
-        // TBD
+    inline uint64_t edgeValue() const {
+        uint64_t val = 0;
+        if (info.size() == 5) {
+            val = info[5];
+        } else if (info.size() == 6) {
+            val = (static_cast<uint64_t>(info[5]) << 32) | info[6];
+        } else {
+            // TBD
+            // TODO: implement for relation
+        }
         return val;
     }
 
-    inline void setEdgeValue(char child) {
-        // TBD
+    inline void setEdgeValue(uint64_t ev) {
+        if (info.size() == 5) {
+            info[5] = ev;
+        } else if (info.size() == 6) {
+            info[5] = static_cast<uint32_t>(ev >> 32);
+            info[6] = static_cast<uint32_t>(ev);
+        } else {
+            //  TBD
+            // TODO; implement for relation
+        }
     }
 
     /**

@@ -249,7 +249,6 @@ class BRAVE_DD::ForestSetting {
                 } else if (valType==INT || valType==FLOAT) {
                     infoSize = isRel ? 6+3 : 4+1;
                 } else {
-                    //TODO: Talk to Lichuan about this
                     infoSize = isRel ? 6 : 4;
                 }
             } else {

@@ -87,6 +87,33 @@ int main()
         }
     }
 
+    std::cout << "Node test for edge value plus. \n\n";
+    setting = ForestSetting("ev+qbdd",10);
+    setting.setValType(INT);
+    node = Node(setting);
+    for (unsigned i=0;i<TESTS; i++) {
+        uint64_t ev = (uint32_t)distr32(gen);
+        node.setEdgeValue(ev);
+        if (node.edgeValue() != ev) {
+            std::cout << "[Edge Value] error at i:" << i << std::endl;
+            std::cout << "set edge value: " << ev << "; get edge value: " << node.edgeValue() << std::endl;
+            exit(1);
+        } 
+    }
+
+    setting = ForestSetting("ev+qbdd",10);
+    setting.setValType(LONG);
+    node = Node(setting);
+    for (unsigned i=0;i<TESTS; i++) {
+        uint64_t ev = (uint64_t)distr64(gen);
+        node.setEdgeValue(ev);
+        if (node.edgeValue() != ev) {
+            std::cout << "[Edge Value] error at i:" << i << std::endl;
+            std::cout << "set edge value: " << ev << "; get edge value: " << node.edgeValue() << std::endl;
+            exit(1);
+        } 
+    }
+
 
     std::cout << TESTS << " tests passed!" << std::endl;
     return 0;

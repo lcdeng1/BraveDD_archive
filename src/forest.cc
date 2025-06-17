@@ -135,25 +135,33 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         bool hasLvl = setting.getReductionSize() > 0;
         //TODO: I really dont like this but this is the most readable way?? ask lichuan as well
         if (setting.getValType() == INT) {
-            int ev0, ev1;
+            int ev0, ev1, normalized_ev0, normalized_ev1;
             child[0].getValue().getValueTo(&ev0, INT);
             child[1].getValue().getValueTo(&ev1, INT);
             int min = MIN(ev0, ev1);
+            normalized_ev0 = ev0 - min;
+            normalized_ev1 = ev1 - min;
             ans.setValue(Value(min));
-            child[0].setValue(Value(ev0 - min));
-            child[1].setValue(Value(ev1 - min));
+            child[0].setValue(Value(normalized_ev0));
+            child[1].setValue(Value(normalized_ev1));
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
+            // Store negative edge value if 0 child has value
+            node.setEdgeValue(normalized_ev1 - normalized_ev0);
         } else if (setting.getValType() == LONG) {
-            long ev0, ev1;
+            long ev0, ev1, normalized_ev0, normalized_ev1;
             child[0].getValue().getValueTo(&ev0, LONG);
             child[1].getValue().getValueTo(&ev1, LONG);
             long min = MIN(ev0, ev1);
+            normalized_ev0 = ev0 - min;
+            normalized_ev1 = ev1 - min;
             ans.setValue(Value(min));
             child[0].setValue(Value(ev0 - min));
             child[1].setValue(Value(ev1 - min));
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
+            // Store negative edge value if 0 child has value
+            node.setEdgeValue(normalized_ev1 - normalized_ev0);
         } else if (setting.getValType() == FLOAT) {
             float ev0, ev1;
             child[0].getValue().getValueTo(&ev0, FLOAT);
@@ -164,6 +172,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             child[1].setValue(Value(ev1 - min));
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
+            //TODO: implement setting values in node
         } else if (setting.getValType() == DOUBLE) {
             double ev0, ev1;
             child[0].getValue().getValueTo(&ev0, DOUBLE);
@@ -174,7 +183,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             child[1].setValue(Value(ev1 - min));
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
-            
+            //TODO: implement setting values in node
         } else if (setting.getValType() == VOID) {
             // TODO: Talk to Lichuan about this
             // When would be the setting be VOID beside the constant inf func
@@ -706,19 +715,11 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
         // TODO Figure this part out
         if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {
             bool isTermPosInf0 = isTerminalPosInf(child[0].getEdgeHandle());
-            bool isTermPosInf1 = isTerminalPosInf(child[1].getEdgeHandle());
-            /* ---------------------------------------------------------------------------------------------
-            * Edge heading to Pos Inf
-            * --------------------------------------------------------------------------------------------*/ 
-            if (isTermPosInf0 && isTermPosInf1) {
-                reduced = child[0];
-                isMatch = 1;
-            }
+            bool isTermPosInf1 = isTerminalPosInf(child[1].getEdgeHandle());      
             /* ---------------------------------------------------------------------------------------------
             * Redundant X
             * --------------------------------------------------------------------------------------------*/ 
-            if(((child[0].getEdgeHandle() == child[1].getEdgeHandle())
-                && (child[0].getValue() == child[1].getValue())
+            if(((child[0].getNodeHandle() == child[1].getNodeHandle())
                 && (child[0].getRule() == RULE_X)
                 && setting.hasReductionRule(RULE_X))
                 || (isTermPosInf0 && isTermPosInf1)) {
