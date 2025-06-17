@@ -1,19 +1,7 @@
 #include "function.h"
 #include "forest.h"
 #include "node.h"
-#include "brave_helpers.h"
-#include "terminal.h"
 #include "operations/operation.h"
-#include "operations/operations_generator.h"
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <utility>
-#include <cstring>
-#include <algorithm>
-#include <set>
-#include <vector>
-#include <map>
 
 using namespace BRAVE_DD;
 // ******************************************************************
@@ -423,15 +411,20 @@ void Func::unionAssignments(const ExplictFunc& assignments) {
         // Process each assignment individually
         for (size_t i = 0; i < numAssignments; i++) {
             const std::vector<bool>& assignment = assignments.getAssignment(i);
-            const Value& outcome = assignments.getOutcome(i);
+            // const Value& outcome = assignments.getOutcome(i);
             
             // Create a path for this assignment
             // For simplicity, build each path level by level from the bottom up
             uint16_t numVars = parent->getSetting().getNumVars();
             
             // Start with a terminal 1 node
-            Edge terminalOneEdge = makeTerminalEdge(parent, 1);
-            Edge terminalZeroEdge = createTerminalZero(parent);
+            Edge terminalOneEdge, terminalZeroEdge;
+            EdgeHandle constOne = makeTerminal(INT, 1), constZero = makeTerminal(INT, 0);
+            packRule(constOne, RULE_X);
+            packRule(constZero, RULE_X);
+            Value v(0);
+            terminalOneEdge.setEdgeHandle(constOne);
+            terminalZeroEdge.setEdgeHandle(constZero);
             
             // Build the path from the bottom up
             Edge currentEdge = terminalOneEdge;
@@ -486,7 +479,7 @@ void Func::unionAssignments(const ExplictFunc& assignments) {
         edge = resultFunc.getEdge();
         
         // Ensure the result has proper type flags
-        edge = ensureTerminalTypeFlags(parent, edge);
+        // edge = ensureTerminalTypeFlags(parent, edge);
     }
     catch (const std::exception& e) {
         std::cerr << "[BRAVE_DD] ERROR in unionAssignments: " << e.what() << std::endl;
