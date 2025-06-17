@@ -64,6 +64,16 @@ namespace BRAVE_DD {
         
         return val;
     }
+
+    static inline bool isTerminal(const EdgeHandle& edgeHnd) {
+        if (unpackLevel(edgeHnd) == 0) {
+            // Additional check for type flags to ensure it's a valid terminal
+            return (edgeHnd & INT_VALUE_FLAG_MASK) || 
+                    (edgeHnd & FLOAT_VALUE_FLAG_MASK) || 
+                    (edgeHnd & SPECIAL_VALUE_FLAG_MASK);
+        }
+        return false;
+    }
     
     static inline bool isTerminalOne(const EdgeHandle& handle) {
         Value val = getTerminalValue(handle);
@@ -155,6 +165,10 @@ namespace BRAVE_DD {
 
     static inline EdgeHandle makeTerminal(const float value) {
         return makeTerminal(FLOAT, value);
+    }
+
+    static inline EdgeHandle makeTerminal(const SpecialValue value) {
+        return makeTerminal(VOID, value);
     }
 
 }; // end of namespace
