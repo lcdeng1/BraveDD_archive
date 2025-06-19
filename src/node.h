@@ -331,31 +331,54 @@ class BRAVE_DD::Node {
         }
     }
 
-    inline uint64_t edgeValue() const {
-        uint64_t val = 0;
-        if (info.size() == 5) {
-            val = info[5];
-        } else if (info.size() == 6) {
-            val = (static_cast<uint64_t>(info[5]) << 32) | info[6];
-        } else {
-            // TBD
-            // TODO: implement for relation
-        }
-        return val;
-    }
-
-    inline void setEdgeValue(uint64_t ev) {
-        if (info.size() == 5) {
-            info[5] = ev;
-        } else if (info.size() == 6) {
-            info[5] = static_cast<uint32_t>(ev >> 32);
-            info[6] = static_cast<uint32_t>(ev);
-        } else {
-            //  TBD
-            // TODO; implement for relation
+    inline uint64_t edgeValue(char child, Value& value) const {
+        ValueType vt = value.getType();
+        if (vt == INT || vt == FLOAT) {
+            uint64_t val = info[info.size()-1];
+            // 0th child and MSB is 1
+            if (!child && (val & (1UL << 31))) return (val & ~(1UL << 31));   
+            // 1st child and MSB is 0
+            if (child && !(val & (1UL << 31))) return val;
+            return 0;
+        } else if (vt == LONG || vt == DOUBLE) {
+            uint64_t val = (static_cast<uint64_t>(info[info.size()-2]) << 32) | info[info.size()-1];
+            // 0th child and MSB is 1
+            if (!child && (val & (1UL << 63))) return (val & ~(1ULL << 63));             
+            // 1st child and MSB is 0
+            if (child && !(val & (1UL << 63))) return val;
+            return 0;
         }
     }
 
+    inline void setEdgeValue(char child, Value& value) {
+        // TODO: simplify this code do we wanna introduce template or union?
+        if (value.getType() == INT) {
+            int ev;
+            value.getValueTo(&ev, INT);
+            uint32_t temp = static_cast<uint32_t>(ev);
+            info[info.size()-1] = child ? temp : (temp | 1UL << 31);
+        } else if (value.getType() == FLOAT) {
+            float ev;
+            value.getValueTo(&ev, FLOAT);
+            uint32_t temp = static_cast<uint32_t>(ev);
+            info[info.size()-1] = child ? temp : (temp | 1UL << 31);
+        } else if (value.getType() == LONG) {
+            long ev;
+            value.getValueTo(&ev, LONG);
+            uint64_t temp = static_cast<uint64_t>(ev);
+            info[info.size()-2] = child ? static_cast<uint32_t>(temp >> 32) : (static_cast<uint32_t>(temp >> 32) | 1UL << 31);
+            info[info.size()-1] = static_cast<uint32_t>(temp);
+        } else if (value.getType() == DOUBLE) {
+            double ev;
+            value.getValueTo(&ev, DOUBLE);
+            uint64_t temp = static_cast<uint64_t>(ev);
+            info[info.size()-2] = child ? static_cast<uint32_t>(temp >> 32) : (static_cast<uint32_t>(temp >> 32) | 1UL << 31);
+            info[info.size()-1] = static_cast<uint32_t>(temp);
+        } else {
+            // Maybe for VOID? TBD
+        }
+    }
+    
     /**
      * Hash this node
      * 

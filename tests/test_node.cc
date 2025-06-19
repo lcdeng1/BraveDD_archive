@@ -14,7 +14,9 @@ std::uniform_int_distribution<> distrBool(0, 1);
 std::uniform_int_distribution<> distrMarks(0, 3);
 std::uniform_int_distribution<uint16_t> distr16(0, UINT16_MAX);
 std::uniform_int_distribution<uint32_t> distr32(0, UINT32_MAX);
+std::uniform_int_distribution<int> distr_pos_int(0, INT32_MAX);
 std::uniform_int_distribution<uint64_t> distr64(0, UINT64_MAX);
+std::uniform_int_distribution<long> distr_pos_long(0, LONG_MAX);
 
 using namespace BRAVE_DD;
 
@@ -90,30 +92,77 @@ int main()
     std::cout << "Node test for edge value plus. \n\n";
     setting = ForestSetting("ev+qbdd",10);
     setting.setValType(INT);
-    node = Node(setting);
     for (unsigned i=0;i<TESTS; i++) {
-        uint64_t ev = (uint32_t)distr32(gen);
-        node.setEdgeValue(ev);
-        if (node.edgeValue() != ev) {
-            std::cout << "[Edge Value] error at i:" << i << std::endl;
-            std::cout << "set edge value: " << ev << "; get edge value: " << node.edgeValue() << std::endl;
+        node = Node(setting);
+        uint32_t ev = distr_pos_int(gen);
+        Value val =Value(static_cast<int>(ev));
+        node.setEdgeValue(0, val);
+        if (node.edgeValue(0, val) != ev) {
+            std::cout << "[Edge Value] error at i int :" << i << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << node.edgeValue(0,val) << std::endl;
+            exit(1);
+        } 
+        if (node.edgeValue(1, val) != 0) {
+            std::cout << "[Edge Value] error at i int :" << i << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << node.edgeValue(0,val) << std::endl;
             exit(1);
         } 
     }
 
-    setting = ForestSetting("ev+qbdd",10);
     setting.setValType(LONG);
-    node = Node(setting);
     for (unsigned i=0;i<TESTS; i++) {
-        uint64_t ev = (uint64_t)distr64(gen);
-        node.setEdgeValue(ev);
-        if (node.edgeValue() != ev) {
-            std::cout << "[Edge Value] error at i:" << i << std::endl;
-            std::cout << "set edge value: " << ev << "; get edge value: " << node.edgeValue() << std::endl;
+        node = Node(setting);
+        uint64_t ev = distr_pos_long(gen);
+        Value val =Value(static_cast<long>(ev));
+        node.setEdgeValue(0, val);
+        if (node.edgeValue(0, val) != ev) {
+            std::cout << "[Edge Value] error at i long :" << i << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << node.edgeValue(0,val) << std::endl;
+            exit(1);
+        } 
+        if (node.edgeValue(1, val) != 0) {
+            std::cout << "[Edge Value] error at i long :" << i << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << node.edgeValue(0,val) << std::endl;
             exit(1);
         } 
     }
 
+    setting = ForestSetting("ev+fbdd",10);
+    setting.setValType(INT);
+    for (unsigned i=0;i<TESTS; i++) {
+        node = Node(setting);
+        uint32_t ev = distr_pos_int(gen);
+        Value val =Value(static_cast<int>(ev));
+        node.setEdgeValue(0, val);
+        if (node.edgeValue(0, val) != ev) {
+            std::cout << "[Edge Value] error at i int :" << i << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << node.edgeValue(0,val) << std::endl;
+            exit(1);
+        } 
+        if (node.edgeValue(1, val) != 0) {
+            std::cout << "[Edge Value] error at i int :" << i << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << node.edgeValue(0,val) << std::endl;
+            exit(1);
+        } 
+    }
+
+    setting.setValType(LONG);
+    for (unsigned i=0;i<TESTS; i++) {
+        node = Node(setting);
+        uint64_t ev = distr_pos_long(gen);
+        Value val =Value(static_cast<long>(ev));
+        node.setEdgeValue(0, val);
+        if (node.edgeValue(0, val) != ev) {
+            std::cout << "[Edge Value] error at i long :" << i << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << node.edgeValue(0,val) << std::endl;
+            exit(1);
+        } 
+        if (node.edgeValue(1, val) != 0) {
+            std::cout << "[Edge Value] error at i long :" << i << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << node.edgeValue(0,val) << std::endl;
+            exit(1);
+        } 
+    }
 
     std::cout << TESTS << " tests passed!" << std::endl;
     return 0;
