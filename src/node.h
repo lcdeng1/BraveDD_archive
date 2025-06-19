@@ -331,6 +331,7 @@ class BRAVE_DD::Node {
         }
     }
 
+    // change this to void and return it with the value
     inline uint64_t edgeValue(char child, Value& value) const {
         ValueType vt = value.getType();
         if (vt == INT || vt == FLOAT) {
