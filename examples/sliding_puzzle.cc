@@ -155,7 +155,7 @@ Func trans(uint16_t from, char direction)  // position FROM and direction
     // position TO is empty: X_to == 0
     for (uint16_t i=0; i<bits; i++) {
         varTo.variable(startTo+i, 0);
-        result &= ((varTo & zero) | (!varTo & !zero));    // equivalence interface for performance TBD
+        result &= ((varTo & zero) | ((!varTo) & (!zero)));    // equivalence interface for performance TBD
     }
 
     /* Firing */
@@ -163,9 +163,9 @@ Func trans(uint16_t from, char direction)  // position FROM and direction
     for (uint16_t i=0; i<bits; i++) {
         varTo.variable(startTo+i, 1);
         varFrom.variable(startFrom+i, 0);
-        result &= ((varTo & varFrom) | (!varTo & !varFrom));  // equivalence interface for performance TBD
+        result &= ((varTo & varFrom) | ((!varTo) & (!varFrom)));  // equivalence interface for performance TBD
         varFrom.variable(startFrom+i, 1);
-        result &= ((varFrom & zero) | (!varFrom & !zero));    // equivalence interface for performance TBD
+        result &= ((varFrom & zero) | ((!varFrom) & (!zero)));    // equivalence interface for performance TBD
     }
 
     /* Identities (dependance) */
@@ -727,7 +727,7 @@ int main(int argc, const char** argv)
     }
     printPuzzleState(conf);
     // initialize forests
-    bits = (const uint16_t)std::ceil(log2(N*M));
+    bits = static_cast<uint16_t>(std::ceil(log2(N*M)));
     std::cout << "bits: " << bits << std::endl;
     uint16_t levels = bits * N * M;
     ForestSetting setting1(setType, levels);

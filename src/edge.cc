@@ -36,6 +36,11 @@ Value::Value(float f)
     floatValue = f;
 }
 
+Value::Value(const Value& val)
+{
+    init(val);
+}
+
 void Value::print(std::ostream& out, int format) const
 {
     if (format == 0) {

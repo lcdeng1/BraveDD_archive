@@ -256,6 +256,7 @@ class BRAVE_DD::Value {
     Value(long l);
     Value(double d);
     Value(float f);
+    Value(const Value& val);
 
     ValueType getType() const { return valueType; }
     inline void getValueTo(void* p, ValueType type) const {
