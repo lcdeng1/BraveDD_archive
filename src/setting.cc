@@ -101,6 +101,11 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         range.setPosInf(1);
     } else if (type == PredefForest::EVFBDD) {
         // setting for EVFBDD
+        reductions = Reductions(FULLY);
+        name = "EVFBDD";
+        encodingType = EDGE_PLUS;
+        range = Range(RangeType::NNINTEGER,VOID);
+        range.setPosInf(1);
     } else if (type == PredefForest::EVQBMXD) {
         // setting for EVQBMxD
     } else if (type == PredefForest::EVFBMXDs) {
@@ -211,7 +216,6 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         reductions = Reductions(FULLY);
         name = "EVFBDD";
         encodingType = EDGE_PLUS;
-        //TODO: (Jae): Do we allow NINTEGERS?
         range = Range(RangeType::NNINTEGER,VOID);
         range.setPosInf(1);
     }

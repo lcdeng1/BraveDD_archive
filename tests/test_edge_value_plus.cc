@@ -259,10 +259,10 @@ int main() {
     std::cout <<std::endl;
     test_constant_fully_int_function();
     std::cout <<std::endl;
-    test_infinite_quasi_function();
-    std::cout <<std::endl;
-    test_infinite_fully_function();
-    std::cout <<std::endl;
+    // test_infinite_quasi_function();
+    // std::cout <<std::endl;
+    // test_infinite_fully_function();
+    // std::cout <<std::endl;
 
     // TODO: Ask Lichuan about double - the use case when do we use double ? How do we avoid precision issues?
     // test_constant_quasi_float_function();

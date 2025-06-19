@@ -257,7 +257,6 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         /* if it is VOID -> value is omega or posInf return current value*/
         else return cv;
     }
-
     while (true) {
 #ifdef BRAVE_DD_TRACE
         std::cout<<"evaluate k: " << k;
@@ -286,14 +285,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 }
             } else if (encode == EDGE_PLUS) {
                 // edge values plus
-                // TODO: (Jae) ask lichuan - only reduction rule allowed is X for ev
-                // If there is a long edge incoming that is not X this really should throw error 
-                // Actually if this is the case then it shows us that our normalization/reduction is not working
-                // But - if our normalization and reduction is working this is dead code.
-                // Discuss
-                // Unless ofc it is going to posinf
-                // THis may change as we may not give X rules to inf
-                // if ((targetLvl == 0) && (isTerminalPosInf(current.getEdgeHandle()))) return getTerminalValue(current.getEdgeHandle());
+                if ((targetLvl == 0) && (isTerminalPosInf(current.getEdgeHandle()))) return getTerminalValue(current.getEdgeHandle());
                 std::cout << "[BRAVE_DD] ERROR!\t evaluate(): Illegal patterns for EVBDD!" << std::endl;
                 exit(0);
             } else if (encode == EDGE_PLUSMOD) {
@@ -324,10 +316,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 Value cv = current.getValue();
                 if (vt == INT) evInt += cv.getIntValue();
                 else if (vt == LONG) evLong += cv.getLongValue();
-                else if (vt == FLOAT) evFloat += cv.getFloatValue();
-                else if (vt == DOUBLE) evDouble += cv.getDoubleValue();
             }
-            
 #ifdef BRAVE_DD_TRACE
             std::cout<<"next currt: k="<< k <<", targetlvl=" << targetLvl << "; ";
             current.print(std::cout, 0);
@@ -351,15 +340,11 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 } else if (ans.valueType == VOID) {
                     // special value: NegInf => PosInf?
                     // TBD
-
                 }
             }
             if(encode == EDGE_PLUS) {
-                Value cv = current.getValue();
-                    if (vt == INT) ans = Value(cv.getIntValue() + evInt);
-                    else if (vt == LONG) ans = Value(cv.getLongValue() + evLong);
-                    else if (vt == FLOAT) ans = Value(cv.getFloatValue() + evFloat);
-                    else if (vt == DOUBLE) ans = Value(cv.getDoubleValue() + evDouble);               
+                if (vt == INT) ans = Value(evInt);
+                else if (vt == LONG) ans = Value(evLong);                  
                 if(isTerminalPosInf(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
             }
             return ans;

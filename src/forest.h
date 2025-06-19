@@ -214,9 +214,19 @@ class BRAVE_DD::Forest {
     inline Edge getChildEdge(const uint16_t level, const NodeHandle handle, const char child) const {
         Edge ans;
         ans.handle = getChildEdgeHandle(level, handle, child);
-        if ((setting.getEncodeMechanism() != TERMINAL) && (unpackLevel(ans.handle) != 0)) {
+        if ((setting.getEncodeMechanism() != TERMINAL)) {
             // get the valid value, TBD
-            // Node& node = getNode(level, handle);
+            Value val;
+            Node node = getNode(level, handle);
+            if (getSetting().getValType() == INT) {
+                val = Value(0);
+                int ev = static_cast<int>(node.edgeValue(child, val));
+                ans.setValue(ev);
+            } else if(getSetting().getValType() == LONG) {
+                val = Value(0L);
+                long ev = static_cast<long>(node.edgeValue(child, val));
+                ans.setValue(ev);
+            }
         }
 
         return ans;
