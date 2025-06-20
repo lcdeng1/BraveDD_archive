@@ -332,22 +332,36 @@ class BRAVE_DD::Node {
     }
 
     // change this to void and return it with the value
-    inline uint64_t edgeValue(char child, Value& value) const {
+    inline void edgeValue(char child, Value& value) const {
         ValueType vt = value.getType();
-        if (vt == INT || vt == FLOAT) {
+        if (vt == INT) {
             uint64_t val = info[info.size()-1];
             // 0th child and MSB is 1
-            if (!child && (val & (1UL << 31))) return (val & ~(1UL << 31));   
+            if (!child && (val & (1UL << 31))) value = Value(static_cast<int>((val & ~(1UL << 31))));
             // 1st child and MSB is 0
-            if (child && !(val & (1UL << 31))) return val;
-            return 0;
-        } else if (vt == LONG || vt == DOUBLE) {
+            else if (child && !(val & (1UL << 31))) value = Value(static_cast<int>(val));
+            else value = Value(0);
+        } else if (vt == FLOAT) {
+            uint64_t val = info[info.size()-1];
+            // 0th child and MSB is 1
+            if (!child && (val & (1UL << 31))) value = Value(static_cast<float>((val & ~(1UL << 31))));
+            // 1st child and MSB is 0
+            else if (child && !(val & (1UL << 31))) value = Value(static_cast<float>(val));
+            else value = Value(0.0f);
+        } else if (vt == LONG ) {
             uint64_t val = (static_cast<uint64_t>(info[info.size()-2]) << 32) | info[info.size()-1];
             // 0th child and MSB is 1
-            if (!child && (val & (1UL << 63))) return (val & ~(1ULL << 63));             
+            if (!child && (val & (1UL << 63))) value = Value(static_cast<long>((val & ~(1ULL << 63))));
             // 1st child and MSB is 0
-            if (child && !(val & (1UL << 63))) return val;
-            return 0;
+            else if (child && !(val & (1UL << 63))) value =  Value(static_cast<long>(val));
+            else value = Value(0L);
+        } else if (vt == DOUBLE) {
+            uint64_t val = (static_cast<uint64_t>(info[info.size()-2]) << 32) | info[info.size()-1];
+            // 0th child and MSB is 1
+            if (!child && (val & (1UL << 63))) value = Value( static_cast<double>((val & ~(1ULL << 63))));
+            // 1st child and MSB is 0
+            else if (child && !(val & (1UL << 63))) value = Value( static_cast<double>(val));
+            else value = Value(0.0);
         }
     }
 

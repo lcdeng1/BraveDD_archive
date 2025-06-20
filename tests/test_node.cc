@@ -97,14 +97,40 @@ int main()
         uint32_t ev = distr_pos_int(gen);
         Value val =Value(static_cast<int>(ev));
         node.setEdgeValue(0, val);
-        if (node.edgeValue(0, val) != ev) {
+        node.edgeValue(0,val);
+        int cmp;
+        val.getValueTo(&cmp,INT);
+        if (cmp != static_cast<int>(ev)) {
             std::cout << "[Edge Value] error at i int :" << i << std::endl;
-            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << node.edgeValue(0,val) << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << cmp << std::endl;
             exit(1);
         } 
-        if (node.edgeValue(1, val) != 0) {
+        node.edgeValue(1,val);
+        val.getValueTo(&cmp, INT);
+        if (cmp != 0) {
             std::cout << "[Edge Value] error at i int :" << i << std::endl;
-            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << node.edgeValue(0,val) << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << cmp << std::endl;
+            exit(1);
+        } 
+    }
+    for (unsigned i=0;i<TESTS; i++) {
+        node = Node(setting);
+        uint32_t ev = distr_pos_int(gen);
+        Value val =Value(static_cast<int>(ev));
+        node.setEdgeValue(1, val);
+        node.edgeValue(1,val);
+        int cmp;
+        val.getValueTo(&cmp,INT);
+        if (cmp != static_cast<int>(ev)) {
+            std::cout << "[Edge Value] error at i int :" << i << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << cmp << std::endl;
+            exit(1);
+        } 
+        node.edgeValue(0,val);
+        val.getValueTo(&cmp, INT);
+        if (cmp != 0) {
+            std::cout << "[Edge Value] error at i int :" << i << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << cmp << std::endl;
             exit(1);
         } 
     }
@@ -115,14 +141,41 @@ int main()
         uint64_t ev = distr_pos_long(gen);
         Value val =Value(static_cast<long>(ev));
         node.setEdgeValue(0, val);
-        if (node.edgeValue(0, val) != ev) {
+        node.edgeValue(0,val);
+        long cmp;
+        val.getValueTo(&cmp, LONG);
+        if (cmp != static_cast<long>(ev)) {
             std::cout << "[Edge Value] error at i long :" << i << std::endl;
-            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << node.edgeValue(0,val) << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << cmp << std::endl;
             exit(1);
         } 
-        if (node.edgeValue(1, val) != 0) {
+        node.edgeValue(1,val);
+        val.getValueTo(&cmp, LONG);
+        if (cmp !=  0L) {
             std::cout << "[Edge Value] error at i long :" << i << std::endl;
-            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << node.edgeValue(0,val) << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << cmp <<std::endl;
+            exit(1);
+        } 
+    }
+    setting.setValType(LONG);
+    for (unsigned i=0;i<TESTS; i++) {
+        node = Node(setting);
+        uint64_t ev = distr_pos_long(gen);
+        Value val =Value(static_cast<long>(ev));
+        node.setEdgeValue(1, val);
+        node.edgeValue(1,val);
+        long cmp;
+        val.getValueTo(&cmp, LONG);
+        if (cmp != static_cast<long>(ev)) {
+            std::cout << "[Edge Value] error at i long :" << i << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << cmp << std::endl;
+            exit(1);
+        } 
+        node.edgeValue(0,val);
+        val.getValueTo(&cmp, LONG);
+        if (cmp !=  0L) {
+            std::cout << "[Edge Value] error at i long :" << i << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << cmp <<std::endl;
             exit(1);
         } 
     }
@@ -134,14 +187,40 @@ int main()
         uint32_t ev = distr_pos_int(gen);
         Value val =Value(static_cast<int>(ev));
         node.setEdgeValue(0, val);
-        if (node.edgeValue(0, val) != ev) {
+        node.edgeValue(0,val);
+        int cmp;
+        val.getValueTo(&cmp,INT);
+        if (cmp != static_cast<int>(ev)) {
             std::cout << "[Edge Value] error at i int :" << i << std::endl;
-            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << node.edgeValue(0,val) << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << cmp << std::endl;
             exit(1);
         } 
-        if (node.edgeValue(1, val) != 0) {
+        node.edgeValue(1,val);
+        val.getValueTo(&cmp, INT);
+        if (cmp != 0) {
             std::cout << "[Edge Value] error at i int :" << i << std::endl;
-            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << node.edgeValue(0,val) << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << cmp << std::endl;
+            exit(1);
+        } 
+    }
+    for (unsigned i=0;i<TESTS; i++) {
+        node = Node(setting);
+        uint32_t ev = distr_pos_int(gen);
+        Value val =Value(static_cast<int>(ev));
+        node.setEdgeValue(1, val);
+        node.edgeValue(1,val);
+        int cmp;
+        val.getValueTo(&cmp,INT);
+        if (cmp != static_cast<int>(ev)) {
+            std::cout << "[Edge Value] error at i int :" << i << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << cmp << std::endl;
+            exit(1);
+        } 
+        node.edgeValue(0,val);
+        val.getValueTo(&cmp, INT);
+        if (cmp != 0) {
+            std::cout << "[Edge Value] error at i int :" << i << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << cmp << std::endl;
             exit(1);
         } 
     }
@@ -152,14 +231,40 @@ int main()
         uint64_t ev = distr_pos_long(gen);
         Value val =Value(static_cast<long>(ev));
         node.setEdgeValue(0, val);
-        if (node.edgeValue(0, val) != ev) {
+        node.edgeValue(0,val);
+        long cmp;
+        val.getValueTo(&cmp, LONG);
+        if (cmp != static_cast<long>(ev)) {
             std::cout << "[Edge Value] error at i long :" << i << std::endl;
-            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << node.edgeValue(0,val) << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << cmp << std::endl;
             exit(1);
         } 
-        if (node.edgeValue(1, val) != 0) {
+        node.edgeValue(1,val);
+        val.getValueTo(&cmp, LONG);
+        if (cmp !=  0L) {
             std::cout << "[Edge Value] error at i long :" << i << std::endl;
-            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << node.edgeValue(0,val) << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << cmp <<std::endl;
+            exit(1);
+        } 
+    }
+    for (unsigned i=0;i<TESTS; i++) {
+        node = Node(setting);
+        uint64_t ev = distr_pos_long(gen);
+        Value val =Value(static_cast<long>(ev));
+        node.setEdgeValue(1, val);
+        node.edgeValue(1,val);
+        long cmp;
+        val.getValueTo(&cmp, LONG);
+        if (cmp != static_cast<long>(ev)) {
+            std::cout << "[Edge Value] error at i long :" << i << std::endl;
+            std::cout << "set 0 edge value: " << ev << "; get 0 edge value: " << cmp << std::endl;
+            exit(1);
+        } 
+        node.edgeValue(0,val);
+        val.getValueTo(&cmp, LONG);
+        if (cmp !=  0L) {
+            std::cout << "[Edge Value] error at i long :" << i << std::endl;
+            std::cout << "set 1 edge value: " << ev << "; get 1 edge value: " << cmp <<std::endl;
             exit(1);
         } 
     }

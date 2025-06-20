@@ -220,12 +220,12 @@ class BRAVE_DD::Forest {
             Node node = getNode(level, handle);
             if (getSetting().getValType() == INT) {
                 val = Value(0);
-                int ev = static_cast<int>(node.edgeValue(child, val));
-                ans.setValue(ev);
+                node.edgeValue(child, val);
+                ans.setValue(val);
             } else if(getSetting().getValType() == LONG) {
                 val = Value(0L);
-                long ev = static_cast<long>(node.edgeValue(child, val));
-                ans.setValue(ev);
+                node.edgeValue(child, val);
+                ans.setValue(val);
             }
         }
 
