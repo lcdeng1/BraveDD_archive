@@ -97,7 +97,7 @@ Edge buildRelEdge(Forest* forest,
 
 Edge buildEvSetEdge(Forest* forest,
                     uint16_t lvl,
-                    std::vector<int>& fun,
+                    const std::vector<int>& fun,
                     int start, int end)
 {
     std::vector<Edge> child(2);
@@ -106,9 +106,9 @@ Edge buildEvSetEdge(Forest* forest,
     if (lvl == 1) {
         // TODO: Determine how to assign partial function
         child[0].setEdgeHandle(makeTerminal(VOID, SpecialValue::OMEGA)); 
-        if (fun[start]) child[0].setValue(fun[start]);
+        if (fun[start]) child[0].setValue(Value(fun[start]));
         child[1].setEdgeHandle(makeTerminal(VOID, SpecialValue::OMEGA)); 
-        if (fun[end]) child[1].setValue(fun[end]);
+        if (fun[end]) child[1].setValue(Value(fun[end]));
         child[0].setRule(RULE_X); 
         child[1].setRule(RULE_X);
         return forest->reduceEdge(lvl, label, lvl, child);
@@ -323,7 +323,7 @@ int main(int argc, char** argv)
         bdd = (PredefForest)atoi(argv[1]);
     } else {
         num = 4;
-        bdd = PredefForest::EVFBDD;
+        bdd = PredefForest::REXBDD;
     }
 
     std::cout<< "ReduceEdge test." << std::endl;
