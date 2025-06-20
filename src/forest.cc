@@ -65,7 +65,8 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
     ans.setRule(RULE_X);    // short
     Node node(setting);
     bool comp = 0, swap = 0, swapTo = 0;
-    if (!setting.isRelation() && (setting.getEncodeMechanism() == TERMINAL)) {
+    EncodeMechanism em = setting.getEncodeMechanism();
+    if (!setting.isRelation() && (em == TERMINAL)) {
         if (setting.getSwapType() == ONE) {
             // swap-one logic
             if (child[0].getNodeLevel() != child[1].getNodeLevel()) {
@@ -131,45 +132,51 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         bool hasLvl = setting.getReductionSize() > 0;
         node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
         node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
-    } else if(!setting.isRelation() && (setting.getEncodeMechanism() == EDGE_PLUS)) {
+    } else if(!setting.isRelation() && (em == EDGE_PLUS || em == EDGE_PLUSMOD)) {
         bool hasLvl = setting.getReductionSize() > 0;
+        unsigned long maxRange = (em == EDGE_PLUS) ? 0 : setting.getMaxRange();
         if (setting.getValType() == INT) {
-            int ev0, ev1, min;
+            int ev0, ev1, min, mod;
+            if (maxRange > static_cast<unsigned long>(std::numeric_limits<int>::max())) mod = 0;
+            else mod = static_cast<int>(maxRange);
             Value normalized;
             child[0].getValue().getValueTo(&ev0, INT);
             child[1].getValue().getValueTo(&ev1, INT);
+            // normalize then mode
             if (ev0 < ev1) {
-                min = ev0;
-                normalized = Value(ev1 - ev0);
-                child[0].setValue(Value(0));
+                min = mod ? ev0 % mod : ev0;
+                normalized = mod ? (ev1 - ev0) % mod : (ev1 - ev0);
+                child[0].setValue(0);
                 child[1].setValue(normalized);
                 node.setEdgeValue(1, normalized);
             } else {
-                min = ev1;
-                normalized = Value(ev0 - ev1);
+                min = mod ? ev1 % mod : ev1;
+                normalized = mod ? (ev0 - ev1) % mod : ev0 - ev1;
                 child[0].setValue(normalized);
-                child[1].setValue(Value(0));
+                child[1].setValue(0);
                 node.setEdgeValue(0, normalized);
             }
-            ans.setValue(Value(min));
+            ans.setValue(min);
             node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
             node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
         } else if (setting.getValType() == LONG) {
-            long ev0, ev1, min;
+            long ev0, ev1, min, mod;
+            if (maxRange > static_cast<unsigned long>(std::numeric_limits<long>::max())) mod = 0;
+            else mod = static_cast<long>(maxRange);
             Value normalized;
             child[0].getValue().getValueTo(&ev0, LONG);
             child[1].getValue().getValueTo(&ev1, LONG);
             if (ev0 < ev1) {
-                min = ev0;
-                normalized = Value(ev1 - ev0);
-                child[0].setValue(Value(0));
+                min = mod ? ev0 % mod : ev0;
+                normalized = mod ? (ev1 - ev0) % mod : (ev1 - ev0);
+                child[0].setValue(0);
                 child[1].setValue(normalized);
                 node.setEdgeValue(1, normalized);
             } else {
-                min = ev1;
-                normalized = Value(ev0 - ev1);
+                min = mod ? ev1 % mod : ev1;
+                normalized = mod ? (ev0 - ev1) % mod : ev0 - ev1;
                 child[0].setValue(normalized);
-                child[1].setValue(Value(0));
+                child[1].setValue(0);
                 node.setEdgeValue(0, normalized);
             }
             ans.setValue(Value(min));
@@ -183,7 +190,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             // TODO: Talk to Lichuan about this
             // When would be the setting be VOID beside the constant inf func
         }
-    } else if (setting.isRelation() && setting.getEncodeMechanism() == TERMINAL){
+    } else if (setting.isRelation() && em == TERMINAL){
         // for relation BDD TBD
         bool hasLvl = setting.getReductionSize() > 0;
         node.setChildEdge(0, child[0].getEdgeHandle(), 1, hasLvl);
@@ -191,7 +198,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         node.setChildEdge(2, child[2].getEdgeHandle(), 1, hasLvl);
         node.setChildEdge(3, child[3].getEdgeHandle(), 1, hasLvl);
 
-    } else if(setting.isRelation() && (setting.getEncodeMechanism() == EDGE_PLUS)) {
+    } else if(setting.isRelation() && (em == EDGE_PLUS)) {
     } else {
         // others, TBD
     }
@@ -440,11 +447,12 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     } else {
         reduced.handle = makeTerminal(VOID, SpecialValue::OMEGA);
     }
+    EncodeMechanism em = setting.getEncodeMechanism();
     /* check if the node matches an illegal pattern */
     /* =================================================================================================
     * BDD for "Set" (Terminal encoding)
     * ================================================================================================*/
-    if (!setting.isRelation() && (setting.getEncodeMechanism() == TERMINAL)) {
+    if (!setting.isRelation() && (em == TERMINAL)) {
         // flag for checking if match any allowed meta-reduction rule
         bool isMatch = 0;
         /* ---------------------------------------------------------------------------------------------
@@ -705,7 +713,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     /* =================================================================================================
     * BDD for "Set" (Edge value encoding)
     * ================================================================================================*/
-    } else if (!setting.isRelation() && setting.getEncodeMechanism() == EDGE_PLUS){
+    } else if (!setting.isRelation() && (em == EDGE_PLUS || em == EDGE_PLUSMOD)){
         bool isMatch = 0;
         // TODO Figure this part out
         if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {
@@ -717,19 +725,18 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
         /* ---------------------------------------------------------------------------------------------
         * Redundant X
         * --------------------------------------------------------------------------------------------*/ 
-           if(((child[0].getNodeHandle() == child[1].getNodeHandle())
+        if(((child[0].getNodeHandle() == child[1].getNodeHandle())
            && (child[0].getValue() == child[1].getValue())
-           && (child[0].getRule() == RULE_X)
            && setting.hasReductionRule(RULE_X))) {
            reduced = child[0];
            isMatch = 1;
-       }
+        }
         if (!isMatch) return normalizeNode(nodeLevel, child);
 
     /* =================================================================================================
     * BMXD for "Relation" (Terminal encoding)
     * ================================================================================================*/
-    } else if (setting.isRelation() && setting.getEncodeMechanism() == TERMINAL) {
+    } else if (setting.isRelation() && em == TERMINAL) {
         bool isMatch = 0;
         bool isConstOne1, isConstOne2;
         bool isConstZero1, isConstZero2;
@@ -763,7 +770,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     /* =================================================================================================
     * BMXD for "Relation" (Edge value encoding)
     * ================================================================================================*/
-    } else if (setting.isRelation() && setting.getEncodeMechanism() == EDGE_PLUS) {
+    } else if (setting.isRelation() && em == EDGE_PLUS) {
         // TBD
     }
 

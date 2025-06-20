@@ -247,7 +247,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         float           evFloat;
         double          evDouble;
     };
-    if (encode == EDGE_PLUS) {
+    if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
         // TODO: Ask Lichuan do we need long and double?
         Value cv = current.getValue();
         if (vt == INT) evInt = targetLvl == 0 ? 0 : cv.getIntValue();
@@ -283,14 +283,11 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                     else ans.setValue(hasRuleTerminalOne(incoming)?1.0f:0.0f, FLOAT);
                     return ans;
                 }
-            } else if (encode == EDGE_PLUS) {
+            } else if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
                 // edge values plus
                 if ((targetLvl == 0) && (isTerminalPosInf(current.getEdgeHandle()))) return getTerminalValue(current.getEdgeHandle());
                 std::cout << "[BRAVE_DD] ERROR!\t evaluate(): Illegal patterns for EVBDD!" << std::endl;
                 exit(0);
-            } else if (encode == EDGE_PLUSMOD) {
-                // edge values plus and modulo
-                // TBD
             } else if (encode == EDGE_MULT) {
                 // edge values multiply
                 // TBD
@@ -312,7 +309,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             targetLvl = current.getNodeLevel();
 
             /* cumulate the edge values*/
-            if (encode == EDGE_PLUS) {
+            if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
                 Value cv = current.getValue();
                 if (vt == INT) evInt += cv.getIntValue();
                 else if (vt == LONG) evLong += cv.getLongValue();
@@ -343,8 +340,23 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 }
             }
             if(encode == EDGE_PLUS) {
-                if (vt == INT) ans = Value(evInt);
-                else if (vt == LONG) ans = Value(evLong);                  
+                if (vt == INT) return Value(evInt);
+                else if (vt == LONG) return Value(evLong);                  
+                if(isTerminalPosInf(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
+            } else if (encode == EDGE_PLUSMOD) {
+                // TODO: after paper discuss
+                // Since the sum of the edge values are either int or long, 
+                // maxRange being unsigned long seem a too big
+                unsigned long mod = getForest()->getSetting().getMaxRange();
+                if (vt == INT) {
+                    // mu is greater than the value that int can store
+                    if ( mod > static_cast<unsigned long>(std::numeric_limits<int>::max())) return Value(evInt);
+                    return Value(evInt % static_cast<int>(mod));
+                } else if (vt == LONG) {
+                    // mu is greater than the value that long can store
+                    if ( mod > static_cast<unsigned long>(std::numeric_limits<long>::max())) return Value(evLong);
+                    return Value(evLong % static_cast<long>(mod));
+                } 
                 if(isTerminalPosInf(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
             }
             return ans;

@@ -106,6 +106,26 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         encodingType = EDGE_PLUS;
         range = Range(RangeType::NNINTEGER,VOID);
         range.setPosInf(1);
+    } else if (type == PredefForest::EVMODQBDD) {
+         // setting for EV%QBDD
+         reductions = Reductions(QUASI);
+         name = "EVMODQBDD";
+         encodingType = EDGE_PLUSMOD;
+         range = Range(RangeType::NNINTEGER,VOID);
+         range.setPosInf(1);
+         // Effectively this will act as if there is no mu
+         // User will have to set mod value in order to benefit from it
+         range.setMaxRange(std::numeric_limits<unsigned long>::max());
+    } else if (type == PredefForest::EVMODFBDD) {
+        // setting for EV%FBDD
+        reductions = Reductions(FULLY);
+        name = "EVMODFBDD";
+        encodingType = EDGE_PLUSMOD;
+        range = Range(RangeType::NNINTEGER,VOID);
+        range.setPosInf(1);
+        // Effectively this will act as if there is no mu
+        // User will have to set mod value in order to benefit from it
+        range.setMaxRange(std::numeric_limits<unsigned long>::max());
     } else if (type == PredefForest::EVQBMXD) {
         // setting for EVQBMxD
     } else if (type == PredefForest::EVFBMXDs) {
@@ -204,11 +224,18 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         reductions = Reductions(QUASI);
         name = "EVQBDD";
         encodingType = EDGE_PLUS;
-        //TODO: (Jae): Do we allow NINTEGERS?
         range = Range(RangeType::NNINTEGER,VOID);
         range.setPosInf(1);
     } else if (bddLower == "ev%qbdd" || bddLower == "evmodqbdd") {
         // setting for EV%QBDD
+        reductions = Reductions(QUASI);
+        name = "EVMODQBDD";
+        encodingType = EDGE_PLUSMOD;
+        range = Range(RangeType::NNINTEGER,VOID);
+        range.setPosInf(1);
+        // Effectively this will act as if there is no mu
+        // User will have to set mod value in order to benefit from it
+        range.setMaxRange(std::numeric_limits<unsigned long>::max());
     } else if (bddLower == "ev*qbdd") {
         // setting for EV*QBDD
     } else if (bddLower == "evfbdd" || bddLower == "ev+fbdd") {
@@ -218,6 +245,16 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         encodingType = EDGE_PLUS;
         range = Range(RangeType::NNINTEGER,VOID);
         range.setPosInf(1);
+    } else if (bddLower == "ev%fbdd" || bddLower == "evmodfbdd") {
+        // setting for EV%FBDD
+        reductions = Reductions(FULLY);
+        name = "EVMODFBDD";
+        encodingType = EDGE_PLUSMOD;
+        range = Range(RangeType::NNINTEGER,VOID);
+        range.setPosInf(1);
+        // Effectively this will act as if there is no mu
+        // User will have to set mod value in order to benefit from it
+        range.setMaxRange(std::numeric_limits<unsigned long>::max());
     }
     // MxDs
     else if (bddLower == "qbmxd") {

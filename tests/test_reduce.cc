@@ -250,12 +250,13 @@ bool buildRelForest(uint16_t num, PredefForest bmxd)
     return ans;
 }
 
-bool buildEvSetForest(uint16_t num, PredefForest bdd)
+bool buildEvSetForest(uint16_t num, PredefForest bdd, unsigned long maxRange=0)
 {
     // test up to 5 variables
     if (num > 5) return 0;
     ForestSetting setting(bdd, num);
     setting.setValType(INT);
+    if(bdd == PredefForest::EVMODQBDD || bdd == PredefForest::EVMODFBDD) setting.setMaxRange(maxRange);
     Forest* forest = new Forest(setting);
     forest->getSetting().output(std::cout);
     bool ans = 0;
@@ -285,7 +286,7 @@ bool buildEvSetForest(uint16_t num, PredefForest bdd)
                 float valFloat;
             };
             eval.getValueTo(&valInt, INT);
-            if (valInt != funs[i][j]) {
+            if (valInt != (funs[i][j] % setting.getMaxRange())) {
                 std::cout<<"Evaluation Failed for " << num << " variable(s), function " << i << std::endl;
                 std::cout<<"\t assignment: ";
                 for (uint16_t k=1; k<=num; k++){
@@ -317,11 +318,14 @@ int main(int argc, char** argv)
 {
     uint16_t num;
     PredefForest bdd;
+    unsigned long mod;
     int TESTS = 10000;
     if (argc == 3) {
+        mod = static_cast<unsigned long>(atoi(argv[3]));
         num = atoi(argv[2]);
         bdd = (PredefForest)atoi(argv[1]);
     } else {
+        mod = 2;
         num = 4;
         bdd = PredefForest::REXBDD;
     }
@@ -342,7 +346,7 @@ int main(int argc, char** argv)
             if (!pass) break;
         }
     } else {
-        pass = buildEvSetForest(num, bdd);
+        pass = buildEvSetForest(num, bdd, mod);
     }
 
     if (!pass) {

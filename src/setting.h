@@ -20,6 +20,8 @@ namespace BRAVE_DD {
         ESRBMXD,
         EVQBDD,
         EVFBDD,
+        EVMODQBDD,
+        EVMODFBDD,
         EVQBMXD,
         EVFBMXDs
     };
