@@ -64,7 +64,7 @@ void Func::constant(int val)
         edge.handle = makeTerminal(INT, val);
         packRule(edge.handle, RULE_X);
         edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
-    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
+    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS || parent->setting.getEncodeMechanism() == EDGE_PLUSMOD) {
         edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
         packRule(edge.handle, RULE_X);
         edge.setValue(Value(val));
@@ -79,7 +79,7 @@ void Func::constant(long val)
         edge.handle = makeTerminal(LONG, val);
         packRule(edge.handle, RULE_X);
         edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
-    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
+    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS || parent->setting.getEncodeMechanism() == EDGE_PLUSMOD) {
         edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
         packRule(edge.handle, RULE_X);
         edge.setValue(Value(val));
@@ -94,7 +94,7 @@ void Func::constant(float val)
         edge.handle = makeTerminal(FLOAT, val);
         packRule(edge.handle, RULE_X);
         edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
-    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
+    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS || parent->setting.getEncodeMechanism() == EDGE_PLUSMOD) {
         edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
         packRule(edge.handle, RULE_X);
         edge.setValue(Value(val));
@@ -109,7 +109,7 @@ void Func::constant(double val)
         edge.handle = makeTerminal(FLOAT, val);
         packRule(edge.handle, RULE_X);
         edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
-    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
+    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS || parent->setting.getEncodeMechanism() == EDGE_PLUSMOD) {
         edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
         packRule(edge.handle, RULE_X);
         edge.setValue(Value(val));
@@ -124,7 +124,7 @@ void Func::constant(SpecialValue val)
         edge.handle = makeTerminal(VOID, val);
         packRule(edge.handle, RULE_X);
         edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
-    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS) {
+    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS || parent->setting.getEncodeMechanism() == EDGE_PLUSMOD) {
         edge.handle = makeTerminal(VOID,val);
         packRule(edge.handle, RULE_X);
         edge.setValue(0);
@@ -210,6 +210,36 @@ void Func::variable(uint16_t lvl, bool isPrime, Value low, Value high)
     // TBD
 }
 
+Edge Func::convert(Forest* evmodForest, Edge evEdge) {
+    EdgeLabel label = 0;
+    packRule(label, RULE_X);
+    std::vector<Edge>evmodChild(2);
+    uint16_t lvl = evEdge.getNodeLevel();
+    if (evEdge.getNodeLevel() == 0) {
+        Edge evmodEdge;
+        evmodEdge.setEdgeHandle(makeTerminal(VOID, SpecialValue::OMEGA));
+        evmodEdge.setValue(evEdge.getValue());
+        return evmodEdge;
+    }
+    if (lvl == 1) {
+        Edge evChild0 = parent->getChildEdge(evEdge.getNodeLevel(),evEdge.getNodeHandle(), 0);
+        Edge evChild1 = parent->getChildEdge(evEdge.getNodeLevel(),evEdge.getNodeHandle(), 1);
+        evmodChild[0].setEdgeHandle(makeTerminal(VOID, SpecialValue::OMEGA));
+        evmodChild[1].setEdgeHandle(makeTerminal(VOID, SpecialValue::OMEGA));
+        packRule(edge.handle,RULE_X);
+        evmodChild[0].setValue(evChild0.getValue());
+        evmodChild[1].setValue(evChild1.getValue());
+        return evmodForest->reduceEdge(evEdge.getNodeLevel(), label, evEdge.getNodeLevel(), evmodChild);
+    }
+    Edge evChild0 = parent->getChildEdge(evEdge.getNodeLevel(),evEdge.getNodeHandle(), 0);
+    Edge evChild1 = parent->getChildEdge(evEdge.getNodeLevel(),evEdge.getNodeHandle(), 1);
+    evmodChild[0] = convert(evmodForest, evChild0);
+    evmodChild[0].setValue(evChild0.getValue());
+    evmodChild[1] = convert(evmodForest, evChild0);
+    evmodChild[1].setValue(evChild0.getValue());
+    return evmodForest->reduceEdge(evEdge.getNodeLevel(), label, evEdge.getNodeLevel(), evmodChild);
+}
+
 Value Func::evaluate(const std::vector<bool>& assignment) const
 {
     /* check the level */
@@ -247,16 +277,6 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         float           evFloat;
         double          evDouble;
     };
-    if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
-        // TODO: Ask Lichuan do we need long and double?
-        Value cv = current.getValue();
-        if (vt == INT) evInt = targetLvl == 0 ? 0 : cv.getIntValue();
-        else if (vt == LONG) evLong = targetLvl == 0 ? 0 : cv.getLongValue();
-        else if (vt == FLOAT) evFloat = targetLvl == 0 ? 0.0 : cv.getFloatValue();
-        else if (vt == DOUBLE) evDouble = targetLvl == 0 ? 0.0 : cv.getDoubleValue();
-        /* if it is VOID -> value is omega or posInf return current value*/
-        else return cv;
-    }
     if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
         // TODO: Ask Lichuan do we need long and double?
         Value cv = current.getValue();
