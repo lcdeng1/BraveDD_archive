@@ -59,6 +59,9 @@ class BRAVE_DD::Func {
     void variable(uint16_t lvl, bool isPrime);
     void variable(uint16_t lvl, bool isPrime, Value low, Value high);
 
+    // Convert EV+ to EVMOD
+    Edge convert(Forest* evmodForest, Edge evEdge);
+
     // Assignment operator
     // Func operator=(Func e);
 
