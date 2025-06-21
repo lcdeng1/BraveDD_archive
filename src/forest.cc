@@ -725,12 +725,25 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
         /* ---------------------------------------------------------------------------------------------
         * Redundant X
         * --------------------------------------------------------------------------------------------*/ 
-        if(((child[0].getNodeHandle() == child[1].getNodeHandle())
-           && (child[0].getValue() == child[1].getValue())
-           && setting.hasReductionRule(RULE_X))) {
-           reduced = child[0];
-           isMatch = 1;
+        if (setting.getValType() == INT) {
+            int ev0, ev1;
+            child[0].getValue().getValueTo(&ev0,INT);
+            child[1].getValue().getValueTo(&ev1,INT);
+            if(((child[0].getEdgeHandle() == child[1].getEdgeHandle())
+            && (ev0 == ev1)
+            && setting.hasReductionRule(RULE_X))) {
+            reduced = child[0];
+            isMatch = 1;
+            }
+        } else if (setting.getValType() == LONG) {
+            if(((child[0].getEdgeHandle() == child[1].getEdgeHandle())
+            && (child[0].getValue() == child[1].getValue())
+            && setting.hasReductionRule(RULE_X))) { 
+            reduced = child[0];
+            isMatch = 1;
         }
+        }
+        
         if (!isMatch) return normalizeNode(nodeLevel, child);
 
     
@@ -755,9 +768,10 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
             child[1].getValue().getValueTo(&ev1,INT);
             ev0 = mod ? ev0 % mod : ev0;
             ev1 = mod ? ev1 % mod : ev0;
-            if(((child[0].getNodeHandle() == child[1].getNodeHandle())
+            if(((child[0].getEdgeHandle() == child[1].getEdgeHandle())
             && (ev0 == ev1)
             && setting.hasReductionRule(RULE_X))) {
+            child[0].setValue(ev0 % mod);
             reduced = child[0];
             isMatch = 1;
             }
@@ -770,9 +784,10 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
             child[1].getValue().getValueTo(&ev1,LONG);
             ev0 = mod ? ev0 % mod : ev0;
             ev1 = mod ? ev1 % mod : ev0;
-            if(((child[0].getNodeHandle() == child[1].getNodeHandle())
+            if(((child[0].getEdgeHandle() == child[1].getEdgeHandle())
             && (ev0 == ev1)
             && setting.hasReductionRule(RULE_X))) {
+            child[0].setValue(ev0 % mod);
             reduced = child[0];
             isMatch = 1;
             }

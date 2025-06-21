@@ -257,6 +257,17 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         /* if it is VOID -> value is omega or posInf return current value*/
         else return cv;
     }
+    if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
+        // TODO: Ask Lichuan do we need long and double?
+        Value cv = current.getValue();
+        if (targetLvl == 0) return cv;
+        if (vt == INT) evInt = cv.getIntValue();
+        else if (vt == LONG) evLong = cv.getLongValue();
+        else if (vt == FLOAT) evFloat = cv.getFloatValue();
+        else if (vt == DOUBLE) evDouble = cv.getDoubleValue();
+        /* if it is VOID -> value is omega or posInf return current value*/
+        else return cv;
+    }
     while (true) {
 #ifdef BRAVE_DD_TRACE
         std::cout<<"evaluate k: " << k;

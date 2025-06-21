@@ -274,7 +274,6 @@ bool buildEvSetForest(uint16_t num, PredefForest bdd, unsigned long maxRange=0)
         for (int k=0; k<(1<<num); k++) {
             funs[i][k] = distr32_int(gen); 
         }
-        funs[0] = std::vector<int>{1, 0, 4, 4, 0, 5, 0, 1, 0, 2, 2, 4, 0, 2, 4, 1};
         // build function
         Edge edge = buildEvSetEdge(forest, num, funs[i], 0, (1<<num)-1);
         function.setEdge(edge);
@@ -287,24 +286,46 @@ bool buildEvSetForest(uint16_t num, PredefForest bdd, unsigned long maxRange=0)
                 float valFloat;
             };
             eval.getValueTo(&valInt, INT);
-            if (valInt != (funs[i][j] % setting.getMaxRange())) {
-                std::cout<<"Evaluation Failed for " << num << " variable(s), function " << i << std::endl;
-                std::cout<<"\t assignment: ";
-                for (uint16_t k=1; k<=num; k++){
-                    std::cout << vars[j][k] << " ";
+            if (setting.getEncodeMechanism() == EDGE_PLUS) {
+                if (valInt != funs[i][j]) {
+                    std::cout<<"Evaluation Failed for " << num << " variable(s), function " << i << std::endl;
+                    std::cout<<"\t assignment: ";
+                    for (uint16_t k=1; k<=num; k++){
+                        std::cout << vars[j][k] << " ";
+                    }
+                    std::cout << "; value shoud be: " << funs[i][j] << "; was: " << valInt << std::endl;
+                    std::cout<<"\t full function: ";
+                    for (int k=0; k<(1<<num); k++){
+                        std::cout << funs[i][k] << " ";
+                    }
+                    std::cout << std::endl;
+    
+                    DotMaker dot(forest, "error_function");
+                    dot.buildGraph(function);
+                    dot.runDot("pdf");
+                    return 0;
                 }
-                std::cout << "; value shoud be: " << funs[i][j] << "; was: " << valInt << std::endl;
-                std::cout<<"\t full function: ";
-                for (int k=0; k<(1<<num); k++){
-                    std::cout << funs[i][k] << " ";
+            } else {
+                if (valInt != (funs[i][j] % setting.getMaxRange())) {
+                    std::cout<<"Evaluation Failed for " << num << " variable(s), function " << i << std::endl;
+                    std::cout<<"\t assignment: ";
+                    for (uint16_t k=1; k<=num; k++){
+                        std::cout << vars[j][k] << " ";
+                    }
+                    std::cout << "; value shoud be: " << funs[i][j] << "; was: " << valInt << std::endl;
+                    std::cout<<"\t full function: ";
+                    for (int k=0; k<(1<<num); k++){
+                        std::cout << funs[i][k] << " ";
+                    }
+                    std::cout << std::endl;
+    
+                    DotMaker dot(forest, "error_function");
+                    dot.buildGraph(function);
+                    dot.runDot("pdf");
+                    return 0;
                 }
-                std::cout << std::endl;
-
-                DotMaker dot(forest, "error_function");
-                dot.buildGraph(function);
-                dot.runDot("pdf");
-                return 0;
             }
+            
         }
     }
     ans = 1;
@@ -328,7 +349,7 @@ int main(int argc, char** argv)
     } else {
         mod = 2;
         num = 4;
-        bdd = PredefForest::REXBDD;
+        bdd = PredefForest::EVMODFBDD;
     }
 
     std::cout<< "ReduceEdge test." << std::endl;
