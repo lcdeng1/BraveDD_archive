@@ -713,7 +713,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     /* =================================================================================================
     * BDD for "Set" (Edge value encoding)
     * ================================================================================================*/
-    } else if (!setting.isRelation() && (em == EDGE_PLUS || em == EDGE_PLUSMOD)){
+    } else if (!setting.isRelation() && em == EDGE_PLUS){
         bool isMatch = 0;
         // TODO Figure this part out
         if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {
@@ -733,6 +733,52 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
         }
         if (!isMatch) return normalizeNode(nodeLevel, child);
 
+    
+    } else if (!setting.isRelation() && em == EDGE_PLUSMOD) {
+        bool isMatch = 0;
+        // TODO Figure this part out
+        if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {
+            if (isTerminalPosInf(child[0].getEdgeHandle()) &&  isTerminalPosInf(child[1].getEdgeHandle())) {
+                reduced = child[0];
+                isMatch = 1;
+            }
+        }
+        /* ---------------------------------------------------------------------------------------------
+        * Redundant X
+        * --------------------------------------------------------------------------------------------*/ 
+        unsigned long maxRange = setting.getMaxRange();
+        if (setting.getValType() == INT) {
+            int ev0, ev1, mod;
+            if (maxRange > static_cast<unsigned long>(std::numeric_limits<int>::max())) mod = 0;
+            else mod = static_cast<int>(maxRange);
+            child[0].getValue().getValueTo(&ev0,INT);
+            child[1].getValue().getValueTo(&ev1,INT);
+            ev0 = mod ? ev0 % mod : ev0;
+            ev1 = mod ? ev1 % mod : ev0;
+            if(((child[0].getNodeHandle() == child[1].getNodeHandle())
+            && (ev0 == ev1)
+            && setting.hasReductionRule(RULE_X))) {
+            reduced = child[0];
+            isMatch = 1;
+            }
+            
+        } else if (setting.getValType() == LONG) {
+            long ev0, ev1, mod;
+            if (maxRange > static_cast<unsigned long>(std::numeric_limits<long>::max())) mod = 0;
+            else mod = static_cast<long>(maxRange);
+            child[0].getValue().getValueTo(&ev0,LONG);
+            child[1].getValue().getValueTo(&ev1,LONG);
+            ev0 = mod ? ev0 % mod : ev0;
+            ev1 = mod ? ev1 % mod : ev0;
+            if(((child[0].getNodeHandle() == child[1].getNodeHandle())
+            && (ev0 == ev1)
+            && setting.hasReductionRule(RULE_X))) {
+            reduced = child[0];
+            isMatch = 1;
+            }
+        }
+        
+        if (!isMatch) return normalizeNode(nodeLevel, child);
     /* =================================================================================================
     * BMXD for "Relation" (Terminal encoding)
     * ================================================================================================*/

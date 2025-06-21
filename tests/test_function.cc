@@ -37,7 +37,7 @@ bool buildEvSetForest(uint16_t num, PredefForest bdd)
     if (num > 5) return 0;
     ForestSetting setting(bdd, num);
     setting.setValType(INT);
-    // setting.setMaxRange(2);
+    setting.setMaxRange(2);
     Forest* forest = new Forest(setting);
     forest->getSetting().output(std::cout);
     bool ans = 0;

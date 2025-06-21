@@ -274,6 +274,7 @@ bool buildEvSetForest(uint16_t num, PredefForest bdd, unsigned long maxRange=0)
         for (int k=0; k<(1<<num); k++) {
             funs[i][k] = distr32_int(gen); 
         }
+        funs[0] = std::vector<int>{1, 0, 4, 4, 0, 5, 0, 1, 0, 2, 2, 4, 0, 2, 4, 1};
         // build function
         Edge edge = buildEvSetEdge(forest, num, funs[i], 0, (1<<num)-1);
         function.setEdge(edge);
