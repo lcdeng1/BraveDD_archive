@@ -74,6 +74,16 @@ namespace BRAVE_DD {
         }
         return false;
     }
+
+    static inline bool isTerminalSpecial(const EdgeHandle& edgeHnd) {
+        if (unpackLevel(edgeHnd) == 0) return (edgeHnd & SPECIAL_VALUE_FLAG_MASK);
+        return false;
+    }
+
+    static inline bool isTerminalSpecial(const SpecialValue sp, const EdgeHandle& handle) {
+        return isTerminalSpecial(handle) 
+                && ((SpecialValue)unpackTarget(handle) == sp);
+    }
     
     static inline bool isTerminalOne(const EdgeHandle& handle) {
         Value val = getTerminalValue(handle);
