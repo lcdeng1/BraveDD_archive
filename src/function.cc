@@ -120,18 +120,9 @@ void Func::constant(double val)
 }
 void Func::constant(SpecialValue val)
 {
-    if (parent->setting.getEncodeMechanism() == TERMINAL) {
-        edge.handle = makeTerminal(VOID, val);
-        packRule(edge.handle, RULE_X);
-        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
-    } else if (parent->setting.getEncodeMechanism() == EDGE_PLUS || parent->setting.getEncodeMechanism() == EDGE_PLUSMOD) {
-        edge.handle = makeTerminal(VOID,val);
-        packRule(edge.handle, RULE_X);
-        edge.setValue(0);
-        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
-    } else {
-        // TBD
-    }
+    edge.handle = makeTerminal(VOID, val);
+    packRule(edge.handle, RULE_X);
+    edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
 }
 /* For dimention of 2 (Relation) */
 void Func::identity(std::vector<bool> dependance)
@@ -742,6 +733,87 @@ char** ExplictFunc::getAllAssignmentsAsCharArray() const
     }
     
     return result;
+}
+
+Func ExplictFunc::buildFunc(Forest* forest) const
+{
+    // number of variables does not match, assuming we are set-encoding, rel-encoding TBD
+    if (forest->getSetting().getNumVars() != getNumBits()) {
+        std::cout << "[BRAVE_DD] ERROR!\t ExplictFunc::buildFunc(): Number of variable does not match.\n";
+        exit(1);    // TBD, maybe throw error msg
+    }
+    // the final answer
+    Func ans(forest);
+    // copy the ExplictFunc
+    ExplictFunc EF = *this;
+    Edge edge = EF.buildEdge(forest, getNumBits(), 0, size());
+    // passing to final answer
+    ans.setEdge(edge);
+    return ans;
+}
+
+Edge ExplictFunc::buildEdge(Forest* forest, uint16_t lvl, size_t start, size_t size)
+{
+    // the edge to return
+    Edge ans;
+    // empty size or terminal by level, build constant edge to default value or outcome value
+    if ((size == 0) || (lvl == 0)) {
+        EncodeMechanism em = forest->getSetting().getEncodeMechanism();
+        Value val = (size == 0) ? defaultVal : outcomes[start];
+        ValueType valTP = val.getType();
+        if (em == TERMINAL) {
+            if (valTP == INT) {
+                ans.handle = makeTerminal(valTP, val.getIntValue());
+            } else if (valTP == LONG) {
+                ans.handle = makeTerminal(valTP, val.getLongValue());
+            } else if (valTP == FLOAT) {
+                ans.handle = makeTerminal(valTP, val.getFloatValue());
+            } else if (valTP == DOUBLE) {
+                ans.handle = makeTerminal(valTP, val.getDoubleValue());
+            } else if (valTP == VOID) {
+                ans.handle = makeTerminal(valTP, val.getSpecialValue());
+            }
+        } else {
+            ans.handle = makeTerminal(VOID, SpecialValue::OMEGA);
+            if (valTP != VOID) {
+                ans.setValue(val);
+            } else {
+                ans.handle = makeTerminal(valTP, val.getSpecialValue());
+            }
+        }
+        packRule(ans.handle, RULE_X);
+        return (size == 0) ? forest->normalizeEdge(lvl, ans) : ans;
+    }
+    // two-finger algorithm to sort 0,1 values in position lvl
+    size_t left = start;
+    size_t right = start + size - 1;
+    for (;;) {
+        // move left to first 1 value
+        for ( ; left < right; left++) {
+            if (assignments[left][lvl-1] == 1) break;
+        }
+        // move right to first 0 value
+        for ( ; left < right; right--) {
+            if (assignments[right][lvl-1] == 0) break;
+        }
+        // stop?
+        if (left >= right) break;
+        // we have a 1 before a 0, swap them;
+        SWAP(assignments[left], assignments[right]);
+        // for sure we can move them one spot
+        ++left;
+        --right;
+    }
+    if (left < size) {
+        if (assignments[left][lvl-1] == 0) left++;
+    }
+    // build a ndoe and recursively call
+    std::vector<Edge> child;
+    child[0] = buildEdge(forest, lvl-1, start, left-start);
+    child[1] = buildEdge(forest, lvl-1, left, size-left+start);
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    return forest->reduceEdge(lvl, root, lvl, child);
 }
 
 void ExplictFunc::freeCharArray(char** array, int size) const
