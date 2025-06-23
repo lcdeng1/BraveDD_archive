@@ -66,6 +66,9 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
     Node node(setting);
     bool comp = 0, swap = 0, swapTo = 0;
     EncodeMechanism em = setting.getEncodeMechanism();
+    /* =================================================================================================
+    * BDD for "Set" (Terminal encoding)
+    * ================================================================================================*/
     if (!setting.isRelation() && (em == TERMINAL)) {
         if (setting.getSwapType() == ONE) {
             // swap-one logic
@@ -132,64 +135,89 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         bool hasLvl = setting.getReductionSize() > 0;
         node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
         node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
+    /* =================================================================================================
+    * BDD for "Set" (Edge value encoding)
+    * ================================================================================================*/
     } else if(!setting.isRelation() && (em == EDGE_PLUS || em == EDGE_PLUSMOD)) {
         bool hasLvl = setting.getReductionSize() > 0;
         unsigned long maxRange = (em == EDGE_PLUS) ? 0 : setting.getMaxRange();
-        if (setting.getValType() == INT) {
-            int ev0, ev1, min, mod;
-            if (maxRange > static_cast<unsigned long>(std::numeric_limits<int>::max())) mod = 0;
-            else mod = static_cast<int>(maxRange);
-            Value normalized;
-            child[0].getValue().getValueTo(&ev0, INT);
-            child[1].getValue().getValueTo(&ev1, INT);
-            // normalize then mode
-            if (ev0 < ev1) {
-                min = mod ? ev0 % mod : ev0;
-                normalized = mod ? (ev1 - ev0) % mod : (ev1 - ev0);
-                child[0].setValue(0);
-                child[1].setValue(normalized);
-                node.setEdgeValue(1, normalized);
-            } else {
-                min = mod ? ev1 % mod : ev1;
-                normalized = mod ? (ev0 - ev1) % mod : ev0 - ev1;
-                child[0].setValue(normalized);
-                child[1].setValue(0);
-                node.setEdgeValue(0, normalized);
+        /* 
+         * One is special terminal value, or both but different, check this first
+         */
+        EdgeHandle child0 = child[0].getEdgeHandle();
+        EdgeHandle child1 = child[1].getEdgeHandle();
+        node.setChildEdge(0, child0, 0, hasLvl);
+        node.setChildEdge(1, child1, 0, hasLvl);
+        // 0 edge is terminal INF
+        if (isTerminalSpecial(SpecialValue::POS_INF, child0)
+            || isTerminalSpecial(SpecialValue::NEG_INF, child0)
+            || isTerminalSpecial(SpecialValue::UNDEF, child0)) {
+            if (!isTerminalSpecial(child1) || isTerminalSpecial(SpecialValue::OMEGA, child1)) { 
+                ans.setValue(child[1].getValue());
             }
-            ans.setValue(min);
-            node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
-            node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
-        } else if (setting.getValType() == LONG) {
-            long ev0, ev1, min, mod;
-            if (maxRange > static_cast<unsigned long>(std::numeric_limits<long>::max())) mod = 0;
-            else mod = static_cast<long>(maxRange);
-            Value normalized;
-            child[0].getValue().getValueTo(&ev0, LONG);
-            child[1].getValue().getValueTo(&ev1, LONG);
-            if (ev0 < ev1) {
-                min = mod ? ev0 % mod : ev0;
-                normalized = mod ? (ev1 - ev0) % mod : (ev1 - ev0);
-                child[0].setValue(0);
-                child[1].setValue(normalized);
-                node.setEdgeValue(1, normalized);
-            } else {
-                min = mod ? ev1 % mod : ev1;
-                normalized = mod ? (ev0 - ev1) % mod : ev0 - ev1;
-                child[0].setValue(normalized);
-                child[1].setValue(0);
-                node.setEdgeValue(0, normalized);
+        // 1 edge is terminal INF
+        } else if (isTerminalSpecial(SpecialValue::POS_INF, child1)
+                || isTerminalSpecial(SpecialValue::NEG_INF, child1)
+                || isTerminalSpecial(SpecialValue::UNDEF, child1)) {
+            // here 0 child must be Omega terminal or nonterminal
+            ans.setValue(child[0].getValue());
+        } else {
+            if (setting.getValType() == INT) {
+                int ev0, ev1, min, mod;
+                if (maxRange > static_cast<unsigned long>(std::numeric_limits<int>::max())) mod = 0;
+                else mod = static_cast<int>(maxRange);
+                Value normalized;
+                child[0].getValue().getValueTo(&ev0, INT);
+                child[1].getValue().getValueTo(&ev1, INT);
+                // normalize then mode
+                if (ev0 < ev1) {
+                    min = mod ? ev0 % mod : ev0;
+                    normalized = mod ? (ev1 - ev0) % mod : (ev1 - ev0);
+                    child[0].setValue(0);
+                    child[1].setValue(normalized);
+                    node.setEdgeValue(1, normalized);
+                } else {
+                    min = mod ? ev1 % mod : ev1;
+                    normalized = mod ? (ev0 - ev1) % mod : ev0 - ev1;
+                    child[0].setValue(normalized);
+                    child[1].setValue(0);
+                    node.setEdgeValue(0, normalized);
+                }
+                ans.setValue(min);
+            } else if (setting.getValType() == LONG) {
+                long ev0, ev1, min, mod;
+                if (maxRange > static_cast<unsigned long>(std::numeric_limits<long>::max())) mod = 0;
+                else mod = static_cast<long>(maxRange);
+                Value normalized;
+                child[0].getValue().getValueTo(&ev0, LONG);
+                child[1].getValue().getValueTo(&ev1, LONG);
+                if (ev0 < ev1) {
+                    min = mod ? ev0 % mod : ev0;
+                    normalized = mod ? (ev1 - ev0) % mod : (ev1 - ev0);
+                    child[0].setValue(0);
+                    child[1].setValue(normalized);
+                    node.setEdgeValue(1, normalized);
+                } else {
+                    min = mod ? ev1 % mod : ev1;
+                    normalized = mod ? (ev0 - ev1) % mod : ev0 - ev1;
+                    child[0].setValue(normalized);
+                    child[1].setValue(0);
+                    node.setEdgeValue(0, normalized);
+                }
+                ans.setValue(Value(min));
+            } else if (setting.getValType() == FLOAT) {
+                //TODO: implement setting values in node
+            } else if (setting.getValType() == DOUBLE) {
+                //TODO: implement setting values in node
+            } else if (setting.getValType() == VOID) {
+                // TODO: Talk to Lichuan about this
+                // When would be the setting be VOID beside the constant inf func
             }
-            ans.setValue(Value(min));
-            node.setChildEdge(0, child[0].getEdgeHandle(), 0, hasLvl);
-            node.setChildEdge(1, child[1].getEdgeHandle(), 0, hasLvl);
-        } else if (setting.getValType() == FLOAT) {
-            //TODO: implement setting values in node
-        } else if (setting.getValType() == DOUBLE) {
-            //TODO: implement setting values in node
-        } else if (setting.getValType() == VOID) {
-            // TODO: Talk to Lichuan about this
-            // When would be the setting be VOID beside the constant inf func
         }
+        
+    /* =================================================================================================
+    * BDD for "Relation" (Terminal encoding)
+    * ================================================================================================*/
     } else if (setting.isRelation() && em == TERMINAL){
         // for relation BDD TBD
         bool hasLvl = setting.getReductionSize() > 0;
@@ -197,7 +225,9 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
         node.setChildEdge(1, child[1].getEdgeHandle(), 1, hasLvl);
         node.setChildEdge(2, child[2].getEdgeHandle(), 1, hasLvl);
         node.setChildEdge(3, child[3].getEdgeHandle(), 1, hasLvl);
-
+    /* =================================================================================================
+    * BDD for "Relation" (Edge value encoding)
+    * ================================================================================================*/
     } else if(setting.isRelation() && (em == EDGE_PLUS)) {
     } else {
         // others, TBD
@@ -715,47 +745,17 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     * ================================================================================================*/
     } else if (!setting.isRelation() && em == EDGE_PLUS){
         bool isMatch = 0;
-        // TODO Figure this part out
-        if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {
-            if (isTerminalPosInf(child[0].getEdgeHandle()) &&  isTerminalPosInf(child[1].getEdgeHandle())) {
-                reduced = child[0];
-                isMatch = 1;
-            }
-        }
         /* ---------------------------------------------------------------------------------------------
         * Redundant X
         * --------------------------------------------------------------------------------------------*/ 
-        if (setting.getValType() == INT) {
-            int ev0, ev1;
-            child[0].getValue().getValueTo(&ev0,INT);
-            child[1].getValue().getValueTo(&ev1,INT);
-            if(((child[0].getEdgeHandle() == child[1].getEdgeHandle())
-            && (ev0 == ev1)
-            && setting.hasReductionRule(RULE_X))) {
+       if ((child[0] == child[1]) && setting.hasReductionRule(RULE_X)) {
             reduced = child[0];
             isMatch = 1;
-            }
-        } else if (setting.getValType() == LONG) {
-            if(((child[0].getEdgeHandle() == child[1].getEdgeHandle())
-            && (child[0].getValue() == child[1].getValue())
-            && setting.hasReductionRule(RULE_X))) { 
-            reduced = child[0];
-            isMatch = 1;
-        }
-        }
-        
+       }        
         if (!isMatch) return normalizeNode(nodeLevel, child);
-
     
     } else if (!setting.isRelation() && em == EDGE_PLUSMOD) {
         bool isMatch = 0;
-        // TODO Figure this part out
-        if ((child[0].getNodeLevel() == 0) && (child[1].getNodeLevel() == 0)) {
-            if (isTerminalPosInf(child[0].getEdgeHandle()) &&  isTerminalPosInf(child[1].getEdgeHandle())) {
-                reduced = child[0];
-                isMatch = 1;
-            }
-        }
         /* ---------------------------------------------------------------------------------------------
         * Redundant X
         * --------------------------------------------------------------------------------------------*/ 

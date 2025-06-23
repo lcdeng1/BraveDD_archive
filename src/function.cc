@@ -297,7 +297,11 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 }
             } else if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
                 // edge values plus
-                if ((targetLvl == 0) && (isTerminalPosInf(current.getEdgeHandle()))) return getTerminalValue(current.getEdgeHandle());
+                if ((targetLvl == 0) 
+                    && isTerminalSpecial(current.getEdgeHandle()) 
+                    && !isTerminalSpecial(SpecialValue::OMEGA, current.getEdgeHandle())) {
+                    return getTerminalValue(current.getEdgeHandle());
+                }
                 std::cout << "[BRAVE_DD] ERROR!\t evaluate(): Illegal patterns for EVBDD!" << std::endl;
                 exit(0);
             } else if (encode == EDGE_MULT) {
@@ -352,13 +356,13 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 }
             }
             if(encode == EDGE_PLUS) {
-                if (vt == INT) return ans;
-                else if (vt == LONG) return ans;                  
-                if(isTerminalPosInf(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
+                // only special terminal check here
+                if(isTerminalSpecial(current.getEdgeHandle()) && !isTerminalOmega(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
             } else if (encode == EDGE_PLUSMOD) {
                 // TODO: after paper discuss
                 // Since the sum of the edge values are either int or long, 
                 // maxRange being unsigned long seem a too big
+                if(isTerminalSpecial(current.getEdgeHandle()) && !isTerminalOmega(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
                 unsigned long mod = getForest()->getSetting().getMaxRange();
                 if (vt == INT) {
                     // mu is greater than the value that int can store
@@ -369,7 +373,6 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                     if ( mod > static_cast<unsigned long>(std::numeric_limits<long>::max())) return ans.getLongValue();
                     return Value(ans.getLongValue() % static_cast<long>(mod));
                 } 
-                if(isTerminalPosInf(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
             }
             return ans;
         }
