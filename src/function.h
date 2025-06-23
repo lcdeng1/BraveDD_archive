@@ -147,6 +147,9 @@ class BRAVE_DD::ExplictFunc {
     
     // Convert assignments to char arrays for radix scan
     char** getAllAssignmentsAsCharArray() const;
+
+    // Convert to Func in a given forest
+    Func buildFunc(Forest* forest) const;
     
     // Free memory from char array conversion
     void freeCharArray(char** array, int size) const;
@@ -154,6 +157,9 @@ class BRAVE_DD::ExplictFunc {
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
+    // helper for recursively building edge, idx+1 is the variable level
+    Edge buildEdge(Forest* forest, uint16_t lvl, size_t start, size_t size);
+    
     std::vector<std::vector<bool>>     assignments;
     std::vector<Value>                 outcomes;
     Value                              defaultVal;
