@@ -808,7 +808,7 @@ Edge ExplictFunc::buildEdge(Forest* forest, uint16_t lvl, size_t start, size_t s
         if (assignments[left][lvl-1] == 0) left++;
     }
     // build a ndoe and recursively call
-    std::vector<Edge> child;
+    std::vector<Edge> child(2);
     child[0] = buildEdge(forest, lvl-1, start, left-start);
     child[1] = buildEdge(forest, lvl-1, left, size-left+start);
     EdgeLabel root = 0;
