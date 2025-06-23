@@ -201,6 +201,7 @@ void Func::variable(uint16_t lvl, bool isPrime, Value low, Value high)
     // TBD
 }
 
+// TODO: add more test and error cases around them 
 Edge Func::convert(Forest* evmodForest, Edge evEdge) {
     EdgeLabel label = 0;
     packRule(label, RULE_X);
@@ -262,22 +263,11 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
     uint16_t k = assignment.size()-1;
 
     /* initialized edge value for EVBDD*/
-    union {
-        int             evInt;
-        long            evLong;
-        float           evFloat;
-        double          evDouble;
-    };
-    if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
+     if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
         // TODO: Ask Lichuan do we need long and double?
         Value cv = current.getValue();
         if (targetLvl == 0) return cv;
-        if (vt == INT) evInt = cv.getIntValue();
-        else if (vt == LONG) evLong = cv.getLongValue();
-        else if (vt == FLOAT) evFloat = cv.getFloatValue();
-        else if (vt == DOUBLE) evDouble = cv.getDoubleValue();
-        /* if it is VOID -> value is omega or posInf return current value*/
-        else return cv;
+        ans = Value(cv);
     }
     while (true) {
 #ifdef BRAVE_DD_TRACE
@@ -333,8 +323,8 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             /* cumulate the edge values*/
             if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
                 Value cv = current.getValue();
-                if (vt == INT) evInt += cv.getIntValue();
-                else if (vt == LONG) evLong += cv.getLongValue();
+                if (vt == INT) ans = Value(ans.getIntValue() + cv.getIntValue());
+                else if (vt == LONG) ans = Value(ans.getLongValue() + cv.getLongValue());
             }
 #ifdef BRAVE_DD_TRACE
             std::cout<<"next currt: k="<< k <<", targetlvl=" << targetLvl << "; ";
@@ -362,8 +352,8 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 }
             }
             if(encode == EDGE_PLUS) {
-                if (vt == INT) return Value(evInt);
-                else if (vt == LONG) return Value(evLong);                  
+                if (vt == INT) return ans;
+                else if (vt == LONG) return ans;                  
                 if(isTerminalPosInf(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
             } else if (encode == EDGE_PLUSMOD) {
                 // TODO: after paper discuss
@@ -372,12 +362,12 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
                 unsigned long mod = getForest()->getSetting().getMaxRange();
                 if (vt == INT) {
                     // mu is greater than the value that int can store
-                    if ( mod > static_cast<unsigned long>(std::numeric_limits<int>::max())) return Value(evInt);
-                    return Value(evInt % static_cast<int>(mod));
+                    if ( mod > static_cast<unsigned long>(std::numeric_limits<int>::max())) return ans.getIntValue();
+                    return Value(ans.getIntValue() % static_cast<int>(mod));
                 } else if (vt == LONG) {
                     // mu is greater than the value that long can store
-                    if ( mod > static_cast<unsigned long>(std::numeric_limits<long>::max())) return Value(evLong);
-                    return Value(evLong % static_cast<long>(mod));
+                    if ( mod > static_cast<unsigned long>(std::numeric_limits<long>::max())) return ans.getLongValue();
+                    return Value(ans.getLongValue() % static_cast<long>(mod));
                 } 
                 if(isTerminalPosInf(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
             }
