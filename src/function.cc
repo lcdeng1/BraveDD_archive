@@ -772,7 +772,8 @@ Edge ExplictFunc::buildEdge(Forest* forest, uint16_t lvl, size_t start, size_t s
             }
         }
         packRule(ans.handle, RULE_X);
-        return (size == 0) ? forest->normalizeEdge(lvl, ans) : ans;
+        // return (size == 0) ? forest->normalizeEdge(lvl, ans) : ans;
+        return ans;
     }
     // two-finger algorithm to sort 0,1 values in position lvl
     size_t left = start;
@@ -794,9 +795,8 @@ Edge ExplictFunc::buildEdge(Forest* forest, uint16_t lvl, size_t start, size_t s
         ++left;
         --right;
     }
-    if (left < size) {
-        if (assignments[left][lvl-1] == 0) left++;
-    }
+    if ((left < (size + start)) && (assignments[left][lvl-1] == 0)) left++;
+
     // build a ndoe and recursively call
     std::vector<Edge> child(2);
     child[0] = buildEdge(forest, lvl-1, start, left-start);
