@@ -47,6 +47,11 @@ Value::Value(const Value& val)
 
 void Value::print(std::ostream& out, int format) const
 {
+    if (valueType == INT) out << intValue;
+    if (valueType == LONG) out << longValue;
+    if (valueType == FLOAT) out << floatValue;
+    if (valueType == DOUBLE) out << doubleValue;
+    if (valueType == VOID) out << speciaValue2String(special);
     if (format == 0) {
         //
     } else {
