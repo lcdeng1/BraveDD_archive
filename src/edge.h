@@ -256,6 +256,7 @@ class BRAVE_DD::Value {
     Value(long l);
     Value(double d);
     Value(float f);
+    Value(SpecialValue sv);
     Value(const Value& val);
 
     ValueType getType() const { return valueType; }
@@ -411,6 +412,7 @@ class BRAVE_DD::Value {
 
     /*-------------------------------------------------------------*/
     friend class Func;
+    friend class ExplictFunc;
     /// Values
     union {
         int             intValue;
@@ -512,6 +514,7 @@ class BRAVE_DD::Edge {
         /* Getters and Setters under Forest */
         friend class Forest;
         friend class Func;
+        friend class ExplictFunc;
         friend class Node;
 
         /* Actual edge information */

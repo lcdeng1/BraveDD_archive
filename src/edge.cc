@@ -35,7 +35,11 @@ Value::Value(float f)
     valueType = FLOAT;
     floatValue = f;
 }
-
+Value::Value(SpecialValue sv)
+{
+    valueType = VOID;
+    special = sv;
+}
 Value::Value(const Value& val)
 {
     init(val);
