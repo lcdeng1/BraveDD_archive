@@ -578,6 +578,7 @@ class BRAVE_DD::Forest {
     friend class NodeManager;
     friend class UniqueTable;
     friend class Func;
+    friend class ExplictFunc;
     friend class UnaryOperation;
     friend class BinaryOperation;
     friend class SaturationOperation;
