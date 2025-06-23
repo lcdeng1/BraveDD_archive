@@ -53,7 +53,7 @@ int main(int argc, const char** argv) {
         std::cout << "Number of outbits: " << parserPla.getOutBits() << std::endl;
         std::cout << "Number of asmts: " << parserPla.getNum() << std::endl;
     }
-    std::vector<char> assignment(parserPla.getInBits());
+    std::vector<bool> assignment(parserPla.getInBits());
     char out = 0;
     for (;;) {
         if (!parserPla.readAssignment(assignment, out)) break;
