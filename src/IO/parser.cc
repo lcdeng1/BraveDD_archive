@@ -153,7 +153,7 @@ void ParserPla::readHeader()
     }
 }
 
-bool ParserPla::readAssignment(std::vector<char>& inputs, char& out)
+bool ParserPla::readAssignment(std::vector<bool>& inputs, char& out)
 {
     int c;
     while (true) {
@@ -166,7 +166,7 @@ bool ParserPla::readAssignment(std::vector<char>& inputs, char& out)
         }
     }
     // read inputs
-    inputs[0] = static_cast<char>(c);
+    inputs[0] = static_cast<bool>(c-'0');
     unsigned n;
     for (n=1; n<inbits; n++) {
         c = get();
@@ -174,7 +174,7 @@ bool ParserPla::readAssignment(std::vector<char>& inputs, char& out)
             std::cout << "[BRAVE_DD] ERROR!\t ParserPla::readAssignment(): Unexpected EOF.\n";
             return false;
         }
-        inputs[n] = static_cast<char>(c);
+        inputs[n] = static_cast<bool>(c-'0');
     }
     // read out
     inputs[n] = 0;

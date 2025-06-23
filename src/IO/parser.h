@@ -97,7 +97,7 @@ class BRAVE_DD::ParserPla : public Parser {
 
     // main functions
     virtual void readHeader() override;
-    bool readAssignment(std::vector<char>& inputs, char& out);
+    bool readAssignment(std::vector<bool>& inputs, char& out);
     // get bits info
     inline unsigned getInBits() { return inbits; }
     inline unsigned getOutBits() { return outbits; }
