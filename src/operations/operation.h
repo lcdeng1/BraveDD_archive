@@ -232,7 +232,6 @@ class BRAVE_DD::BinaryOperation : public Operation {
     Edge computeUnion(const uint16_t lvl, const Edge& source1, const Edge& source2);
     Edge computeIntersection(const uint16_t lvl, const Edge& source1, const Edge& source2);
     Edge computeImage(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre = 0);
-    Edge computeMinimum(const uint16_t lvl, const Edge& source1, const Edge& source2);
     // elementwise related
     Edge operateLL(const uint16_t lvl, const Edge& e1, const Edge& e2);
     Edge operateHH(const uint16_t lvl, const Edge& e1, const Edge& e2);
