@@ -1110,10 +1110,6 @@ Edge BinaryOperation::operateLL(const uint16_t lvl, const Edge& e1, const Edge& 
     } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
         x = computeIntersection(m1, x1, x2);
         y = computeIntersection(m1, y1, y2);
-    } else if (opType == BinaryOperationType::BOP_MINIMUM) {
-        //TODO: update the edge value before passing 
-        x = computeMinimum(m1, x1, x2);
-        y = computeMinimum(m1, y1, y2);
     }
     // more operations TBD
     Edge ans = resForest->buildHalf(lvl, m1+1, x, y, 1);
