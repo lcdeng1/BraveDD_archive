@@ -143,6 +143,16 @@ bool Edge::isConstantZero() const {
     return (hasRuleTerminalOne(getRule()) == (getComp() ^ isTermOne)) && !(getComp() ^ isTermOne);
 }
 
+bool Edge::isConstantOmega() const {
+    if (getNodeLevel() > 0) return false;
+    return isTerminalOmega(handle);
+}
+
+bool Edge::isConstantPosInf() const {
+    if (getNodeLevel() > 0) return false;
+    return isTerminalPosInf(handle);
+}
+
 void Edge::print(std::ostream& out, int format) const
 {
     printEdgeHandle(handle, out, format);

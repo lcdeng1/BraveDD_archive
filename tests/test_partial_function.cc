@@ -171,7 +171,7 @@ int main(int argc, char** argv)
     std::cout<< "Testing EVMODFBDD ... " << std::endl;
     pass = buildEvSetForest(num, PredefForest::EVMODFBDD, mod);
 
-    std::cout << "Finished testing edge valued decision daigram with partial function" << std::endl;
+    std::cout << "Finished testing edge valued decision diagram with partial function" << std::endl;
     if (!pass) {
         std::cout << "Test Failed!" << std::endl;
     } else {

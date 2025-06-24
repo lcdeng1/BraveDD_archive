@@ -317,6 +317,40 @@ class BRAVE_DD::Value {
     inline bool operator!=(const Value& val) const {
         return !equals(val);
     }
+    inline bool operator>(const Value& val) const {
+        if (valueType != val.getType()) {
+            std::cout << "[BRAVE_DD] ERROR!\t cannot compare values with different type!" << std::endl;
+            exit(0);
+        }
+        if (valueType == INT) return intValue > val.getIntValue();
+        if (valueType == FLOAT) return floatValue > val.getFloatValue();
+        if (valueType == LONG) return longValue > val.getLongValue();
+        if (valueType == DOUBLE) return doubleValue > val.getDoubleValue();
+        // comparing infinity
+        return false;
+    }
+    inline Value operator+(const Value& val) const {
+        if (valueType != val.getType()) {
+            std::cout << "[BRAVE_DD] ERROR!\t cannot add values with different type!" << std::endl;
+            exit(0);
+        }
+        if (valueType == INT) return intValue + val.getIntValue();
+        if (valueType == FLOAT) return floatValue + val.getFloatValue();
+        if (valueType == LONG) return longValue + val.getLongValue();
+        if (valueType == DOUBLE) return doubleValue + val.getDoubleValue();
+        return *this;
+    }
+    inline Value operator-(const Value& val) const {
+        if (valueType != val.getType()) {
+            std::cout << "[BRAVE_DD] ERROR!\t cannot add values with different type!" << std::endl;
+            exit(0);
+        }
+        if (valueType == INT) return intValue - val.getIntValue();
+        if (valueType == FLOAT) return floatValue - val.getFloatValue();
+        if (valueType == LONG) return longValue - val.getLongValue();
+        if (valueType == DOUBLE) return doubleValue - val.getDoubleValue();
+        return *this;
+    }
     void print(std::ostream& out, int format) const;
     /*-------------------------------------------------------------*/
     private:
@@ -474,6 +508,10 @@ class BRAVE_DD::Edge {
         bool isConstantOne() const;
 
         bool isConstantZero() const;
+
+        bool isConstantOmega() const;
+
+        bool isConstantPosInf() const;
 
         inline void complement() {
             // complement the reduction rule and flip the complement bit, when complement allowed
