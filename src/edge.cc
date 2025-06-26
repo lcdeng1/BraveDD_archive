@@ -145,12 +145,12 @@ bool Edge::isConstantZero() const {
 
 bool Edge::isConstantOmega() const {
     if (getNodeLevel() > 0) return false;
-    return isTerminalOmega(handle);
+    return isTerminalSpecial(SpecialValue::OMEGA, handle);
 }
 
 bool Edge::isConstantPosInf() const {
     if (getNodeLevel() > 0) return false;
-    return isTerminalPosInf(handle);
+    return isTerminalSpecial(SpecialValue::POS_INF, handle);
 }
 
 void Edge::print(std::ostream& out, int format) const
