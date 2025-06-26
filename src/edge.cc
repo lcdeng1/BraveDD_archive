@@ -167,6 +167,16 @@ bool Edge::isConstantPosInf() const {
     return isTerminalSpecial(SpecialValue::POS_INF, handle);
 }
 
+bool Edge::isConstantNegInf() const {
+    if (getNodeLevel() > 0) return false;
+    return isTerminalSpecial(SpecialValue::NEG_INF, handle);
+}
+
+bool Edge::isConstantUnDef() const {
+    if (getNodeLevel() > 0) return false;
+    return isTerminalSpecial(SpecialValue::UNDEF, handle);
+}
+
 void Edge::print(std::ostream& out, int format) const
 {
     printEdgeHandle(handle, out, format);

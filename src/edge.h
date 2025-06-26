@@ -321,13 +321,22 @@ class BRAVE_DD::Value {
         if (valueType != val.getType()) {
             std::cout << "[BRAVE_DD] ERROR!\t cannot compare values with different type!" << std::endl;
             exit(0);
+        } // Mixed-type comparisons allowed, this to be removed
+        // special value check first, omega and undef TBD
+        if (((valueType == VOID) && (special == SpecialValue::POS_INF))
+            || ((val.valueType == VOID) && (val.special == SpecialValue::NEG_INF))) return true;
+        if (valueType == val.getType()) {
+            if (valueType == INT) return intValue > val.intValue;
+            if (valueType == FLOAT) return floatValue > val.floatValue;
+            if (valueType == LONG) return longValue > val.longValue;
+            if (valueType == DOUBLE) return doubleValue > val.doubleValue;
+        } else {
+            // promote types to compare
         }
-        if (valueType == INT) return intValue > val.getIntValue();
-        if (valueType == FLOAT) return floatValue > val.getFloatValue();
-        if (valueType == LONG) return longValue > val.getLongValue();
-        if (valueType == DOUBLE) return doubleValue > val.getDoubleValue();
-        // comparing infinity
         return false;
+    }
+    inline bool operator<(const Value& val) const {
+        return (val != *this) && (val > *this);
     }
     inline Value operator+(const Value& val) const {
         if (valueType != val.getType()) {
@@ -512,6 +521,10 @@ class BRAVE_DD::Edge {
         bool isConstantOmega() const;
 
         bool isConstantPosInf() const;
+
+        bool isConstantNegInf() const;
+
+        bool isConstantUnDef() const;
 
         inline void complement() {
             // complement the reduction rule and flip the complement bit, when complement allowed
