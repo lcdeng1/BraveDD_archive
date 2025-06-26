@@ -140,7 +140,6 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
     * ================================================================================================*/
     } else if(!setting.isRelation() && em == EDGE_PLUS) {
         bool hasLvl = setting.getReductionSize() > 0;
-        unsigned long maxRange = (em == EDGE_PLUS) ? 0 : setting.getMaxRange();
         /* 
          * One is special terminal value, or both but different, check this first
          */
@@ -250,7 +249,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             ans.setValue(child[0].getValue());
         } else {
             if (setting.getValType() == INT) {
-                int ev0, ev1, min, mod;
+                int ev0, ev1, mod;
                 mod = static_cast<int>(maxRange);
                 Value normalized;
                 child[0].getValue().getValueTo(&ev0, INT);
@@ -261,7 +260,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
                 node.setEdgeValue(1, normalized);
                 ans.setValue(ev0);
             } else if (setting.getValType() == LONG) {
-                long ev0, ev1, min, mod;
+                long ev0, ev1, mod;
                 mod = static_cast<long>(maxRange);
                 Value normalized;
                 child[0].getValue().getValueTo(&ev0, LONG);
