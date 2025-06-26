@@ -497,7 +497,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
                 childEdges[3] = temp;
             }
         }
-        normalized = temp;
+        normalized.setEdgeHandle(temp.getEdgeHandle()); // not change the original edge value
     }
 
     return normalized;
@@ -924,7 +924,13 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
     if (((incomingRule == reducedRule) && (incomingSkip > 0) && (reducedSkip > 0)
             && (isRuleEL(reducedRule) || isRuleEH(reducedRule) || isRuleI(reducedRule) || (reducedRule == RULE_X)))
         || (incomingSkip == 0)) {
-        merged = reduced;
+        merged.setEdgeHandle(reduced.getEdgeHandle());
+        if (setting.getEncodeMechanism() == EDGE_PLUS) {
+            merged.setValue(reduced.getValue() + value);
+        } else if (setting.getEncodeMechanism() == EDGE_PLUSMOD) {
+            int mod = static_cast<int>(setting.getMaxRange());
+            merged.setValue((reduced.getValue() + value) % mod);
+        }
         return normalizeEdge(beginLevel, merged);
     }
     /* ---------------------------------------------------------------------------------------------
