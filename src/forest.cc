@@ -138,7 +138,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
     /* =================================================================================================
     * BDD for "Set" (Edge value encoding)
     * ================================================================================================*/
-    } else if(!setting.isRelation() && (em == EDGE_PLUS || em == EDGE_PLUSMOD)) {
+    } else if(!setting.isRelation() && em == EDGE_PLUS) {
         bool hasLvl = setting.getReductionSize() > 0;
         unsigned long maxRange = (em == EDGE_PLUS) ? 0 : setting.getMaxRange();
         /* 
@@ -163,43 +163,39 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             ans.setValue(child[0].getValue());
         } else {
             if (setting.getValType() == INT) {
-                int ev0, ev1, min, mod;
-                if (maxRange > static_cast<unsigned long>(std::numeric_limits<int>::max())) mod = 0;
-                else mod = static_cast<int>(maxRange);
+                int ev0, ev1, min;
                 Value normalized;
                 child[0].getValue().getValueTo(&ev0, INT);
                 child[1].getValue().getValueTo(&ev1, INT);
                 // normalize then mode
                 if (ev0 < ev1) {
-                    min = mod ? ev0 % mod : ev0;
-                    normalized = mod ? (ev1 - ev0) % mod : (ev1 - ev0);
+                    min = ev0;
+                    normalized = (ev1 - ev0);
                     child[0].setValue(0);
                     child[1].setValue(normalized);
                     node.setEdgeValue(1, normalized);
                 } else {
-                    min = mod ? ev1 % mod : ev1;
-                    normalized = mod ? (ev0 - ev1) % mod : ev0 - ev1;
+                    min = ev1;
+                    normalized = (ev0 - ev1);
                     child[0].setValue(normalized);
                     child[1].setValue(0);
                     node.setEdgeValue(0, normalized);
                 }
                 ans.setValue(min);
             } else if (setting.getValType() == LONG) {
-                long ev0, ev1, min, mod;
-                if (maxRange > static_cast<unsigned long>(std::numeric_limits<long>::max())) mod = 0;
-                else mod = static_cast<long>(maxRange);
+                long ev0, ev1, min;
                 Value normalized;
                 child[0].getValue().getValueTo(&ev0, LONG);
                 child[1].getValue().getValueTo(&ev1, LONG);
                 if (ev0 < ev1) {
-                    min = mod ? ev0 % mod : ev0;
-                    normalized = mod ? (ev1 - ev0) % mod : (ev1 - ev0);
+                    min = ev0;
+                    normalized = (ev1 - ev0);
                     child[0].setValue(0);
                     child[1].setValue(normalized);
                     node.setEdgeValue(1, normalized);
                 } else {
-                    min = mod ? ev1 % mod : ev1;
-                    normalized = mod ? (ev0 - ev1) % mod : ev0 - ev1;
+                    min = ev1;
+                    normalized = ev0 - ev1;
                     child[0].setValue(normalized);
                     child[1].setValue(0);
                     node.setEdgeValue(0, normalized);
@@ -214,7 +210,76 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
                 // When would be the setting be VOID beside the constant inf func
             }
         }
-        
+    /* =================================================================================================
+    * BDD for "Set" (Edge value mod encoding)
+    * ================================================================================================*/
+    } else if (!setting.isRelation() && em == EDGE_PLUSMOD) {
+        bool hasLvl = setting.getReductionSize() > 0;
+        unsigned long maxRange = (em == EDGE_PLUS) ? 0 : setting.getMaxRange();
+        /* 
+         * One is special terminal value, or both but different, check this first
+         */
+        EdgeHandle child0 = child[0].getEdgeHandle();
+        EdgeHandle child1 = child[1].getEdgeHandle();
+        node.setChildEdge(0, child0, 0, hasLvl);
+        node.setChildEdge(1, child1, 0, hasLvl);
+
+        if (setting.getValType() == INT 
+            && (maxRange > static_cast<unsigned long>(std::numeric_limits<int>::max()))) {
+                std::cout << "[BRAVE_DD] ERROR!\t maxRange overflows valType specified" << std::endl;
+                exit(0);
+        }
+        if (setting.getValType() == LONG 
+            && (maxRange > static_cast<unsigned long>(std::numeric_limits<long>::max()))) {
+                std::cout << "[BRAVE_DD] ERROR!\t maxRange overflows valType specified" << std::endl;
+                exit(0);
+        }
+
+        // 0 edge is terminal INF
+        if (isTerminalSpecial(SpecialValue::POS_INF, child0)
+            || isTerminalSpecial(SpecialValue::NEG_INF, child0)
+            || isTerminalSpecial(SpecialValue::UNDEF, child0)) {
+            if (!isTerminalSpecial(child1) || isTerminalSpecial(SpecialValue::OMEGA, child1)) { 
+                ans.setValue(child[1].getValue());
+            }
+    // 1 edge is terminal INF
+        } else if (isTerminalSpecial(SpecialValue::POS_INF, child1)
+                || isTerminalSpecial(SpecialValue::NEG_INF, child1)
+                || isTerminalSpecial(SpecialValue::UNDEF, child1)) {
+            // here 0 child must be Omega terminal or nonterminal
+            ans.setValue(child[0].getValue());
+        } else {
+            if (setting.getValType() == INT) {
+                int ev0, ev1, min, mod;
+                mod = static_cast<int>(maxRange);
+                Value normalized;
+                child[0].getValue().getValueTo(&ev0, INT);
+                child[1].getValue().getValueTo(&ev1, INT);
+                normalized = Value(((((ev1 - ev0) % mod) + mod) % mod));
+                child[0].setValue(0);
+                child[1].setValue(normalized);
+                node.setEdgeValue(1, normalized);
+                ans.setValue(ev0);
+            } else if (setting.getValType() == LONG) {
+                long ev0, ev1, min, mod;
+                mod = static_cast<long>(maxRange);
+                Value normalized;
+                child[0].getValue().getValueTo(&ev0, LONG);
+                child[1].getValue().getValueTo(&ev1, LONG);
+                normalized = Value(((((ev1 - ev0) % mod) + mod) % mod));
+                child[0].setValue(0);
+                child[1].setValue(normalized);
+                node.setEdgeValue(1, normalized);
+                ans.setValue(ev0);
+            } else if (setting.getValType() == FLOAT) {
+                //TODO: implement setting values in node
+            } else if (setting.getValType() == DOUBLE) {
+                //TODO: implement setting values in node
+            } else if (setting.getValType() == VOID) {
+                // TODO: Talk to Lichuan about this
+                // When would be the setting be VOID beside the constant inf func
+            }
+        }    
     /* =================================================================================================
     * BDD for "Relation" (Terminal encoding)
     * ================================================================================================*/
@@ -762,7 +827,10 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
         unsigned long maxRange = setting.getMaxRange();
         if (setting.getValType() == INT) {
             int ev0, ev1, mod;
-            if (maxRange > static_cast<unsigned long>(std::numeric_limits<int>::max())) mod = 0;
+            if (maxRange > static_cast<unsigned long>(std::numeric_limits<int>::max())) {
+                std::cout << "[BRAVE_DD] ERROR!\t maxRange overflows valType specified" << std::endl;
+                exit(0);
+            }
             else mod = static_cast<int>(maxRange);
             child[0].getValue().getValueTo(&ev0,INT);
             child[1].getValue().getValueTo(&ev1,INT);
@@ -778,7 +846,10 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
             
         } else if (setting.getValType() == LONG) {
             long ev0, ev1, mod;
-            if (maxRange > static_cast<unsigned long>(std::numeric_limits<long>::max())) mod = 0;
+            if (maxRange > static_cast<unsigned long>(std::numeric_limits<long>::max())) {
+                std::cout << "[BRAVE_DD] ERROR!\t maxRange overflows valType specified" << std::endl;
+                exit(0);
+            }
             else mod = static_cast<long>(maxRange);
             child[0].getValue().getValueTo(&ev0,LONG);
             child[1].getValue().getValueTo(&ev1,LONG);

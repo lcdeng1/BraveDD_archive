@@ -351,7 +351,7 @@ int main(int argc, char** argv)
     } else {
         mod = 3;
         num = 4;
-        bdd = PredefForest::REXBDD;
+        bdd = PredefForest::EVMODFBDD;
     }
 
     std::cout<< "ReduceEdge test." << std::endl;

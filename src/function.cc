@@ -357,20 +357,32 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
             }
             if(encode == EDGE_PLUS) {
                 // only special terminal check here
-                if(isTerminalSpecial(current.getEdgeHandle()) && !isTerminalOmega(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
+                if( isTerminalSpecial(current.getEdgeHandle()) 
+                    && !isTerminalSpecial(SpecialValue::OMEGA, current.getEdgeHandle())) {
+                        return getTerminalValue(current.getEdgeHandle());
+                    }
             } else if (encode == EDGE_PLUSMOD) {
                 // TODO: after paper discuss
                 // Since the sum of the edge values are either int or long, 
                 // maxRange being unsigned long seem a too big
-                if(isTerminalSpecial(current.getEdgeHandle()) && !isTerminalOmega(current.getEdgeHandle())) return getTerminalValue(current.getEdgeHandle());
+                if( isTerminalSpecial(current.getEdgeHandle()) 
+                    && !isTerminalSpecial(SpecialValue::OMEGA, current.getEdgeHandle())) {
+                        return getTerminalValue(current.getEdgeHandle());
+                    }
                 unsigned long mod = getForest()->getSetting().getMaxRange();
                 if (vt == INT) {
                     // mu is greater than the value that int can store
-                    if ( mod > static_cast<unsigned long>(std::numeric_limits<int>::max())) return ans.getIntValue();
+                    if ( mod > static_cast<unsigned long>(std::numeric_limits<int>::max())) {
+                        std::cout << "[BRAVE_DD] ERROR!\t maxRange overflows valType specified" << std::endl;
+                        exit(0);
+                    }
                     return Value(ans.getIntValue() % static_cast<int>(mod));
                 } else if (vt == LONG) {
                     // mu is greater than the value that long can store
-                    if ( mod > static_cast<unsigned long>(std::numeric_limits<long>::max())) return ans.getLongValue();
+                    if ( mod > static_cast<unsigned long>(std::numeric_limits<long>::max())) {
+                        std::cout << "[BRAVE_DD] ERROR!\t maxRange overflows valType specified" << std::endl;
+                        exit(0);
+                    }
                     return Value(ans.getLongValue() % static_cast<long>(mod));
                 } 
             }
