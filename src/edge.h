@@ -360,6 +360,14 @@ class BRAVE_DD::Value {
         if (valueType == DOUBLE) return doubleValue - val.getDoubleValue();
         return *this;
     }
+    inline Value operator%(const int& mod) const {
+        if ((valueType != INT) && (valueType != LONG)) {
+            std::cout << "[BRAVE_DD] ERROR!\t only mod values with INT or LONG type!" << std::endl;
+            exit(0);
+        }
+        if (valueType == INT) return intValue % mod;
+        if (valueType == LONG) return longValue % mod;
+    }
     void print(std::ostream& out, int format=0) const;
     /*-------------------------------------------------------------*/
     private:
