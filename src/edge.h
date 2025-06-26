@@ -351,7 +351,7 @@ class BRAVE_DD::Value {
         if (valueType == DOUBLE) return doubleValue - val.getDoubleValue();
         return *this;
     }
-    void print(std::ostream& out, int format) const;
+    void print(std::ostream& out, int format=0) const;
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
