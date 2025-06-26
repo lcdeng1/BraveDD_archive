@@ -170,14 +170,10 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
                 if (ev0 < ev1) {
                     min = ev0;
                     normalized = (ev1 - ev0);
-                    child[0].setValue(0);
-                    child[1].setValue(normalized);
                     node.setEdgeValue(1, normalized);
                 } else {
                     min = ev1;
                     normalized = (ev0 - ev1);
-                    child[0].setValue(normalized);
-                    child[1].setValue(0);
                     node.setEdgeValue(0, normalized);
                 }
                 ans.setValue(min);
@@ -189,14 +185,10 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
                 if (ev0 < ev1) {
                     min = ev0;
                     normalized = (ev1 - ev0);
-                    child[0].setValue(0);
-                    child[1].setValue(normalized);
                     node.setEdgeValue(1, normalized);
                 } else {
                     min = ev1;
                     normalized = ev0 - ev1;
-                    child[0].setValue(normalized);
-                    child[1].setValue(0);
                     node.setEdgeValue(0, normalized);
                 }
                 ans.setValue(Value(min));
@@ -255,8 +247,6 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
                 child[0].getValue().getValueTo(&ev0, INT);
                 child[1].getValue().getValueTo(&ev1, INT);
                 normalized = Value(((((ev1 - ev0) % mod) + mod) % mod));
-                child[0].setValue(0);
-                child[1].setValue(normalized);
                 node.setEdgeValue(1, normalized);
                 ans.setValue(ev0);
             } else if (setting.getValType() == LONG) {
@@ -266,8 +256,6 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
                 child[0].getValue().getValueTo(&ev0, LONG);
                 child[1].getValue().getValueTo(&ev1, LONG);
                 normalized = Value(((((ev1 - ev0) % mod) + mod) % mod));
-                child[0].setValue(0);
-                child[1].setValue(normalized);
                 node.setEdgeValue(1, normalized);
                 ans.setValue(ev0);
             } else if (setting.getValType() == FLOAT) {
