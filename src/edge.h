@@ -318,10 +318,6 @@ class BRAVE_DD::Value {
         return !equals(val);
     }
     inline bool operator>(const Value& val) const {
-        if (valueType != val.getType()) {
-            std::cout << "[BRAVE_DD] ERROR!\t cannot compare values with different type!" << std::endl;
-            exit(0);
-        } // Mixed-type comparisons allowed, this to be removed
         // special value check first, omega and undef TBD
         if (((valueType == VOID) && (special == SpecialValue::POS_INF))
             || ((val.valueType == VOID) && (val.special == SpecialValue::NEG_INF))) return true;
@@ -342,7 +338,7 @@ class BRAVE_DD::Value {
         if (valueType != val.getType()) {
             std::cout << "[BRAVE_DD] ERROR!\t cannot add values with different type!" << std::endl;
             exit(0);
-        }
+        } // Mixed-type allowed, this to be removed
         if (valueType == INT) return intValue + val.getIntValue();
         if (valueType == FLOAT) return floatValue + val.getFloatValue();
         if (valueType == LONG) return longValue + val.getLongValue();
@@ -353,7 +349,7 @@ class BRAVE_DD::Value {
         if (valueType != val.getType()) {
             std::cout << "[BRAVE_DD] ERROR!\t cannot add values with different type!" << std::endl;
             exit(0);
-        }
+        } // Mixed-type allowed, this to be removed
         if (valueType == INT) return intValue - val.getIntValue();
         if (valueType == FLOAT) return floatValue - val.getFloatValue();
         if (valueType == LONG) return longValue - val.getLongValue();

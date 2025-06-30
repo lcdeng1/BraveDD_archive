@@ -180,7 +180,8 @@ bool Edge::isConstantUnDef() const {
 void Edge::print(std::ostream& out, int format) const
 {
     printEdgeHandle(handle, out, format);
-    // value?
+    out << " v: ";
+    value.print(out, format);
     if (format == 0) {
         //
     } else {
