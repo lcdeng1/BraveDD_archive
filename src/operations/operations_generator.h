@@ -38,7 +38,9 @@ namespace BRAVE_DD {
     BinaryOperation* UNION(Forest* arg1, Forest* arg2, Forest* res);
     BinaryOperation* INTERSECTION(Forest* arg1, Forest* arg2, Forest* res);
     BinaryOperation* DIFFERENCE(Forest* arg1, Forest* arg2, Forest* res);
+    BinaryOperation* MINIMUM(Forest* arg1, Forest* arg2, Forest* res);
     BinaryOperation* MINIMUM(Forest* arg1, OpndType arg2, Forest* res);
+    BinaryOperation* MAXIMUM(Forest* arg1, Forest* arg2, Forest* res);
     BinaryOperation* MAXIMUM(Forest* arg1, OpndType arg2, Forest* res);
     BinaryOperation* PLUS(Forest* arg1, OpndType arg2, Forest* res);
     BinaryOperation* MINUS(Forest* arg1, OpndType arg2, Forest* res);
