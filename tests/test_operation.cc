@@ -1,11 +1,13 @@
 #include "brave_dd.h"
 
-#include "cstdlib"
-#include "cstdio"
+#include <random>
 
 long seed =123456789;
 
 using namespace BRAVE_DD;
+
+std::mt19937 gen(seed);   
+std::uniform_int_distribution<uint32_t> random06(0, 6);
 
 /* Random function generating value between 0 and 1 */
 double random01()
@@ -98,6 +100,47 @@ child[3] = buildRelEdge(forest, lvl-1, fun, end2+1, end);
 return forest->reduceEdge(lvl, label, lvl, child);
 }
 
+Edge buildEvSetEdge(Forest* forest,
+                    uint16_t lvl,
+                    std::vector<Value>& fun,
+                    int start, int end)
+{
+    std::vector<Edge> child(2);
+    EdgeLabel label = 0;
+    packRule(label, RULE_X);
+    if (lvl == 1) {
+        if (fun[start].getType() != VOID) {
+            child[0].setEdgeHandle(makeTerminal(VOID, SpecialValue::OMEGA));
+            child[0].setValue(fun[start]);
+            
+        } else {
+            child[0].setEdgeHandle(makeTerminal(VOID, SpecialValue::POS_INF));
+        }
+        if(fun[end].getType() != VOID) {
+            child[1].setEdgeHandle(makeTerminal(VOID, SpecialValue::OMEGA)); 
+            child[1].setValue(fun[end]);
+        } else {
+            child[1].setEdgeHandle(makeTerminal(VOID, SpecialValue::POS_INF));
+        }
+        child[0].setRule(RULE_X); 
+        child[1].setRule(RULE_X);
+        return forest->reduceEdge(lvl, label, lvl, child);
+    }
+    child[0] = buildEvSetEdge(forest, lvl-1, fun, start, start+(1<<(lvl-1))-1);
+    child[1] = buildEvSetEdge(forest, lvl-1, fun, start+(1<<(lvl-1)), end);
+    return forest->reduceEdge(lvl, label, lvl, child);
+}
+
+Edge buildEvRelEdge(Forest* forest,
+                    uint16_t lvl,
+                    std::vector<Value>& fun,
+                    int start, int end)
+{
+    Edge ans;
+    // TBD
+    return ans;
+}
+
 bool testOperation(uint16_t num, PredefForest bdd, BinaryOperationType opt)
 {
     // forest setting
@@ -121,6 +164,10 @@ bool testOperation(uint16_t num, PredefForest bdd, BinaryOperationType opt)
             if (fun1[i] && fun2[i]) countOneRes++;
         } else if (opt == BinaryOperationType::BOP_UNION) {
             if (fun1[i] || fun2[i]) countOneRes++;
+        } else if (opt == BinaryOperationType::BOP_MINIMUM) {
+            //
+        } else if (opt == BinaryOperationType::BOP_MAXIMUM) {
+            //
         }
     }
     std::string operation = "AND";
@@ -243,6 +290,179 @@ bool testOperation(uint16_t num, PredefForest bdd, BinaryOperationType opt)
         dot3.buildGraph(res);
         dot3.runDot("pdf");
     }
+    delete forest;
+    return isPass;
+}
+
+bool testOperationValue(uint16_t num, PredefForest bdd, BinaryOperationType opt)
+{
+    // forest setting
+    ForestSetting setting(bdd, num);
+    setting.setValType(INT);
+    setting.setMaxRange(6);
+    Forest* forest = new Forest(setting);
+    bool isRel = setting.isRelation();
+    // functions
+    Func f1(forest), f2(forest), res(forest);
+    // truth table
+    long long size = (isRel) ? 0x01LL<<(2*num) : 0x01LL<<(num);
+    std::vector<Value> fun1(size);
+    std::vector<Value> fun2(size);
+    // countings
+    long long countInf1 = 0, countInf2 = 0, countInfRes = 0;
+    // build functions and countings
+    int randomNum = 0;
+    for (long long i=0; i<size; i++) {
+        randomNum = random06(gen);
+        if (randomNum == 6) {
+            fun1[i] = Value(SpecialValue::POS_INF);
+            countInf1++;
+            // countInfRes++;
+        } else {
+            fun1[i] = randomNum;
+        }
+        randomNum = random06(gen);
+        if (randomNum == 6) {
+            fun2[i] = Value(SpecialValue::POS_INF);
+            countInf2++;
+            // countInfRes++;
+        } else {
+            fun2[i] = randomNum;
+        }
+        if (opt == BinaryOperationType::BOP_MINIMUM) {
+            if ((fun1[i].getType() != VOID) && (fun2[i].getType() != VOID)) {
+                countInfRes++;
+            }
+        } else if (opt == BinaryOperationType::BOP_MAXIMUM) {
+            //
+        }
+    }
+    std::string operation = "MINIMUM";
+    if (opt == BinaryOperationType::BOP_MAXIMUM) {
+        operation = "MAXIMUM";
+    }
+    std::cout << "Infs counting:" << std::endl;
+    std::cout << "Func 1: " << countInf1 << ";" << std::endl;
+    std::cout << "Func 2: " << countInf2 << ";" << std::endl;
+    std::cout << "res (" << operation << ") should be: " << countInfRes << ";" << std::endl;
+
+    // build edges
+    Edge e1, e2;
+    if (isRel) {
+        e1 = buildEvRelEdge(forest, num, fun1, 0, size-1);
+        e2 = buildEvRelEdge(forest, num, fun2, 0, size-1);
+    } else {
+        e1 = buildEvSetEdge(forest, num, fun1, 0, size-1);
+        e2 = buildEvSetEdge(forest, num, fun2, 0, size-1);
+    }
+    
+    std::cout << "Func 1: " << std::endl;
+    e1.print(std::cout);
+    std::cout << std::endl;
+    std::cout << "Func 2: " << std::endl;
+    e2.print(std::cout);
+    std::cout << std::endl;
+
+    // call apply, and check results
+    f1.setEdge(e1);
+    f2.setEdge(e2);
+    if (opt == BinaryOperationType::BOP_MINIMUM) {
+        apply(MINIMUM, f1, f2, res);
+    } else if (opt == BinaryOperationType::BOP_MAXIMUM) {
+        // apply(MAXIMUM, f1, f2, res);
+    } else {
+        std::cout << "Not implemented!" << std::endl;
+    }
+    std::cout << "result (" << operation << "): " << std::endl;
+    res.getEdge().print(std::cout);
+    std::cout << std::endl;
+
+    // evaluation
+    bool isPass = 1;
+    std::vector<bool> assignment(num+1, 0);
+    std::vector<bool> assignmentTo(num+1, 0);
+    for (long long n=0; n<size; n++) {
+        if (isRel) {
+            for (uint16_t l=1; l<=num; l++) {
+                assignment[l] = n & (0x01 << (2*l-1));
+                assignmentTo[l] = n & (0x01 << (2*l-2));
+            }
+        } else {
+            for (size_t k=1; k<=assignment.size()-1; k++) {
+                assignment[k] = n & (1<<(k-1));
+            }
+        }
+        Value val1, val2, valRes, correct;
+        val1 = (isRel) ? f1.evaluate(assignment, assignmentTo) : f1.evaluate(assignment);
+        val2 = (isRel) ? f2.evaluate(assignment, assignmentTo) : f2.evaluate(assignment);
+        valRes = (isRel) ? res.evaluate(assignment, assignmentTo) : res.evaluate(assignment);
+        if (fun1[n] != val1) {
+            std::cout << "Func 1 evaluation failed!" << std::endl;
+            isPass = 0;
+        }
+        if (fun2[n] != val2) {
+            std::cout << "Func 2 evaluation failed!" << std::endl;
+            isPass = 0;
+        }
+        if ((valRes != val1) && (valRes != val2)) {
+            // wrong result for MINIMUM or MAXIMUM
+            std::cout << "result (" << operation << ") evaluation failed!" << std::endl;
+            isPass = 0;
+        }
+        if (opt == BinaryOperationType::BOP_MINIMUM) {
+            correct = ((val1 == val2) || (val1 < val2)) ? val1 : val2;
+            isPass = valRes == correct;
+        } else if (opt == BinaryOperationType::BOP_MAXIMUM) {
+            isPass = (val1 == val2) || (valRes == val1) ? val1 > val2 : val2 > val1;
+        } else {
+            // TBD
+        }
+        if (!isPass && (num <=6)) {
+            std::cout << "Assignment: ";
+            for (uint16_t k=1; k<=num; k++){
+                std::cout << assignment[k] << " ";
+            }
+            std::cout << std::endl;
+            std::cout << "Correct: ";
+            correct.print(std::cout);
+            std::cout << "; result: ";
+            valRes.print(std::cout);
+            std::cout << std::endl;
+            break;
+        }
+    }
+    if (!isPass) {
+        if (num < 6) {
+            std::cout<<"Full function\n";
+            std::cout << "\tfun1: \t\t";
+            for (long long k=0; k<size; k++){
+                fun1[k].print(std::cout);
+                std::cout << " ";
+            }
+            std::cout << std::endl;
+            std::cout << "\tfun2: \t\t";
+            for (long long k=0; k<size; k++){
+                fun2[k].print(std::cout);
+                std::cout << " ";
+            }
+            std::cout << std::endl;
+            // std::cout << "\tres should be: \t";
+            // for (long long k=0; k<size; k++){
+            //     std::cout << (fun1[k] && fun2[k]) << " ";
+            // }
+        }
+        std::cout << std::endl;
+        DotMaker dot1(forest, "func1");
+        dot1.buildGraph(f1);
+        dot1.runDot("pdf");
+        DotMaker dot2(forest, "func2");
+        dot2.buildGraph(f2);
+        dot2.runDot("pdf");
+        DotMaker dot3(forest, "res");
+        dot3.buildGraph(res);
+        dot3.runDot("pdf");
+    }
+    delete forest;
     return isPass;
 }
 
@@ -252,14 +472,20 @@ int main(int argc, char** argv){
       printf("\tThis will randomly generate two boolean functions to test logic operation\n");
       exit(0);
     }
+    bool isValued = 0;
     int TESTS = 1000;
     uint16_t numVals = 10;
     PredefForest bdd = PredefForest::REXBDD;
-    BinaryOperationType opt = BinaryOperationType::BOP_UNION;
-    if ((argc == 3) || (argc == 4)) {
+    BinaryOperationType opt = BinaryOperationType::BOP_MINIMUM;
+    // processing arguments TBD
+    if ((argc == 3) || (argc == 4) || (argc == 5)) {
         bdd = (PredefForest)atoi(argv[1]);
         numVals = atoi(argv[2]);
         if (argc == 4) TESTS = atoi(argv[3]);
+        if ((argc == 5) && (strcmp("-v", argv[4]) == 0)) {
+            TESTS = atoi(argv[3]);
+            isValued = 1;
+        }
     }
     
     // forest setting
@@ -268,10 +494,18 @@ int main(int argc, char** argv){
 
     bool isPass = 0;
     // Randomly generate assignments and build two BDDs
-    for (int test=0; test<TESTS; test++) {
-        isPass = testOperation(numVals, bdd, opt);
-        if (!isPass) break;
+    if (!isValued) {
+        for (int test=0; test<TESTS; test++) {
+            isPass = testOperation(numVals, bdd, opt);
+            if (!isPass) break;
+        }
+    } else {
+        for (int test=0; test<TESTS; test++) {
+            isPass = testOperationValue(numVals, bdd, opt);
+            if (!isPass) break;
+        }
     }
+    
 
     if (!isPass) {
         std::cout << "Test Failed!" << std::endl;
