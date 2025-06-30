@@ -373,6 +373,14 @@ BinaryOperation::BinaryOperation(BinaryOperationType type, Forest* source1, Fore
     source2Type = OpndType::FOREST;
     resForest = res;
 }
+BinaryOperation::BinaryOperation(BinaryOperationType type, Forest* source1, OpndType source2, Forest* res)
+:opType(type)
+{
+    source1Forest = source1;
+    source2Forest = source1;
+    source2Type = source2;
+    resForest = res;
+}
 BinaryOperation::~BinaryOperation()
 {
     cache.~ComputeTable();
@@ -409,7 +417,8 @@ void BinaryOperation::compute(const Func& source1, const Func& source2, Func& re
     // compute the result
     if ((opType == BinaryOperationType::BOP_UNION)
         || (opType == BinaryOperationType::BOP_INTERSECTION)
-        || (opType == BinaryOperationType::BOP_MINIMUM)) { // more operations
+        || (opType == BinaryOperationType::BOP_MINIMUM)
+        || (opType == BinaryOperationType::BOP_MAXIMUM)) { // more operations
         ans = computeElmtWise(numVars, source1Equ.getEdge(), source2Equ.getEdge());
     } else if (opType == BinaryOperationType::BOP_PREIMAGE) {
         ans = computeImage(numVars, source1.getEdge(), source2.getEdge(), 1);
@@ -431,10 +440,10 @@ void BinaryOperation::compute(const Func& source1, const Func& source2, Func& re
 
 void BinaryOperation::compute(const Func& source1, const ExplictFunc& source2, Func& res)
 {
-    if (!checkForestCompatibility()) {
-        throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
-    }
-    // TBD
+    // convert ExplictFunc to Func in source2Forest
+    Func source2Func = source2.buildFunc(source2Forest);
+    // call compute
+    compute(source1, source2Func, res);
 }
 
 bool BinaryOperation::checkForestCompatibility() const
@@ -456,25 +465,58 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
     // the final answer
     Edge ans;
     Edge e1, e2;
-    Value min;
-    // normalize edges
+    // copy edge info
     e1 = resForest->normalizeEdge(lvl, source1);
     e2 = resForest->normalizeEdge(lvl, source2);
-    // Base case 1: two edges are the same
+    /* -------------------------------------------------------------------------------------------------
+    * Base case 1.1: two edges are the same, for all operations
+    * Base case 1.2: same edge handle but different edge value
+    * ------------------------------------------------------------------------------------------------*/
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "checking base case 1\n";
+    std::cout << "checking base case 1.1\n";
 #endif
+    // the same edge handle and edge value
     if (e1 == e2) {
         if ((opType == BinaryOperationType::BOP_UNION)
-            || (opType == BinaryOperationType::BOP_INTERSECTION)) { // more operations?
+            || (opType == BinaryOperationType::BOP_INTERSECTION)
+            || (opType == BinaryOperationType::BOP_MINIMUM)
+            || (opType == BinaryOperationType::BOP_MAXIMUM)) { // more operations?
             return e1;
         }
+    // the same edge handle but different edge value, only for EV+
+    } else if ((e1.getEdgeHandle() == e2.getEdgeHandle()) && (e1.getValue() != e2.getValue())) {
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking base case 1.2\n";
+#endif
+        if ((resForest->getSetting().getEncodeMechanism() != EDGE_PLUSMOD) || (isTerminal(e1.getEdgeHandle()))) {
+            if (e1.getValue() > e2.getValue()) {
+                if (opType == BinaryOperationType::BOP_MINIMUM) return e2;
+                else if (opType == BinaryOperationType::BOP_MAXIMUM) return e1;
+            } else {
+                if (opType == BinaryOperationType::BOP_MINIMUM) return e1;
+                else if (opType == BinaryOperationType::BOP_MAXIMUM) return e2;
+            }
+        }
     }
-    // Base case 2: two edges are complemented
+    /* -------------------------------------------------------------------------------------------------
+    * Base case 2: one is INF terminal
+    * ------------------------------------------------------------------------------------------------*/
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "checking base case 2\n";
 #endif
-    // TODO: add this once complement EV is added
+    if (e1.isConstantNegInf() || e2.isConstantPosInf()) {
+        if (opType == BinaryOperationType::BOP_MINIMUM) return e1;
+        else if (opType == BinaryOperationType::BOP_MAXIMUM) return e2;
+    } else if (e2.isConstantNegInf() || e1.isConstantPosInf()) {
+        if (opType == BinaryOperationType::BOP_MINIMUM) return e2;
+        else if (opType == BinaryOperationType::BOP_MAXIMUM) return e1;
+    }
+    /* -------------------------------------------------------------------------------------------------
+    * Base case 3: two edges are complemented
+    * ------------------------------------------------------------------------------------------------*/
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking base case 3\n";
+#endif
     if (e1.isComplementTo(e2)) {
         if (opType == BinaryOperationType::BOP_UNION) {
             EdgeHandle constant = makeTerminal(INT, 1);
@@ -498,17 +540,11 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
             // more operations, TBD
         }
     }
-    // reordering
-    uint16_t m1, m2;
-    m1 = e1.getNodeLevel();
-    m2 = e2.getNodeLevel();
-    if (m1<m2) {
-        SWAP(e1, e2);
-        SWAP(m1, m2);
-    }
-    // Base case 3: one edge is constant ONE edge
+    /* -------------------------------------------------------------------------------------------------
+    * Base case 4: one edge is constant ONE edge
+    * ------------------------------------------------------------------------------------------------*/
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "checking base case 3\n";
+    std::cout << "checking base case 4\n";
 #endif
     if (e1.isConstantOne() || e2.isConstantOne()) {
         if (opType == BinaryOperationType::BOP_UNION) {
@@ -521,18 +557,20 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
             ans = resForest->normalizeEdge(lvl, ans);
             return ans;
         } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-            return resForest->normalizeEdge(lvl, (e1.isConstantOne()) ? e2 : e1);
+            return (e1.isConstantOne()) ? e2 : e1;
         } else {
             // more operations, TBD
         }
     }
-    // Base case 4: one edge is constant ZERO edge
+    /* -------------------------------------------------------------------------------------------------
+    * Base case 5: one edge is constant ZERO edge
+    * ------------------------------------------------------------------------------------------------*/
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "checking base case 4\n";
+    std::cout << "checking base case 5\n";
 #endif
     if (e1.isConstantZero() || e2.isConstantZero()) {
         if (opType == BinaryOperationType::BOP_UNION) {
-            return resForest->normalizeEdge(lvl, (e1.isConstantZero()) ? e2 : e1);
+            return (e1.isConstantZero()) ? e2 : e1;
         } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
             EdgeHandle constant = makeTerminal(INT, 0);
             if (resForest->getSetting().getValType() == FLOAT) {
@@ -546,19 +584,37 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
             // more operations, TBD
         }
     }
-    if (opType == BinaryOperationType::BOP_MINIMUM) {
-        // Case e1 is infinity
-        if (e1.isConstantPosInf()) return e2;
-        // Case e2 is infinity
-        if (e2.isConstantPosInf()) return e1;
-        min = e1.getValue() > e2.getValue() ? e2.getValue() : e1.getValue();
-        // Case the edges are pointing to same node
-        if (e1.getNodeHandle() == e2.getNodeHandle()) {
-            e1.setValue(min);
-            return e1;
+    /* -------------------------------------------------------------------------------------------------
+    * Base case 6: both are terminal edges, for terminal encoding
+    * ------------------------------------------------------------------------------------------------*/
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking base case 6\n";
+#endif
+    if (isTerminal(e1.getEdgeHandle()) && isTerminal(e2.getEdgeHandle())
+        && !isTerminalSpecial(e1.getEdgeHandle()) && !isTerminalSpecial(e2.getEdgeHandle())) {
+        Value tv1 = getTerminalValue(e1.getEdgeHandle());
+        Value tv2 = getTerminalValue(e2.getEdgeHandle());
+        if (tv1 > tv2) {
+            if (opType == BinaryOperationType::BOP_MINIMUM) return e2;
+            else if (opType == BinaryOperationType::BOP_MAXIMUM) return e1;
+        } else {
+            if (opType == BinaryOperationType::BOP_MINIMUM) return e1;
+            else if (opType == BinaryOperationType::BOP_MAXIMUM) return e2;
         }
     }
-    // check cache here
+    /* -------------------------------------------------------------------------------------------------
+    * Reordering
+    * ------------------------------------------------------------------------------------------------*/
+    uint16_t m1, m2;
+    m1 = e1.getNodeLevel();
+    m2 = e2.getNodeLevel();
+    if (m1<m2) {
+        SWAP(e1, e2);
+        SWAP(m1, m2);
+    }
+    /* -------------------------------------------------------------------------------------------------
+    * Check cache
+    * ------------------------------------------------------------------------------------------------*/
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "checking cache\n";
 #endif
@@ -600,55 +656,14 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
             return ans;
         }
     }
-
+    /* -------------------------------------------------------------------------------------------------
+    * Compute 
+    * ------------------------------------------------------------------------------------------------*/
     // Here means we can not find the result in cache, computation is needed
     // Case that edge1 is a short edge
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "check if recursive computing\n";
 #endif
-    // TODO: discuss this:
-    // For EV we don't have to worry about only X pattern
-    // We need conditionals anyway and it bloats the existing code
-    // For now I am pulling them away
-    if (opType == BinaryOperationType::BOP_MINIMUM) {
-        Edge x1, x2, y1, y2;
-        std::vector<Edge> child1, child2, tmp;
-        child1 = std::vector<Edge>(2);
-        child2 = std::vector<Edge>(2);
-        tmp = std::vector<Edge>(2);
-
-        if (m1 == lvl) {
-            for (char i=0; i<(char)child1.size(); i++) {
-                child1[i] = resForest->cofact(lvl, e1, i);
-                child2[i] = resForest->cofact(lvl, e2, i);
-                Value val2 = m1 == m2 ? e2.getValue() - min + child2[i].getValue() : e2.getValue() - min;
-                child1[i].setValue(e1.getValue() - min + child1[i].getValue());
-                child2[i].setValue(val2);
-                tmp[i] = computeElmtWise(lvl-1, child1[i], child2[i]);
-            }
-            EdgeLabel root = 0;
-            packRule(root, RULE_X);
-            ans = resForest->reduceEdge(lvl, root, lvl, tmp);
-            ans.setValue(min);
-        } else if (m2 == lvl) {
-            for (char i=0; i<(char)child1.size(); i++) {
-                child1[i] = resForest->cofact(lvl, e1, i);
-                child2[i] = resForest->cofact(lvl, e2, i);
-                child1[i].setValue(e1.getValue() - min);
-                child2[i].setValue(e2.getValue() - min + child2[i].getValue());
-                tmp[i] = computeElmtWise(lvl-1, child1[i], child2[i]);
-            }
-            EdgeLabel root = 0;
-            packRule(root, RULE_X);
-            ans = resForest->reduceEdge(lvl, root, lvl, tmp);
-            ans.setValue(min);
-        } else {
-            ans = computeElmtWise(lvl-1, e1, e2);
-        }
-        cache.add(lvl, e1, e2, ans);
-        return ans;
-    }
-    
     if (m1 == lvl) {
         std::vector<Edge> child1, child2, tmp;
         if (resForest->getSetting().isRelation()) {
@@ -672,7 +687,9 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         cache.add(lvl, e1, e2, ans);
         return ans;
     }
-
+    /* -------------------------------------------------------------------------------------------------
+    * Compute
+    * ------------------------------------------------------------------------------------------------*/
     // Here we have lvl>m1>=m2
     if (!resForest->getSetting().isRelation()) {
         // For BDDs, it's time to decide pattern types and use pattern operations
@@ -680,8 +697,8 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
     std::cout << "patterns computing\n";
 #endif
         char t1, t2;
-        t1 = rulePattern(e1.getRule()); // U
-        t2 = rulePattern(e2.getRule()); // U
+        t1 = rulePattern(e1.getRule());
+        t2 = rulePattern(e2.getRule());
         if (t1 == 'L') {
             if (t2 == 'L' || t2 == 'U') {
                 ans = operateLL(lvl, e1, e2);
@@ -696,7 +713,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
             }
         } else {
             if (t2 == 'L' || t2 == 'U') {
-                ans = operateLL(lvl, e1, e2); // always here
+                ans = operateLL(lvl, e1, e2);
             } else {
                 ans = operateHH(lvl, e1, e2);
             }
@@ -1104,14 +1121,8 @@ Edge BinaryOperation::operateLL(const uint16_t lvl, const Edge& e1, const Edge& 
     y2 = (m1==m2) ? e2.part(1) : resForest->cofact(m1+1, e2, 1);
 
     Edge x, y;
-    if (opType == BinaryOperationType::BOP_UNION) {
-        x = computeUnion(m1, x1, x2);
-        y = computeUnion(m1, y1, y2);
-    } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-        x = computeIntersection(m1, x1, x2);
-        y = computeIntersection(m1, y1, y2);
-    }
-    // more operations TBD
+    x = computeElmtWise(m1, x1, x2);
+    y = computeElmtWise(m1, y1, y2);
     Edge ans = resForest->buildHalf(lvl, m1+1, x, y, 1);
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "build Low with x: ";
@@ -1124,7 +1135,6 @@ Edge BinaryOperation::operateLL(const uint16_t lvl, const Edge& e1, const Edge& 
     std::cout << std::endl;
 #endif
     return ans;
-
 }
 
 Edge BinaryOperation::operateHH(const uint16_t lvl, const Edge& e1, const Edge& e2)
@@ -1147,14 +1157,8 @@ Edge BinaryOperation::operateHH(const uint16_t lvl, const Edge& e1, const Edge& 
     y2 = e2.part(1);
 
     Edge x, y;
-    if (opType == BinaryOperationType::BOP_UNION) {
-        x = computeUnion(m1, x1, x2);
-        y = computeUnion(m1, y1, y2);
-    } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-        x = computeIntersection(m1, x1, x2);
-        y = computeIntersection(m1, y1, y2);
-    }
-    // more operations TBD
+    x = computeElmtWise(m1, x1, x2);
+    y = computeElmtWise(m1, y1, y2);
     Edge ans = resForest->buildHalf(lvl, m1+1, x, y, 0);
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "build High with x: ";
@@ -1200,32 +1204,17 @@ Edge BinaryOperation::operateLH(const uint16_t lvl, const Edge& e1, const Edge& 
         m = m2;
     }
     Edge x, y, z;
-    if (opType == BinaryOperationType::BOP_UNION) {
-        x = computeUnion(m, x1, x2);
-        z = computeUnion(m, y1, y2);
-        if (lvl - m == 1) {
-            EdgeLabel root = 0;
-            packRule(root, RULE_X);
-            std::vector<Edge> child(2);
-            child[0] = x;
-            child[1] = z;
-            return resForest->reduceEdge(lvl, root, lvl, child);
-        }
-        y = computeUnion(m, x1, y2);
-    } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-        x = computeIntersection(m, x1, x2);
-        z = computeIntersection(m, y1, y2);
-        if (lvl - m == 1) {
-            EdgeLabel root = 0;
-            packRule(root, RULE_X);
-            std::vector<Edge> child(2);
-            child[0] = x;
-            child[1] = z;
-            return resForest->reduceEdge(lvl, root, lvl, child);
-        }
-        y = computeIntersection(m, x1, y2);
+    x = computeElmtWise(m, x1, x2);
+    z = computeElmtWise(m, y1, y2);
+    if (lvl - m == 1) {
+        EdgeLabel root = 0;
+        packRule(root, RULE_X);
+        std::vector<Edge> child(2);
+        child[0] = x;
+        child[1] = z;
+        return resForest->reduceEdge(lvl, root, lvl, child);
     }
-    // more operations TBD
+    y = computeElmtWise(m, x1, y2);
     Edge ans = resForest->buildUmb(lvl, m+1, x, y, z);
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "build Umbrella with x: ";

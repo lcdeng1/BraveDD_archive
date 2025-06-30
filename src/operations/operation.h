@@ -59,8 +59,7 @@ namespace BRAVE_DD {
         BOP_POSTIMAGE,
         BOP_VM,
         BOP_MV,
-        BOP_MM,
-        BOP_UNION_ASSIGNMENTS  // New operation type for unionAssignments
+        BOP_MM
     };
     class BinaryOperation;
     class BinaryList;
@@ -214,6 +213,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
     public:
     /*-------------------------------------------------------------*/
     BinaryOperation(BinaryOperationType type, Forest* source1, Forest* source2, Forest* res);
+    BinaryOperation(BinaryOperationType type, Forest* source1, OpndType source2, Forest* res);
 
     /* Main part: computation */
     void compute(const Func& source1, const Func& source2, Func& res);
