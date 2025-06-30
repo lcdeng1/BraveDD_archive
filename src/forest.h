@@ -323,6 +323,8 @@ class BRAVE_DD::Forest {
             Edge ans = getChildEdge(lvl, edge.getNodeHandle(), childIndex);
             if (edge.getComp()) ans.complement();
             if ((setting.getSwapType() == ALL) && edge.getSwap(0)) ans.swap();
+            ans.value = ans.value + edge.value; // push the value down
+            if (setting.getEncodeMechanism() == EDGE_PLUSMOD) ans.value = ans.value % setting.getMaxRange();
             return ans;
         }
         Edge ans;

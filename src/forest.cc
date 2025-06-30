@@ -233,7 +233,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
             if (!isTerminalSpecial(child1) || isTerminalSpecial(SpecialValue::OMEGA, child1)) { 
                 ans.setValue(child[1].getValue());
             }
-    // 1 edge is terminal INF
+        // 1 edge is terminal INF
         } else if (isTerminalSpecial(SpecialValue::POS_INF, child1)
                 || isTerminalSpecial(SpecialValue::NEG_INF, child1)
                 || isTerminalSpecial(SpecialValue::UNDEF, child1)) {
