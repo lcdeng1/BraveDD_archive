@@ -351,7 +351,7 @@ int main(int argc, char** argv)
     } else {
         mod = 3;
         num = 4;
-        bdd = PredefForest::EVMODFBDD;
+        bdd = PredefForest::QBMXD;
     }
 
     std::cout<< "ReduceEdge test." << std::endl;
@@ -362,7 +362,7 @@ int main(int argc, char** argv)
     delete forest;
 
     bool pass = 0;
-    if (bdd < PredefForest::FBMXD) {
+    if (bdd < PredefForest::QBMXD) {
         pass = buildSetForest(num, bdd);
     } else if (bdd < PredefForest::EVQBDD) {
         for (int i=0; i<TESTS; i++) {

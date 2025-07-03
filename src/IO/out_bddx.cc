@@ -53,22 +53,24 @@ void BddxMaker::buildBddx(const std::vector<Func>& func)
     outfile << "\tTYPE " << name << "\n";
     // the forests are always reduced
     outfile << "\tREDUCED true\n"; 
-    outfile << "\tLVLS " << numVars << " x " << dim << "\n";
+    outfile << "\tLVLS " << numVars << " x " << static_cast<int>(dim) << "\n";
     outfile << "\tRANGE " << range << "\n";
-    outfile << "\tNNUM " << range << "\n";
-    outfile << "\tRNUM " << range << "\n";
+    // TODO
+    outfile << "\tNNUM " << parent->getNodeManUsed() << "\n";
+    // TODO
+    outfile << "\tRNUM " << roots.size() << "\n";
     outfile << "}\n";
 
     outfile << "NODES {\n";
     
     // Loop through and find all the nodes
     std::queue<Edge> frontier;
-    std::unordered_map<NodeHandle, bool> visited;
-    std::vector<std::vector<Edge>> edgeByLevel(numVars);
+    std::vector<std::unordered_map<NodeHandle, bool>> visited(numVars+1);
+    std::vector<std::vector<Edge>> edgeByLevel(numVars+1);
     for (Edge root:roots) {
-        if (!visited[root.getNodeHandle()]) {
+        if (!visited[root.getNodeLevel()][root.getNodeHandle()]) {
             edgeByLevel[root.getNodeLevel()].push_back(root);
-            visited[root.getNodeHandle()] = true;
+            visited[root.getNodeLevel()][root.getNodeHandle()] = true;
             if (root.getNodeLevel() != 0) {
                 frontier.push(root);
             }
@@ -77,11 +79,14 @@ void BddxMaker::buildBddx(const std::vector<Func>& func)
     while (frontier.size()) {
         Edge curr = frontier.front();
         frontier.pop();
-        if (!visited[curr.getNodeHandle()]) {
-            edgeByLevel[curr.getNodeLevel()].push_back(curr);
-            visited[curr.getNodeHandle()] = true;
-            if (curr.getNodeLevel() != 0) {
-                frontier.push(curr);
+        for (char j=0;j<numChild;j++) {
+            Edge child = parent->getChildEdge(curr.getNodeLevel(), curr.getNodeHandle(), j);
+            if (!visited[child.getNodeLevel()][child.getNodeHandle()]) {
+                edgeByLevel[child.getNodeLevel()].push_back(child);
+                visited[child.getNodeLevel()][child.getNodeHandle()] = true;
+                if (child.getNodeLevel() != 0) {
+                    frontier.push(child);
+                }
             }
         }
     }
@@ -90,33 +95,34 @@ void BddxMaker::buildBddx(const std::vector<Func>& func)
             outfile << "\tN" << curr.getNodeHandle() << " L " << i << ": ";
             for (char j=0;j<numChild;j++) {
                 Edge child = parent->getChildEdge(curr.getNodeLevel(), curr.getNodeHandle(), j);
-                outfile << j <<":";
+                outfile << static_cast<int>(j) <<":";
 
                 std::string label = "";
                 label += "<";
                 if (numRules > 0) {
-                    ReductionRule rule = curr.getRule();
+                    ReductionRule rule = child.getRule();
                     label += ((rule == RULE_X) && !parent->getSetting().hasReductionRule(rule)) ? "N" : rule2String(rule);
                 }
                 if (cs != NO_COMP) {
-                    label += (curr.getComp()) ? ", c" : ", _";
+                    label += (child.getComp()) ? ", c" : ", _";
                 }
                 if (ss != NO_SWAP) {
                     if (ss == ONE) {
-                        label += (curr.getSwap(0)) ? ", s_o" : ", _";
+                        label += (child.getSwap(0)) ? ", s_o" : ", _";
                     } else if (ss == ALL) {
-                        label += (curr.getSwap(0)) ? ", s_a" : ", _";
+                        label += (child.getSwap(0)) ? ", s_a" : ", _";
                     } else if (ss == FROM || ss == FROM_TO) {
-                        label += (curr.getSwap(0)) ? ", s_f" : ", _";
+                        label += (child.getSwap(0)) ? ", s_f" : ", _";
                     } else if (ss == TO) {
-                        label += (curr.getSwap(1)) ? ", s_t" : ", _";
+                        label += (child.getSwap(1)) ? ", s_t" : ", _";
                     }
                     if (ss == FROM_TO) {
-                        label += (curr.getSwap(1)) ? ", s_t" : ", _";
+                        label += (child.getSwap(1)) ? ", s_t" : ", _";
                     }
                 }
-                if (curr.getNodeLevel() == 0) label += "T" + unpackTermiValue(curr.getEdgeHandle());
-                else label += std::to_string(curr.getNodeHandle());
+                label += ",";
+                if (child.getNodeLevel() == 0) label += "T" + unpackTermiValue(child.getEdgeHandle());
+                else label += std::to_string(child.getNodeHandle());
                 label += ">";
 
                 outfile << label;
@@ -152,6 +158,7 @@ void BddxMaker::buildBddx(const std::vector<Func>& func)
                 label += (root.getSwap(1)) ? ", s_t" : ", _";
             }
         }
+        label += ",";
         if (root.getNodeLevel() == 0) label += "T" + unpackTermiValue(root.getEdgeHandle());
         else label += std::to_string(root.getNodeHandle());
         label += ">";
@@ -159,5 +166,3 @@ void BddxMaker::buildBddx(const std::vector<Func>& func)
     }
     outfile << "}\n";
 }
-
-

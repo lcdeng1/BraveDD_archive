@@ -17,6 +17,7 @@
 #include "operators.h"
 #include "operations/apply.h"
 #include "IO/out_dot.h"
+#include "IO/out_bddx.h"
 #include "IO/parser.h"
 
 namespace BRAVE_DD {

@@ -24,7 +24,6 @@ class BRAVE_DD::BddxMaker {
 
     void buildBddx(const Func& func);
     void buildBddx(const std::vector<Func>& func);
-    void runDot(const std::string ext);
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
