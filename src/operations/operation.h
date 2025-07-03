@@ -119,6 +119,7 @@ class BRAVE_DD::UnaryOperation : public Operation {
     void compute(const Func& source, Func& target);
     void compute(const Func& source, long& target);
     void compute(const Func& source, double& target);
+    void compute(const Func& source, Func& target, const Value val);
     /*-------------------------------------------------------------*/
     protected:
     /*-------------------------------------------------------------*/
@@ -132,6 +133,14 @@ class BRAVE_DD::UnaryOperation : public Operation {
     Edge computeCOPY(const uint16_t lvl, const Edge& source);
     Edge computeCOMPLEMENT(const uint16_t lvl, const Edge& source);
     long computeCARD(const uint16_t lvl, const Edge& source);
+    // concretizing
+    Edge computeRESTRICT(const uint16_t lvl, const Edge& source, const Value val);
+    Edge computeOSM(const uint16_t lvl, const Edge& source, const Value val);
+    Edge computeTSM(const uint16_t lvl, const Edge& source, const Value val);
+    // used for concretizing
+    unsigned char compareOSM(const Edge& e1, const Edge& e2);
+    bool hasCommonTSM(const Edge& e1, const Edge& e2);
+    Edge commonTSM(const uint16_t lvl, const Edge& e1, const Edge& e2);
     // list
     friend class UnaryList;
     UnaryOperation*     next;
@@ -232,6 +241,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
     Edge computeUnion(const uint16_t lvl, const Edge& source1, const Edge& source2);
     Edge computeIntersection(const uint16_t lvl, const Edge& source1, const Edge& source2);
     Edge computeImage(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre = 0);
+    Edge computePlus(const uint16_t lvl, const Edge& source1, const Edge& source2);
     // elementwise related
     Edge operateLL(const uint16_t lvl, const Edge& e1, const Edge& e2);
     Edge operateHH(const uint16_t lvl, const Edge& e1, const Edge& e2);
@@ -361,7 +371,9 @@ class BRAVE_DD::SaturationOperation : public Operation {
     /// Helper Methods ==============================================
     bool checkForestCompatibility() const;
     Edge computeSaturation(const uint16_t lvl, const Edge& source1, const size_t begin);
+    Edge computeSaturationDistance(const uint16_t lvl, const Edge& source1, const size_t begin);
     Edge computeImageSat(const uint16_t lvl, const Edge& source1, const Edge& trans, const size_t begin);
+    Edge computeImageSatDistance(const uint16_t lvl, const Edge& source1, const Edge& trans, const size_t begin);
     // sort relation functions
     void sortRelations();
     // locate the first event that its level lower than k, return -1 if not found
