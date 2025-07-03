@@ -37,6 +37,28 @@ UnaryOperation* BRAVE_DD::COMPLEMENT(Forest* arg, Forest* res)
     return UOPs.add(new UnaryOperation(UnaryOperationType::UOP_COMPLEMENT, arg, res));
 }
 
+UnaryOperation* BRAVE_DD::CONCRETIZE_RST(Forest* arg, Forest* res)
+{
+    if (!arg) return nullptr;
+    UnaryOperation* uop = UOPs.find(UnaryOperationType::UOP_CONCRETIZE_RST, arg, res);
+    if (uop) return uop;
+    return UOPs.add(new UnaryOperation(UnaryOperationType::UOP_CONCRETIZE_RST, arg, res));
+}
+UnaryOperation* BRAVE_DD::CONCRETIZE_OSM(Forest* arg, Forest* res)
+{
+    if (!arg) return nullptr;
+    UnaryOperation* uop = UOPs.find(UnaryOperationType::UOP_CONCRETIZE_OSM, arg, res);
+    if (uop) return uop;
+    return UOPs.add(new UnaryOperation(UnaryOperationType::UOP_CONCRETIZE_OSM, arg, res));
+}
+UnaryOperation* BRAVE_DD::CONCRETIZE_TSM(Forest* arg, Forest* res)
+{
+    if (!arg) return nullptr;
+    UnaryOperation* uop = UOPs.find(UnaryOperationType::UOP_CONCRETIZE_TSM, arg, res);
+    if (uop) return uop;
+    return UOPs.add(new UnaryOperation(UnaryOperationType::UOP_CONCRETIZE_TSM, arg, res));
+}
+
 
 // ... TBD
 
@@ -78,6 +100,15 @@ BinaryOperation* BRAVE_DD::MINIMUM(Forest* arg1, OpndType arg2, Forest* res)
     BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_MINIMUM, arg1, arg2, res);
     if (bop) return bop;
     bop = new BinaryOperation(BinaryOperationType::BOP_MINIMUM, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::PLUS(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_PLUS, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_PLUS, arg1, arg2, res);
     return BOPs.add(bop);
 }
 

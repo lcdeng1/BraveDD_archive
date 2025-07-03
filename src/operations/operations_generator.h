@@ -20,9 +20,9 @@ namespace BRAVE_DD {
     UnaryOperation* HIGHEST(Forest* arg, OpndType res);
     UnaryOperation* LOWEST(Forest* arg, OpndType res);
     UnaryOperation* COMPLEMENT(Forest* arg, Forest* res);
-    UnaryOperation* CONCRETIZE_RST(Forest* arg1, SpecialValue arg2, Forest* res);
-    UnaryOperation* CONCRETIZE_OSM(Forest* arg1, SpecialValue arg2, Forest* res);
-    UnaryOperation* CONCRETIZE_TSM(Forest* arg1, SpecialValue arg2, Forest* res);
+    UnaryOperation* CONCRETIZE_RST(Forest* arg, Forest* res);
+    UnaryOperation* CONCRETIZE_OSM(Forest* arg, Forest* res);
+    UnaryOperation* CONCRETIZE_TSM(Forest* arg, Forest* res);
     UnaryOperation* EQUANTIFY(Forest* arg, std::vector<uint16_t> val, Forest* res);  // 2-L?
     UnaryOperation* UQUANTIFY(Forest* arg, std::vector<uint16_t> val, Forest* res);
 
@@ -42,8 +42,8 @@ namespace BRAVE_DD {
     BinaryOperation* MINIMUM(Forest* arg1, OpndType arg2, Forest* res);
     BinaryOperation* MAXIMUM(Forest* arg1, Forest* arg2, Forest* res);
     BinaryOperation* MAXIMUM(Forest* arg1, OpndType arg2, Forest* res);
-    BinaryOperation* PLUS(Forest* arg1, OpndType arg2, Forest* res);
-    BinaryOperation* MINUS(Forest* arg1, OpndType arg2, Forest* res);
+    BinaryOperation* PLUS(Forest* arg1, Forest* arg2, Forest* res);
+    BinaryOperation* MINUS(Forest* arg1, Forest* arg2, Forest* res);
     BinaryOperation* MULTIPLY(Forest* arg1, Forest* arg2, Forest* res);
     BinaryOperation* DIVIDE(Forest* arg1, Forest* arg2, Forest* res);
     BinaryOperation* MODULO(Forest* arg1, Forest* arg2, Forest* res);
