@@ -334,12 +334,18 @@ bool testOperationValue(uint16_t num, PredefForest bdd, BinaryOperationType opt)
                 countInfRes++;
             }
         } else if (opt == BinaryOperationType::BOP_MAXIMUM) {
-            //
+            // TBD
+        } else if (opt == BinaryOperationType::BOP_PLUS) {
+            if ((fun1[i] == Value(SpecialValue::POS_INF)) || (fun2[i] == Value(SpecialValue::POS_INF))){
+                countInfRes++;
+            }
         }
     }
     std::string operation = "MINIMUM";
     if (opt == BinaryOperationType::BOP_MAXIMUM) {
         operation = "MAXIMUM";
+    } else if (opt == BinaryOperationType::BOP_PLUS) {
+        operation = "PLUS";
     }
     std::cout << "Infs counting:" << std::endl;
     std::cout << "Func 1: " << countInf1 << ";" << std::endl;
@@ -370,6 +376,8 @@ bool testOperationValue(uint16_t num, PredefForest bdd, BinaryOperationType opt)
         apply(MINIMUM, f1, f2, res);
     } else if (opt == BinaryOperationType::BOP_MAXIMUM) {
         // apply(MAXIMUM, f1, f2, res);
+    } else if (opt == BinaryOperationType::BOP_PLUS) {
+        apply(PLUS, f1, f2, res);
     } else {
         std::cout << "Not implemented!" << std::endl;
     }
@@ -404,16 +412,23 @@ bool testOperationValue(uint16_t num, PredefForest bdd, BinaryOperationType opt)
             std::cout << "Func 2 evaluation failed!" << std::endl;
             isPass = 0;
         }
-        if ((valRes != val1) && (valRes != val2)) {
-            // wrong result for MINIMUM or MAXIMUM
-            std::cout << "result (" << operation << ") evaluation failed!" << std::endl;
-            isPass = 0;
+        if ((opt == BinaryOperationType::BOP_MINIMUM) || (opt == BinaryOperationType::BOP_MAXIMUM)) {
+            if ((valRes != val1) && (valRes != val2)) {
+                // wrong result for MINIMUM or MAXIMUM
+                std::cout << "result (" << operation << ") evaluation failed!" << std::endl;
+                isPass = 0;
+            }
+        } else {
+            // other operations, TBD
         }
+        
         if (opt == BinaryOperationType::BOP_MINIMUM) {
             correct = ((val1 == val2) || (val1 < val2)) ? val1 : val2;
             isPass = valRes == correct;
         } else if (opt == BinaryOperationType::BOP_MAXIMUM) {
             isPass = (val1 == val2) || (valRes == val1) ? val1 > val2 : val2 > val1;
+        }else if (opt == BinaryOperationType::BOP_PLUS) {
+            isPass = (valRes == (val1 + val2));
         } else {
             // TBD
         }
@@ -476,7 +491,7 @@ int main(int argc, char** argv){
     int TESTS = 1000;
     uint16_t numVals = 10;
     PredefForest bdd = PredefForest::REXBDD;
-    BinaryOperationType opt = BinaryOperationType::BOP_MINIMUM;
+    BinaryOperationType opt = BinaryOperationType::BOP_PLUS;
     // processing arguments TBD
     if ((argc == 3) || (argc == 4) || (argc == 5)) {
         bdd = (PredefForest)atoi(argv[1]);
