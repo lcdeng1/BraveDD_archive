@@ -182,6 +182,25 @@ namespace BRAVE_DD {
         return makeTerminal(VOID, value);
     }
 
+    static inline EdgeHandle makeTerminal(const Value value) {
+        if (value.getType() == INT) {
+            int term;
+            value.getValueTo(&term, INT);
+            return makeTerminal(term);
+        } else if (value.getType() == FLOAT) {
+            float term;
+            value.getValueTo(&term, FLOAT);
+            return makeTerminal(term);
+        } else if (value.getType() == VOID) {
+            SpecialValue term;
+            value.getValueTo(&term, VOID);
+            return makeTerminal(term);
+        } else {
+            std::cout << "[BRAVE_DD] ERROR!\t makeTerminal(): Unsupported data type! It can only be INT, FLOAT, or VOID."<< std::endl;
+            exit(0);
+        }
+    }
+
 }; // end of namespace
 
 #endif
