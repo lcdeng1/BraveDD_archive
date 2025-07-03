@@ -15,7 +15,7 @@
       },
       {
         "name": "keyword.control.bddx",
-        "match": "\\b(TYPE|LVLS|RANGE|NNUM|RNUM)\\b"
+        "match": "\\b(TYPE|LVLS|RANGE|NNUM|RNUM|REDUCED)\\b"
       },
       {
         "name": "variable.other.bddx",
