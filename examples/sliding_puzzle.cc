@@ -602,6 +602,7 @@ bool processArgs(int argc, const char** argv)
             // option for time out
             if (strcmp("-t", argv[i])==0) {
                 timeLimit = std::stod(argv[i+1]);
+                newTimeLimit = timeLimit;
                 i++;
                 continue;
             }
