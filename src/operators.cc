@@ -86,8 +86,8 @@ namespace BRAVE_DD {
 
     Func operator+(const Func &e1, const Func &e2)
     {
-        Func out;
-        // implementations TBD
+        Func out(e1.getForest());
+        apply(PLUS, e1, e2, out);
         return out;
     }
     Func operator-(const Func &e1, const Func &e2)
@@ -122,8 +122,12 @@ namespace BRAVE_DD {
     }
     Func operator^(const Func &e1, const Func &e2)
     {
-        Func out;
-        // implementations TBD
+        // A xor B = (A or B) and not (A and B)
+        Func out1, out2, out;
+        apply(UNION, e1, e2, out1);
+        apply(INTERSECTION, e1, e2, out2);
+        apply(COMPLEMENT, out2, out2);
+        apply(INTERSECTION, out1, out2, out);
         return out;
     }
     Func operator!(const Func &e)
@@ -135,7 +139,7 @@ namespace BRAVE_DD {
 
     Func operator+=(Func &e1, const Func &e2)
     {
-        // implementations TBD
+        apply(PLUS, e1, e2, e1);
         return e1;
     }
     Func operator-=(Func &e1, const Func &e2)
@@ -156,13 +160,11 @@ namespace BRAVE_DD {
 
     Func operator&=(Func &e1, const Func &e2)
     {
-        Func out(e1.getForest());
         apply(INTERSECTION, e1, e2, e1);
         return e1;
     }
     Func operator|=(Func &e1, const Func &e2)
     {
-        Func out(e1.getForest());
         apply(UNION, e1, e2, e1);
         return e1;
     }
