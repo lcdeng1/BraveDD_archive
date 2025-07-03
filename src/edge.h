@@ -335,26 +335,44 @@ class BRAVE_DD::Value {
         return (val != *this) && (val > *this);
     }
     inline Value operator+(const Value& val) const {
-        if (valueType != val.getType()) {
-            std::cout << "[BRAVE_DD] ERROR!\t cannot add values with different type!" << std::endl;
-            exit(0);
-        } // Mixed-type allowed, this to be removed
-        if (valueType == INT) return intValue + val.getIntValue();
-        if (valueType == FLOAT) return floatValue + val.getFloatValue();
-        if (valueType == LONG) return longValue + val.getLongValue();
-        if (valueType == DOUBLE) return doubleValue + val.getDoubleValue();
-        return *this;
+        // this is INF
+        if ((valueType == VOID) && ((special == SpecialValue::POS_INF) || (special == SpecialValue::NEG_INF))) {
+            return *this;
+        // val is INF
+        } else if ((val.valueType == VOID) && ((val.special == SpecialValue::POS_INF) || (val.special == SpecialValue::NEG_INF))) {
+            return val;
+        } else if (valueType == val.valueType) {
+            if (valueType == INT) return intValue + val.getIntValue();
+            if (valueType == FLOAT) return floatValue + val.getFloatValue();
+            if (valueType == LONG) return longValue + val.getLongValue();
+            if (valueType == DOUBLE) return doubleValue + val.getDoubleValue();
+        } else {
+            // TBD
+            std::cout << "[BRAVE_DD] Warning!\t add values with different type!" << std::endl;
+            return *this;
+        }
     }
     inline Value operator-(const Value& val) const {
         if (valueType != val.getType()) {
             std::cout << "[BRAVE_DD] ERROR!\t cannot add values with different type!" << std::endl;
             exit(0);
         } // Mixed-type allowed, this to be removed
-        if (valueType == INT) return intValue - val.getIntValue();
-        if (valueType == FLOAT) return floatValue - val.getFloatValue();
-        if (valueType == LONG) return longValue - val.getLongValue();
-        if (valueType == DOUBLE) return doubleValue - val.getDoubleValue();
-        return *this;
+        // this is INF
+        if ((valueType == VOID) && ((special == SpecialValue::POS_INF) || (special == SpecialValue::NEG_INF))) {
+            return *this;
+        // val is INF
+        } else if ((val.valueType == VOID) && ((val.special == SpecialValue::POS_INF) || (val.special == SpecialValue::NEG_INF))) {
+            return val;
+        } else if (valueType == val.valueType) {
+            if (valueType == INT) return intValue - val.getIntValue();
+            if (valueType == FLOAT) return floatValue - val.getFloatValue();
+            if (valueType == LONG) return longValue - val.getLongValue();
+            if (valueType == DOUBLE) return doubleValue - val.getDoubleValue();
+        } else {
+            // TBD
+            std::cout << "[BRAVE_DD] Warning!\t minus values with different type!" << std::endl;
+            return *this;
+        }
     }
     inline Value operator%(const int& mod) const {
         if ((valueType != INT) && (valueType != LONG)) {
