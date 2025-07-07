@@ -30,6 +30,7 @@
 #include <cmath>
 #include <vector>
 #include <list>
+#include <queue>
 #include <algorithm>  // for std::count
 #include <cctype>
 #include <iostream>
