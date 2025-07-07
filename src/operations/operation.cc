@@ -537,167 +537,195 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
     // copy edge info
     e1 = resForest->normalizeEdge(lvl, source1);
     e2 = resForest->normalizeEdge(lvl, source2);
+    /* =================================================================================================
+    * Terminal cases based on operation types; This can be optimized by "template" class TBD
+    * ================================================================================================*/
     /* -------------------------------------------------------------------------------------------------
-    * Base case 1.1: two edges are the same, for all operations
-    * Base case 1.2: same edge handle (target to nonterminal or Omega)
+    * Intersection and Union operations
     * ------------------------------------------------------------------------------------------------*/
-#ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "checking base case 1.1\n";
-#endif
-    // the same edge handle and edge value
-    if (e1 == e2) {
-        if ((opType == BinaryOperationType::BOP_UNION)
-            || (opType == BinaryOperationType::BOP_INTERSECTION)
-            || (opType == BinaryOperationType::BOP_MINIMUM)
-            || (opType == BinaryOperationType::BOP_MAXIMUM)) { // more operations?
-            return e1;
-        } else if (opType == BinaryOperationType::BOP_PLUS) {
-            if (e1.isConstantPosInf() || e1.isConstantNegInf()) {
-                return e1;
-            } else if (e1.isConstantOmega()) {
-                ans = e1;
-                ans.setValue(e1.getValue() + e2.getValue());
+    if ((opType == BinaryOperationType::BOP_INTERSECTION) || (opType == BinaryOperationType::BOP_UNION)) {
+        /* Base case 1: two edges are the same */
+    #ifdef BRAVE_DD_OPERATION_TRACE
+        std::cout << "checking base case 1\n";
+    #endif
+        if (e1 == e2) return e1;
+        /* Base case 2: two edges are complemented */
+    #ifdef BRAVE_DD_OPERATION_TRACE
+        std::cout << "checking base case 2\n";
+    #endif
+        if (e1.isComplementTo(e2)) {
+            if (opType == BinaryOperationType::BOP_UNION) {
+                EdgeHandle constant = makeTerminal(INT, 1);
+                if (resForest->getSetting().getValType() == FLOAT) {
+                    constant = makeTerminal(FLOAT, 1.0f);
+                }
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+                ans = resForest->normalizeEdge(lvl, ans);
                 return ans;
-            }
-        }
-    // the same edge handle but different edge value, only for EV+ and terminal edges of EVmod
-    } else if ((e1.getEdgeHandle() == e2.getEdgeHandle()) && (e1.getValue() != e2.getValue())) {
-#ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "checking base case 1.2\n";
-#endif
-        if ((resForest->getSetting().getEncodeMechanism() != EDGE_PLUSMOD) || (isTerminal(e1.getEdgeHandle()))) {
-            if ((opType == BinaryOperationType::BOP_PLUS) && e1.isConstantOmega()) {
-                ans = e1;
-                ans.setValue(e1.getValue() + e2.getValue());
-                return ans;
-            }
-            if (e1.getValue() > e2.getValue()) {
-                if (opType == BinaryOperationType::BOP_MINIMUM) return e2;
-                else if (opType == BinaryOperationType::BOP_MAXIMUM) return e1;
             } else {
-                if (opType == BinaryOperationType::BOP_MINIMUM) return e1;
-                else if (opType == BinaryOperationType::BOP_MAXIMUM) return e2;
+                EdgeHandle constant = makeTerminal(INT, 0);
+                if (resForest->getSetting().getValType() == FLOAT) {
+                    constant = makeTerminal(FLOAT, 0.0f);
+                }
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+                ans = resForest->normalizeEdge(lvl, ans);
+                return ans;
             }
         }
-    }
-    /* -------------------------------------------------------------------------------------------------
-    * Base case 2: one is INF terminal
-    * ------------------------------------------------------------------------------------------------*/
-#ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "checking base case 2\n";
-#endif
-    if (e1.isConstantNegInf() || e2.isConstantPosInf()) {
-        if (opType == BinaryOperationType::BOP_MINIMUM) return e1;
-        else if (opType == BinaryOperationType::BOP_MAXIMUM) return e2;
-        else if (opType == BinaryOperationType::BOP_PLUS) {
-            // if one PosInf and another NegInf, return constant zero, TBD
-            return (e1.isConstantNegInf()) ? e1 : e2;
-        }
-    } else if (e2.isConstantNegInf() || e1.isConstantPosInf()) {
-        if (opType == BinaryOperationType::BOP_MINIMUM) return e2;
-        else if (opType == BinaryOperationType::BOP_MAXIMUM) return e1;
-        else if (opType == BinaryOperationType::BOP_PLUS) {
-            // if one PosInf and another NegInf, return constant zero, TBD
-            return (e2.isConstantNegInf()) ? e2 : e1;
-        }
-    }
-    /* -------------------------------------------------------------------------------------------------
-    * Base case 3: two edges are complemented
-    * ------------------------------------------------------------------------------------------------*/
-#ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "checking base case 3\n";
-#endif
-    if (e1.isComplementTo(e2)) {
-        if (opType == BinaryOperationType::BOP_UNION) {
-            EdgeHandle constant = makeTerminal(INT, 1);
-            if (resForest->getSetting().getValType() == FLOAT) {
-                constant = makeTerminal(FLOAT, 1.0f);
+        /* Base case 3: one edge is constant ONE edge */
+    #ifdef BRAVE_DD_OPERATION_TRACE
+        std::cout << "checking base case 3\n";
+    #endif
+        if (e1.isConstantOne() || e2.isConstantOne()) {
+            if (opType == BinaryOperationType::BOP_UNION) {
+                EdgeHandle constant = makeTerminal(INT, 1);
+                if (resForest->getSetting().getValType() == FLOAT) {
+                    constant = makeTerminal(FLOAT, 1.0f);
+                }
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+                ans = resForest->normalizeEdge(lvl, ans);
+                return ans;
+            } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
+                return (e1.isConstantOne()) ? e2 : e1;
+            } else {
+                // more operations, TBD
             }
-            packRule(constant, RULE_X);
-            ans.setEdgeHandle(constant);
-            ans = resForest->normalizeEdge(lvl, ans);
-            return ans;
-        } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-            EdgeHandle constant = makeTerminal(INT, 0);
-            if (resForest->getSetting().getValType() == FLOAT) {
-                constant = makeTerminal(FLOAT, 0.0f);
+        }
+        /* Base case 4: one edge is constant ZERO edge */
+    #ifdef BRAVE_DD_OPERATION_TRACE
+        std::cout << "checking base case 4\n";
+    #endif
+        if (e1.isConstantZero() || e2.isConstantZero()) {
+            if (opType == BinaryOperationType::BOP_UNION) {
+                return (e1.isConstantZero()) ? e2 : e1;
+            } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
+                EdgeHandle constant = makeTerminal(INT, 0);
+                if (resForest->getSetting().getValType() == FLOAT) {
+                    constant = makeTerminal(FLOAT, 0.0f);
+                }
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+                ans = resForest->normalizeEdge(lvl, ans);
+                return ans;
+            } else {
+                // more operations, TBD
             }
-            packRule(constant, RULE_X);
-            ans.setEdgeHandle(constant);
-            ans = resForest->normalizeEdge(lvl, ans);
-            return ans;
-        } else {
-            // more operations, TBD
         }
-    }
     /* -------------------------------------------------------------------------------------------------
-    * Base case 4: one edge is constant ONE edge
+    * Minimum and Maximum operations
     * ------------------------------------------------------------------------------------------------*/
-#ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "checking base case 4\n";
-#endif
-    if (e1.isConstantOne() || e2.isConstantOne()) {
-        if (opType == BinaryOperationType::BOP_UNION) {
-            EdgeHandle constant = makeTerminal(INT, 1);
-            if (resForest->getSetting().getValType() == FLOAT) {
-                constant = makeTerminal(FLOAT, 1.0f);
+    } else if ((opType == BinaryOperationType::BOP_MINIMUM) || (opType == BinaryOperationType::BOP_MAXIMUM)) {
+        /* Base case 1: two edges are the same */
+    #ifdef BRAVE_DD_OPERATION_TRACE
+        std::cout << "checking base case 1\n";
+    #endif
+        if (e1 == e2) return e1;
+        /* Base case 2: one edge is constant*/
+    #ifdef BRAVE_DD_OPERATION_TRACE
+        std::cout << "checking base case 2\n";
+    #endif
+        if (isTerminal(e1.getEdgeHandle())) {
+            if (e1.isConstantPosInf()) {
+                return (opType == BinaryOperationType::BOP_MINIMUM) ? e2 : e1;
+            } else if (e1.isConstantNegInf()) {
+                return (opType == BinaryOperationType::BOP_MINIMUM) ? e1 : e2;
+            } else if (e1.isConstantOmega()) {
+                // for EV
+                if (e2.isConstantOmega()) {
+                    if (e1.getValue() > e2.getValue()) {
+                        return (opType == BinaryOperationType::BOP_MINIMUM) ? e2 : e1;
+                    } else {
+                        return (opType == BinaryOperationType::BOP_MINIMUM) ? e1 : e2;
+                    }
+                } else if (e2.isConstantPosInf()) {
+                    return (opType == BinaryOperationType::BOP_MINIMUM) ? e1 : e2;
+                } else if (e2.isConstantNegInf()) {
+                    return (opType == BinaryOperationType::BOP_MINIMUM) ? e2 : e1;
+                } else if (e2.isConstantUnDef()) {
+                    // TBD for UnDef
+                }
+            } else if (e1.isConstantUnDef()) {
+                // TBD for UnDef
+            } else if (isTerminal(e2.getEdgeHandle())) {
+                // for MT
+                Value tv1 = getTerminalValue(e1.getEdgeHandle());
+                Value tv2 = getTerminalValue(e2.getEdgeHandle());
+                if (tv1 > tv2) {
+                    return (opType == BinaryOperationType::BOP_MINIMUM) ? e2 : e1;
+                } else {
+                    return (opType == BinaryOperationType::BOP_MINIMUM) ? e1 : e2;
+                }
             }
-            packRule(constant, RULE_X);
-            ans.setEdgeHandle(constant);
-            ans = resForest->normalizeEdge(lvl, ans);
-            return ans;
-        } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-            return (e1.isConstantOne()) ? e2 : e1;
-        } else {
-            // more operations, TBD
-        }
-    }
-    /* -------------------------------------------------------------------------------------------------
-    * Base case 5: one edge is constant ZERO edge
-    * ------------------------------------------------------------------------------------------------*/
-#ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "checking base case 5\n";
-#endif
-    if (e1.isConstantZero() || e2.isConstantZero()) {
-        if (opType == BinaryOperationType::BOP_UNION) {
-            return (e1.isConstantZero()) ? e2 : e1;
-        } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
-            EdgeHandle constant = makeTerminal(INT, 0);
-            if (resForest->getSetting().getValType() == FLOAT) {
-                constant = makeTerminal(FLOAT, 0.0f);
+        } else if (isTerminal(e2.getEdgeHandle())) {
+            if (e2.isConstantPosInf()) {
+                return (opType == BinaryOperationType::BOP_MINIMUM) ? e1 : e2;
+            } else if (e2.isConstantNegInf()) {
+                return (opType == BinaryOperationType::BOP_MINIMUM) ? e2 : e1;
+            } else if (e1.isConstantUnDef()) {
+                // TBD for UnDef
             }
-            packRule(constant, RULE_X);
-            ans.setEdgeHandle(constant);
-            ans = resForest->normalizeEdge(lvl, ans);
-            return ans;
-        } else {
-            // more operations, TBD
         }
-    }
+        /* Base case 3: two edges are the same */
+    #ifdef BRAVE_DD_OPERATION_TRACE
+        std::cout << "checking base case 3\n";
+    #endif
+        if ((e1.getEdgeHandle() == e2.getEdgeHandle()) && (e1.getValue() != e2.getValue())) {
+            if (e1.getValue() > e2.getValue()) {
+                return (opType == BinaryOperationType::BOP_MINIMUM) ? e2 : e1;
+            } else {
+                return (opType == BinaryOperationType::BOP_MINIMUM) ? e1 : e2;
+            }
+        }
     /* -------------------------------------------------------------------------------------------------
-    * Base case 6: both are terminal edges, for terminal encoding
+    * Plus and Minus operations
     * ------------------------------------------------------------------------------------------------*/
-#ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "checking base case 6\n";
-#endif
-    if (isTerminal(e1.getEdgeHandle()) && isTerminal(e2.getEdgeHandle())
-        && !isTerminalSpecial(e1.getEdgeHandle()) && !isTerminalSpecial(e2.getEdgeHandle())) {
-        Value tv1 = getTerminalValue(e1.getEdgeHandle());
-        Value tv2 = getTerminalValue(e2.getEdgeHandle());
-        if (opType == BinaryOperationType::BOP_PLUS) {
-            EdgeHandle constant = makeTerminal(tv1 + tv2);
-            packRule(constant, RULE_X);
-            ans.setEdgeHandle(constant);
-            ans = resForest->normalizeEdge(lvl, ans);
-            return ans;
+    } else if ((opType == BinaryOperationType::BOP_PLUS) || (opType == BinaryOperationType::BOP_MINUS)) {
+        /* Base case 0: one edge is constant*/
+    #ifdef BRAVE_DD_OPERATION_TRACE
+        std::cout << "checking base case 0\n";
+    #endif
+        if (isTerminal(e1.getEdgeHandle())) {
+            if (e1.isConstantOmega()) {
+                // for EV
+                ans = e2;
+                ans.setValue(e1.getValue() + e2.getValue());
+                return ans;
+            } else if (e1.isConstantPosInf() || e1.isConstantNegInf()) {
+                return e1;
+            } else if (e1.isConstantUnDef()) {
+                // TBD for UnDef
+            } else if (isTerminal(e2.getEdgeHandle())) {
+                // for MT
+                Value tv1 = getTerminalValue(e1.getEdgeHandle());
+                Value tv2 = getTerminalValue(e2.getEdgeHandle());
+                EdgeHandle constant = makeTerminal(tv1 + tv2);
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+                ans = resForest->normalizeEdge(lvl, ans);
+                return ans;
+            }
+        } else if (isTerminal(e2.getEdgeHandle())) {
+            if (e2.isConstantOmega()) {
+                // for EV
+                ans = e1;
+                ans.setValue(e1.getValue() + e2.getValue());
+                return ans;
+            } else if (e2.isConstantPosInf() || e2.isConstantNegInf()) {
+                return e2;
+            } else if (e2.isConstantUnDef()) {
+                // TBD for UnDef
+            }
         }
-        if (tv1 > tv2) {
-            if (opType == BinaryOperationType::BOP_MINIMUM) return e2;
-            else if (opType == BinaryOperationType::BOP_MAXIMUM) return e1;
-        } else {
-            if (opType == BinaryOperationType::BOP_MINIMUM) return e1;
-            else if (opType == BinaryOperationType::BOP_MAXIMUM) return e2;
-        }
+    /* -------------------------------------------------------------------------------------------------
+    * Multiply operations
+    * ------------------------------------------------------------------------------------------------*/
+    } else if (opType == BinaryOperationType::BOP_MULTIPLY) {
+        //
+    } else {
+        //
     }
     /* -------------------------------------------------------------------------------------------------
     * Reordering
@@ -2051,19 +2079,16 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
     r = source2Forest->normalizeEdge(lvl, trans);
 
     /* -------------------------------------------------------------------------------------------------
-    * Base case 1: empty state or relation
+    * Base case 1: empty state (INF) or relation (Zero)
     * ------------------------------------------------------------------------------------------------*/
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "checking base case 1\n";
 #endif
-    if (s.isConstantZero() || r.isConstantZero()) {
+    if (s.isConstantPosInf() || r.isConstantZero()) {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 1\n";
 #endif
-        EdgeHandle constant = makeTerminal(INT, 0);
-        if (source1Forest->getSetting().getValType() == FLOAT) {
-            constant = makeTerminal(FLOAT, 0.0f);
-        }
+        EdgeHandle constant = makeTerminal(VOID, SpecialValue::POS_INF);
         packRule(constant, RULE_X);
         ans.setEdgeHandle(constant);
         ans = source1Forest->normalizeEdge(lvl, ans);
