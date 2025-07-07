@@ -221,6 +221,9 @@ namespace BRAVE_DD {
     static inline void printEdgeHandle(const EdgeHandle& handle, std::ostream& out, int format)
     {
         if (format == 0) {
+            out << "i" << (bool)(handle & INT_VALUE_FLAG_MASK);
+            out << "f" << (bool)(handle & FLOAT_VALUE_FLAG_MASK);
+            out << "s" << (bool)(handle & SPECIAL_VALUE_FLAG_MASK);
             out << "<" << rule2String(unpackRule(handle));
             out << ", " << unpackComp(handle);
             out << ", " << unpackSwap(handle);
