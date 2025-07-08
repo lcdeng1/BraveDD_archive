@@ -525,7 +525,7 @@ bool BinaryOperation::checkForestCompatibility() const
 Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, const Edge& source2)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "compute elementwise: lvl: " << lvl << "; e1: ";
+    std::cout << "compute elementwise(" << BOP2String(opType) << "): lvl: " << lvl << "; e1: ";
     source1.print(std::cout);
     std::cout << "; e2: ";
     source2.print(std::cout);
@@ -646,6 +646,14 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
                     return (opType == BinaryOperationType::BOP_MINIMUM) ? e2 : e1;
                 } else if (e2.isConstantUnDef()) {
                     // TBD for UnDef
+                } else if (isTerminal(e2.getEdgeHandle())) {
+                    // still a terminal value?
+                    Value tv2 = getTerminalValue(e2.getEdgeHandle());
+                    if (e1.getValue() > tv2) {
+                        return (opType == BinaryOperationType::BOP_MINIMUM) ? e2 : e1;
+                    } else {
+                        return (opType == BinaryOperationType::BOP_MINIMUM) ? e1 : e2;
+                    }
                 }
             } else if (e1.isConstantUnDef()) {
                 // TBD for UnDef
@@ -668,7 +676,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
                 // TBD for UnDef
             }
         }
-        /* Base case 3: two edges are the same */
+        /* Base case 3: two edges are the same edgeHandle but different edge value */
     #ifdef BRAVE_DD_OPERATION_TRACE
         std::cout << "checking base case 3\n";
     #endif
@@ -1768,7 +1776,7 @@ Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Ed
     /* the result would go the same forest as source1 */
     // begin event's level should not be higher than lvl
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "computeSaturation: lvl " << lvl << "; ";
+    std::cout << "computeSaturationDistance: lvl " << lvl << "; ";
     source1.print(std::cout);
     std::cout << "; begin: " << begin << "; ";
     relations[begin].getEdge().print(std::cout);
@@ -1830,13 +1838,16 @@ Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Ed
         Edge constantOne;
         if (source1Forest->setting.getEncodeMechanism() == TERMINAL) {
             constantOne.setEdgeHandle(makeTerminal(1));
+            constantOne.setRule(RULE_X);
         } else {
             constantOne.setEdgeHandle(makeTerminal(SpecialValue::OMEGA));
+            constantOne.setRule(RULE_X);
             constantOne.setValue(Value(1));
         }
 #ifdef BRAVE_DD_SAT_STRATEGY_1
         // child edges firing enough
-        bool must0 = !child[0].isConstantZero(), must1 = !child[1].isConstantZero();
+        bool must0 = !(child[0].isConstantZero() || (child[0].isConstantOmega() && (child[0].getValue() == Value(0))));
+        bool must1 = !(child[1].isConstantZero() || (child[1].isConstantOmega() && (child[1].getValue() == Value(0))));
         while (must0 || must1) {
             Edge oldChild, rel, res;
             bool isChanged = 1;
@@ -1934,7 +1945,7 @@ Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Ed
 Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source1, const Edge& trans, const size_t begin)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << ((isPre)?"Pre":"Post") << "IMAGE: lvl: " << (uint16_t)lvl << "; s: ";
+    std::cout << ((isPre)?"Pre":"Post") << "ImageSat: lvl: " << (uint16_t)lvl << "; s: ";
     source1.print(std::cout);
     std::cout << "; r: ";
     trans.print(std::cout);
@@ -2065,7 +2076,7 @@ Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source
 Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge& source1, const Edge& trans, const size_t begin)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << ((isPre)?"Pre":"Post") << "IMAGE: lvl: " << (uint16_t)lvl << "; s: ";
+    std::cout << ((isPre)?"Pre":"Post") << "ImageSatDistance: lvl: " << (uint16_t)lvl << "; s: ";
     source1.print(std::cout);
     std::cout << "; r: ";
     trans.print(std::cout);
@@ -2107,16 +2118,21 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
     std::cout << "base case 2: identity\n";
 #endif
             return s;
-        } else if (r.isConstantOne()) {
+        } else if (r.isConstantOne() && (isTerminal(s.getEdgeHandle()))) {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 2: redundant\n";
 #endif
-            EdgeHandle constant = makeTerminal(INT, 1);
-            if (source1Forest->getSetting().getValType() == FLOAT) {
-                constant = makeTerminal(FLOAT, 1.0f);
+            // optimization TBD
+            if (source1Forest->setting.getEncodeMechanism() == TERMINAL) {
+                EdgeHandle constant = makeTerminal(getTerminalValue(s.getEdgeHandle()));
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+            } else {
+                EdgeHandle constant = makeTerminal(VOID, SpecialValue::OMEGA);
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+                ans.setValue(s.getValue());
             }
-            packRule(constant, RULE_X);
-            ans.setEdgeHandle(constant);
             ans = source1Forest->normalizeEdge(lvl, ans);
             return ans;
         }
@@ -2133,10 +2149,7 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
     if (!cacheRel.check(lvl, s, r, ans)) {
         // not cached, computing needed
         std::vector<Edge> child(2);
-        EdgeHandle constant = makeTerminal(INT, 0);
-        if (source1Forest->getSetting().getValType() == FLOAT) {
-            constant = makeTerminal(FLOAT, 0.0f);
-        }
+        EdgeHandle constant = makeTerminal(VOID, SpecialValue::POS_INF);
         packRule(constant, RULE_X);
         for (size_t i=0; i<2; i++) {
             child[i].setEdgeHandle(constant);
@@ -2155,7 +2168,7 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "recursive computing\n";
 #endif
-            // Union of BDDs operation required
+            // Minimum of BDDs operation required
             BinaryOperation* un = BOPs.find(BinaryOperationType::BOP_MINIMUM, source1Forest, source1Forest, source1Forest);
             if (!un) {
                 un = BOPs.add(new BinaryOperation(BinaryOperationType::BOP_MINIMUM, source1Forest, source1Forest, source1Forest));
@@ -2169,7 +2182,7 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
                 resRec = computeImageSatDistance(m-1, sRec, rRec, nextBegin);
                 child[s1Idx] = un->computeElmtWise(m-1, child[s1Idx], resRec);
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << "after union child[" << (int)s1Idx << "]: ";
+    std::cout << "after Minimum child[" << (int)s1Idx << "]: ";
     child[s1Idx].print(std::cout);
     std::cout << std::endl;
 #endif

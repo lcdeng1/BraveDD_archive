@@ -61,6 +61,38 @@ namespace BRAVE_DD {
         BOP_MV,
         BOP_MM
     };
+    static inline std::string BOP2String(BinaryOperationType bop) {
+        std::string optype;
+        switch (bop)
+        {
+        case BinaryOperationType::BOP_UNION:
+            optype = "Union";
+            break;
+        case BinaryOperationType::BOP_INTERSECTION:
+            optype = "Intersection";
+            break;
+        case BinaryOperationType::BOP_MINIMUM:
+            optype = "Minimum";
+            break;
+        case BinaryOperationType::BOP_MAXIMUM:
+            optype = "Maximum";
+            break;
+        case BinaryOperationType::BOP_PLUS:
+            optype = "Plus";
+            break;
+        case BinaryOperationType::BOP_PREIMAGE:
+            optype = "PreImage";
+            break;
+        case BinaryOperationType::BOP_POSTIMAGE:
+            optype = "PostImage";
+            break;
+        
+        default:
+            optype = "Unknown";
+            break;
+        }
+        return optype;
+    }
     class BinaryOperation;
     class BinaryList;
 
