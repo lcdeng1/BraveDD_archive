@@ -103,6 +103,24 @@ BinaryOperation* BRAVE_DD::MINIMUM(Forest* arg1, OpndType arg2, Forest* res)
     return BOPs.add(bop);
 }
 
+BinaryOperation* BRAVE_DD::MAXIMUM(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_MAXIMUM, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_MAXIMUM, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::MAXIMUM(Forest* arg1, OpndType arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_MAXIMUM, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_MAXIMUM, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
 BinaryOperation* BRAVE_DD::PLUS(Forest* arg1, Forest* arg2, Forest* res)
 {
     if (!arg1) return nullptr;
