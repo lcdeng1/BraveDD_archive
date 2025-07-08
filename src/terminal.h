@@ -95,7 +95,7 @@ namespace BRAVE_DD {
         if (val.getType() == INT) {
             val.getValueTo(&valInt, INT);
             ans = (valInt == 1);
-        } else {
+        } else if (val.getType() == FLOAT) {
             val.getValueTo(&valFloat, FLOAT);
             ans = (valFloat == 1.0f);
         }
@@ -112,7 +112,7 @@ namespace BRAVE_DD {
         if (val.getType() == INT) {
             val.getValueTo(&valInt, INT);
             ans = (valInt == 0);
-        } else {
+        } else if (val.getType() == FLOAT) {
             val.getValueTo(&valFloat, FLOAT);
             ans = (valFloat == 0.0f);
         }
