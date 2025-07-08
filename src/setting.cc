@@ -97,21 +97,21 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         reductions = Reductions(QUASI);
         name = "EVQBDD";
         encodingType = EDGE_PLUS;
-        range = Range(RangeType::NNINTEGER,VOID);
+        range = Range(RangeType::NNINTEGER,INT);
         range.setPosInf(1);
     } else if (type == PredefForest::EVFBDD) {
         // setting for EVFBDD
         reductions = Reductions(FULLY);
         name = "EVFBDD";
         encodingType = EDGE_PLUS;
-        range = Range(RangeType::NNINTEGER,VOID);
+        range = Range(RangeType::NNINTEGER,INT);
         range.setPosInf(1);
     } else if (type == PredefForest::EVMODQBDD) {
          // setting for EV%QBDD
          reductions = Reductions(QUASI);
          name = "EVMODQBDD";
          encodingType = EDGE_PLUSMOD;
-         range = Range(RangeType::NNINTEGER,VOID);
+         range = Range(RangeType::NNINTEGER,INT);
          range.setPosInf(1);
          // Effectively this will act as if there is no mu
          // User will have to set mod value in order to benefit from it
@@ -121,7 +121,7 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         reductions = Reductions(FULLY);
         name = "EVMODFBDD";
         encodingType = EDGE_PLUSMOD;
-        range = Range(RangeType::NNINTEGER,VOID);
+        range = Range(RangeType::NNINTEGER,INT);
         range.setPosInf(1);
         // Effectively this will act as if there is no mu
         // User will have to set mod value in order to benefit from it
@@ -224,14 +224,14 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         reductions = Reductions(QUASI);
         name = "EVQBDD";
         encodingType = EDGE_PLUS;
-        range = Range(RangeType::NNINTEGER,VOID);
+        range = Range(RangeType::NNINTEGER,INT);
         range.setPosInf(1);
     } else if (bddLower == "ev%qbdd" || bddLower == "evmodqbdd") {
         // setting for EV%QBDD
         reductions = Reductions(QUASI);
         name = "EVMODQBDD";
         encodingType = EDGE_PLUSMOD;
-        range = Range(RangeType::NNINTEGER,VOID);
+        range = Range(RangeType::NNINTEGER,INT);
         range.setPosInf(1);
         // Effectively this will act as if there is no mu
         // User will have to set mod value in order to benefit from it
@@ -243,14 +243,14 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         reductions = Reductions(FULLY);
         name = "EVFBDD";
         encodingType = EDGE_PLUS;
-        range = Range(RangeType::NNINTEGER,VOID);
+        range = Range(RangeType::NNINTEGER,INT);
         range.setPosInf(1);
     } else if (bddLower == "ev%fbdd" || bddLower == "evmodfbdd") {
         // setting for EV%FBDD
         reductions = Reductions(FULLY);
         name = "EVMODFBDD";
         encodingType = EDGE_PLUSMOD;
-        range = Range(RangeType::NNINTEGER,VOID);
+        range = Range(RangeType::NNINTEGER,INT);
         range.setPosInf(1);
         // Effectively this will act as if there is no mu
         // User will have to set mod value in order to benefit from it
