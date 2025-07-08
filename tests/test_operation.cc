@@ -375,7 +375,7 @@ bool testOperationValue(uint16_t num, PredefForest bdd, BinaryOperationType opt)
     if (opt == BinaryOperationType::BOP_MINIMUM) {
         apply(MINIMUM, f1, f2, res);
     } else if (opt == BinaryOperationType::BOP_MAXIMUM) {
-        // apply(MAXIMUM, f1, f2, res);
+        apply(MAXIMUM, f1, f2, res);
     } else if (opt == BinaryOperationType::BOP_PLUS) {
         apply(PLUS, f1, f2, res);
     } else {
@@ -426,7 +426,8 @@ bool testOperationValue(uint16_t num, PredefForest bdd, BinaryOperationType opt)
             correct = ((val1 == val2) || (val1 < val2)) ? val1 : val2;
             isPass = valRes == correct;
         } else if (opt == BinaryOperationType::BOP_MAXIMUM) {
-            isPass = (val1 == val2) || (valRes == val1) ? val1 > val2 : val2 > val1;
+            correct = ((val1 == val2) || (val1 < val2)) ? val2 : val1;
+            isPass = valRes == correct;
         }else if (opt == BinaryOperationType::BOP_PLUS) {
             isPass = (valRes == (val1 + val2));
         } else {
@@ -491,7 +492,7 @@ int main(int argc, char** argv){
     int TESTS = 1000;
     uint16_t numVals = 10;
     PredefForest bdd = PredefForest::REXBDD;
-    BinaryOperationType opt = BinaryOperationType::BOP_PLUS;
+    BinaryOperationType opt = BinaryOperationType::BOP_MAXIMUM;
     // processing arguments TBD
     if ((argc == 3) || (argc == 4) || (argc == 5)) {
         bdd = (PredefForest)atoi(argv[1]);
