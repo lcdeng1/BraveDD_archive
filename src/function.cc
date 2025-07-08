@@ -40,22 +40,36 @@ Func::~Func()
 /**************************** Make edge *************************/
 void Func::trueFunc()
 {
-    /* Don't care the value on edge */
-    edge.handle = makeTerminal(INT, 1);
-    if (parent->setting.getValType() == FLOAT) {
-        edge.handle = makeTerminal(FLOAT, 1.0f);
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
+        /* Don't care the value on edge */
+        edge.handle = makeTerminal(INT, 1);
+        if (parent->setting.getValType() == FLOAT) {
+            edge.handle = makeTerminal(FLOAT, 1.0f);
+        }
+        packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else {
+        edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
+        packRule(edge.handle, RULE_X);
+        edge.value = Value(1);  // value type?
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
     }
-    packRule(edge.handle, RULE_X);
-    edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
 }
 void Func::falseFunc()
 {
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
     edge.handle = makeTerminal(INT, 0);
-    if (parent->setting.getValType() == FLOAT) {
-        edge.handle = makeTerminal(FLOAT, 0.0f);
+        if (parent->setting.getValType() == FLOAT) {
+            edge.handle = makeTerminal(FLOAT, 0.0f);
+        }
+        packRule(edge.handle, RULE_X);
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
+    } else {
+        edge.handle = makeTerminal(VOID, SpecialValue::OMEGA);
+        packRule(edge.handle, RULE_X);
+        edge.value = Value(0);  // value type?
+        edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
     }
-    packRule(edge.handle, RULE_X);
-    edge = parent->normalizeEdge(parent->setting.getNumVars(), edge);
 }
 /* For dimention 1 and 2 */
 void Func::constant(int val)
@@ -156,15 +170,22 @@ void Func::identity(std::vector<bool> dependance)
 void Func::variable(uint16_t lvl)
 {
     std::vector<Edge> child(2);
-    // edge valued TBD
-    child[0].handle = makeTerminal(INT, 0);
-    child[1].handle = makeTerminal(INT, 1);
-    if ((parent->getSetting().getValType() == FLOAT) || (parent->getSetting().getValType() == DOUBLE)) {
-        child[0].handle = makeTerminal(FLOAT, 0.0f);
-        child[1].handle = makeTerminal(FLOAT, 1.0f);
-    }
-    for (size_t i=0; i<child.size(); i++) {
-        packRule(child[i].handle, RULE_X);
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
+        child[0].handle = makeTerminal(INT, 0);
+        child[1].handle = makeTerminal(INT, 1);
+        if ((parent->getSetting().getValType() == FLOAT) || (parent->getSetting().getValType() == DOUBLE)) {
+            child[0].handle = makeTerminal(FLOAT, 0.0f);
+            child[1].handle = makeTerminal(FLOAT, 1.0f);
+        }
+        for (size_t i=0; i<child.size(); i++) {
+            packRule(child[i].handle, RULE_X);
+        }
+    } else {
+        for (size_t i=0; i<child.size(); i++) {
+            child[i].handle = makeTerminal(VOID, SpecialValue::OMEGA);
+            packRule(child[i].handle, RULE_X);
+        }
+        child[1].value = Value(1);
     }
     EdgeLabel root = 0;
     packRule(root, RULE_X);
@@ -172,7 +193,33 @@ void Func::variable(uint16_t lvl)
 }
 void Func::variable(uint16_t lvl, Value low, Value high)
 {
-    // TBD
+    std::vector<Edge> child(2);
+    if (parent->setting.getEncodeMechanism() == TERMINAL) {
+        child[0].handle = makeTerminal(low);
+        child[1].handle = makeTerminal(high);
+        for (size_t i=0; i<child.size(); i++) {
+            packRule(child[i].handle, RULE_X);
+        }
+    } else {
+        if (low.getType() == VOID) {
+            child[0].handle = makeTerminal(low);
+        } else {
+            child[0].handle = makeTerminal(Value(SpecialValue::OMEGA));
+            child[0].value = low;
+        }
+        if (high.getType() == VOID) {
+            child[1].handle = makeTerminal(high);
+        } else {
+            child[1].handle = makeTerminal(Value(SpecialValue::OMEGA));
+            child[1].value = high;
+        }
+        for (size_t i=0; i<child.size(); i++) {
+            packRule(child[i].handle, RULE_X);
+        }
+    }
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    edge = parent->reduceEdge(parent->getSetting().getNumVars(), root, lvl, child);
 }
 /* For dimention of 2 (Relation) */
 // Variable Func

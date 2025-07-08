@@ -351,7 +351,9 @@ class BRAVE_DD::Value {
             if (valueType == DOUBLE) return doubleValue + val.getDoubleValue();
         } else {
             // TBD
-            std::cout << "[BRAVE_DD] Warning!\t add values with different type!" << std::endl;
+            std::cout << "[BRAVE_DD] Warning!\t Value+: add values with different type!" << std::endl;
+            print(std::cout);
+            val.print(std::cout);
             return *this;
         }
     }
