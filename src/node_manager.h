@@ -32,7 +32,12 @@ class BRAVE_DD::NodeManager {
      *  Then fill it with the given unpacked node.
      */
     inline NodeHandle getFreeNodeHandle(const uint16_t lvl, const Node& node) {
-        return chunks[lvl-1].getFreeNodeHandle(node);
+        NodeHandle handle = chunks[lvl-1].getFreeNodeHandle(node);
+        // for sure number of used nodes +1
+        numNodes++;
+        // update peak
+        if (numNodes > peak) peak = numNodes;
+        return handle;
     }
 
     /**
@@ -65,6 +70,8 @@ class BRAVE_DD::NodeManager {
     inline uint32_t numUsed(uint16_t lvl) const { return PRIMES[chunks[lvl-1].sizeIndex] - chunks[lvl-1].numFrees; }
     inline uint32_t numAlloc(uint16_t lvl) const { return chunks[lvl-1].firstUnalloc; }
     inline uint32_t numMarked(uint16_t lvl) const { return chunks[lvl-1].getNumMarked(); }
+    inline uint32_t numPeakAlloc(uint16_t lvl) const { return chunks[lvl-1].firstUnalloc - 1; }
+    inline uint64_t numRealPeak() const { return peak; }
 
     /*-------------------------------------------------------------*/
     private:
@@ -99,7 +106,7 @@ class BRAVE_DD::NodeManager {
             uint32_t                freeList;       // Header of the list of unused slots
             uint32_t                numFrees;       // Number of free/unused slots
             uint32_t                recycled;       // Last recycled node index
-
+            uint32_t                peak;           // Peak number of nodes
     }; // class SubManager
 
     // ======================Helper Methods====================
@@ -109,6 +116,8 @@ class BRAVE_DD::NodeManager {
     Forest*                     parent;     // Parent Forest
     std::vector<SubManager>     chunks;     // Chunks by levels
 
+    uint64_t                    numNodes;   // number of used nodes
+    uint64_t                    peak;       // peak total numbe of used nodes
 };
 
 #endif

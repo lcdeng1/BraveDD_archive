@@ -1194,6 +1194,7 @@ void Forest::reportNodesNum(std::ostream& out) const
         total += getNodeManUsed(k);
     }
     out << "Total nodes: " << total << "\n";
+    out << "Peak nodes: " << nodeMan->numRealPeak() << "\n";
 }
 
 /// Helper Methods ==============================================

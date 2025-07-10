@@ -474,6 +474,12 @@ class BRAVE_DD::Forest {
     inline uint32_t getNodeManAlloc(const uint16_t level) const {
         return nodeMan->numAlloc(level);
     }
+    inline uint32_t getNodeManPeak(const uint16_t level) const {
+        return nodeMan->numPeakAlloc(level);
+    }
+    inline uint64_t getNodeManPeak() const {
+        return nodeMan->numRealPeak();
+    }
     inline uint32_t getUTEntriesNum(const uint16_t level) const {
         return uniqueTable->getNumEntries(level);
     }

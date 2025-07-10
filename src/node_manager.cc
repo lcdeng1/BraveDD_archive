@@ -20,6 +20,7 @@ NodeManager::SubManager::SubManager(Forest *f):parent(f)
     firstUnalloc = 1;
     freeList = 0;
     numFrees = PRIMES[sizeIndex];
+    peak = 0;
 }
 NodeManager::SubManager::~SubManager()
 {
@@ -53,6 +54,7 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
     /* Free list is empty, so pull from the unallocated end portion */
     new (&nodes[firstUnalloc]) Node(parent->nodeSize);
     nodes[firstUnalloc].assign(node, parent->nodeSize);
+    if (firstUnalloc > peak) peak = firstUnalloc;   // update peak
     return firstUnalloc++;
 }
 
@@ -151,6 +153,7 @@ NodeManager::NodeManager(Forest *f):parent(f)
     for (uint16_t i = 0; i < lvls; i++) {
         chunks.emplace_back(f);  // Directly constructs SubManager
     }
+    peak = 0;
 }
 NodeManager::~NodeManager()
 {
@@ -160,16 +163,21 @@ NodeManager::~NodeManager()
     chunks.clear();
     std::vector<SubManager>().swap(chunks);
     parent = 0;
+    peak = 0;
 }
 
 void NodeManager::sweep(uint16_t lvl)
 {
+    uint32_t beforeNum = numUsed(lvl);
     chunks[lvl-1].sweep();
+    numNodes += (numUsed(lvl) - beforeNum);     // update number of used nodes
 }
 
 void NodeManager::sweep()
 {
+    numNodes = 0;
     for (uint16_t k=1; k<=parent->getSetting().getNumVars(); k++) {
+        numNodes += numUsed(k);     // update number of used nodes
         sweep(k);
     }
 }
