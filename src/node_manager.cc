@@ -170,14 +170,12 @@ void NodeManager::sweep(uint16_t lvl)
 {
     uint32_t beforeNum = numUsed(lvl);
     chunks[lvl-1].sweep();
-    numNodes += (numUsed(lvl) - beforeNum);     // update number of used nodes
+    numNodes += (int)(numUsed(lvl) - beforeNum);     // update number of used nodes
 }
 
 void NodeManager::sweep()
 {
-    numNodes = 0;
     for (uint16_t k=1; k<=parent->getSetting().getNumVars(); k++) {
-        numNodes += numUsed(k);     // update number of used nodes
         sweep(k);
     }
 }

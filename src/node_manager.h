@@ -72,6 +72,7 @@ class BRAVE_DD::NodeManager {
     inline uint32_t numMarked(uint16_t lvl) const { return chunks[lvl-1].getNumMarked(); }
     inline uint32_t numPeakAlloc(uint16_t lvl) const { return chunks[lvl-1].firstUnalloc - 1; }
     inline uint64_t numRealPeak() const { return peak; }
+    inline void resetPeak() { peak = 0; }
 
     /*-------------------------------------------------------------*/
     private:

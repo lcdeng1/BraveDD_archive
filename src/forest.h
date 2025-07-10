@@ -403,6 +403,12 @@ class BRAVE_DD::Forest {
         funcs.erase(std::remove(funcs.begin(), funcs.end(), func), funcs.end());
     }
 
+    inline void deregisterFunc() {
+        funcs.clear();
+        // reset peak of nodeMan here?
+        nodeMan->resetPeak();
+    }
+
     inline bool isFuncRegistered(const Func& func) {
         auto it = std::find(funcs.begin(), funcs.end(), func);
         return it != funcs.end();
