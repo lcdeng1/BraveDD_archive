@@ -74,6 +74,11 @@ void DotMaker::buildGraph(const Func& func)
     if (ss == FROM || ss == FROM_TO) label += ", s_f";
     if (ss == TO || ss == FROM_TO) label += ", s_t";
     label += ">";
+    if (parent->getSetting().getEncodeMechanism() == EDGE_PLUSMOD) {
+        label += " (mod = ";
+        label += std::to_string(parent->getSetting().getMaxRange());
+        label += ")";
+    }
     outfile << "\tv" << numVars+1 << " [label=\"" << label << "\"]\n";
     outfile << "\tv" << numVars+1 << " -> v" << numVars << " [style=invis]\n";
     /* build the function */
