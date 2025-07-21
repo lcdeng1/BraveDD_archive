@@ -3,6 +3,7 @@
 #include <random>
 #include <iostream>
 #include <cstdint>
+#include <climits>
 
 const unsigned TESTS=1000000;
 const unsigned SEED=123456;
