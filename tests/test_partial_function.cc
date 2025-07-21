@@ -109,7 +109,7 @@ bool buildEvSetForest(uint16_t num, PredefForest bdd, unsigned long maxRange=0)
                     int evalInt, funInt;
                     eval.getValueTo(&evalInt, INT);
                     funs[i][j].getValueTo(&funInt, INT);
-                    isCorrect = evalInt == (funInt % setting.getMaxRange()) ? 1 : 0;
+                    isCorrect = evalInt == (funInt % (int)setting.getMaxRange()) ? 1 : 0;
                 }
 
                 if (!isCorrect) {
