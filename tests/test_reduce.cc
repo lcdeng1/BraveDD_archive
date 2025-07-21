@@ -308,7 +308,7 @@ bool buildEvSetForest(uint16_t num, PredefForest bdd, unsigned long maxRange=0)
                     return 0;
                 }
             } else {
-                if (valInt != (funs[i][j] % setting.getMaxRange())) {
+                if (valInt != (funs[i][j] % (int)setting.getMaxRange())) {
                     std::cout<<"Evaluation Failed for " << num << " variable(s), function " << i << std::endl;
                     std::cout<<"\t assignment: ";
                     for (uint16_t k=1; k<=num; k++){
