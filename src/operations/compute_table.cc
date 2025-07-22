@@ -101,7 +101,7 @@ bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, Edge&
 void ComputeTable::add(const uint16_t lvl, const Edge& a, const long& ans)
 {
     /* Check if we should enlage the table when  */
-    if (((numEntries * 2) > (size * 1)) && (size < (uint64_t)0x01 << 62)) {
+    if (((numEntries * 3) > (size * 2)) && (size < (uint64_t)0x01 << 62)) {
         size *= 2;
         enlarge(size);
     }
@@ -133,7 +133,7 @@ void ComputeTable::add(const uint16_t lvl, const Edge& a, const long& ans)
 void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& ans)
 {
     /* Check if we should enlage the table when  */
-    if (((numEntries * 2) > (size * 1)) && (size < (uint64_t)0x01 << 62)) {
+    if (((numEntries * 3) > (size * 2)) && (size < (uint64_t)0x01 << 62)) {
         size *= 2;
         enlarge(size);
     }
@@ -185,7 +185,7 @@ void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const E
     std::cout << std::endl;
 #endif
     /* Check if we should enlage the table when  */
-    if (((numEntries * 2) > (size * 1)) && (size < (uint64_t)0x01 << 62)) {
+    if (((numEntries * 3) > (size * 2)) && (size < (uint64_t)0x01 << 62)) {
 #ifdef BRAVE_DD_CACHE_TRACE
     std::cout << "enlarge table: entries = " << numEntries << ", size = " << size << std::endl;
 #endif
