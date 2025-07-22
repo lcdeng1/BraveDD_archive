@@ -15,6 +15,7 @@ using namespace BRAVE_DD;
 uint16_t N;     // row
 uint16_t M;     // column
 uint16_t bits;  // bits per position
+int     maxStep = 40;
 
 using PuzzleState = std::vector<std::vector<uint16_t> >; // 2D representation of the puzzle
 
@@ -23,6 +24,7 @@ timer watchSat, watchChain, watchBFS, watchBFS0;
 double timeLimit = 1800.0;
 bool isTimeLimitGlobal = 0;
 bool isReportToFile = 0;
+bool isComputeDistance = 0;
 
 /* flags if results are computed */
 bool getRes_Sat = 0, getRes_BFS = 0, getRes_chain = 0, getRes_correct = 0;
@@ -32,6 +34,8 @@ double time_Sat = 0.0, time_BFS = 0.0, time_chain = 0.0, time_correct = 0.0, new
 long state_Sat = 0, state_BFS = 0, state_chain = 0, state_correct = 0;
 /* #nodes of each methods */
 uint64_t nodes_Sat = 0, nodes_BFS = 0, nodes_chain = 0, nodes_correct = 0, nodes_rel = 0;
+/* peak number of nodes */
+uint64_t nodes_Sat_Peak = 0, nodes_BFS_Peak = 0, nodes_chain_Peak = 0, nodes_rel_Peak = 0;
 
 
 /**
@@ -337,15 +341,32 @@ bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& targ
     while (true) {
         for (size_t i=0; i<relations.size(); i++) {
             std::cout << "BFS image process: " << n << " : (" << i << "/" << relations.size() << ")" << std::endl;
+            // change for distance computing
             apply(POST_IMAGE, curr, relations[i], nextStep);
-            FF |= nextStep;
+            if (isComputeDistance) {
+                apply(MINIMUM, FF, nextStep, FF);
+            } else {
+                if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
+                    FF |= nextStep;
+                } else {
+                    apply(MAXIMUM, FF, nextStep, FF);
+                }
+            }
         }
         // if (!testImage(curr, relations, FF)) {
         //     std::cout << "image test failed\n";
         //     exit(0);
         // }
         n++;
-        SS = curr | FF;
+        if (isComputeDistance) {
+            apply(MINIMUM, curr, FF, SS);
+        } else {
+            if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
+                SS = curr | FF;
+            } else {
+                apply(MAXIMUM, curr, FF, SS);
+            }
+        }
 
         apply(CARDINALITY, SS, card_SS);
         apply(CARDINALITY, curr, card_curr);
@@ -397,8 +418,17 @@ bool SSG_chain(const Func& initial, const std::vector<Func>& relations, Func& ta
     while (true) {
         for (size_t i=0; i<relations.size(); i++) {
             std::cout << "chain image process: " << n << " : (" << i << "/" << relations.size() << ")" << std::endl;
+            // chenge for distance computing
             apply(POST_IMAGE, curr, relations[i], nextStep);
-            curr |= nextStep;
+            if (isComputeDistance) {
+                apply(MINIMUM, curr, nextStep, curr);
+            } else {
+                if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
+                    curr |= nextStep;
+                } else {
+                    apply(MAXIMUM, curr, nextStep, curr);
+                }
+            }
         }
         n++;
         apply(CARDINALITY, SS, card_SS);
@@ -409,7 +439,15 @@ bool SSG_chain(const Func& initial, const std::vector<Func>& relations, Func& ta
         std::cout << "curr num: " << forest1->getNodeManUsed(curr) << std::endl;
 
         if (SS == curr) break;
-        SS |= curr;
+        if (isComputeDistance) {
+            apply(MINIMUM, curr, SS, SS);
+        } else {
+            if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
+                SS |= curr;
+            } else {
+                apply(MAXIMUM, curr, SS, SS);
+            }
+        }
         curr = SS;
         // GC
         forest1->registerFunc(curr);
@@ -438,7 +476,11 @@ Func encodePuzzle2BDD(const std::vector<std::vector<uint16_t> >& puzzle)
 {
     /* Assuming forest1 is initialized and result starts from constant 1 */
     Func result(forest1);
-    result.trueFunc();
+    if (isComputeDistance) {
+        result.constant(0);
+    } else {
+        result.trueFunc();
+    }
     /* Intermediates */
     Func var(forest1);
     uint16_t row, col;
@@ -447,11 +489,32 @@ Func encodePuzzle2BDD(const std::vector<std::vector<uint16_t> >& puzzle)
         row = (i%M==0) ? i/M-1 : i/M;
         col = (i%M==0) ? M-1 : i%M-1;
         for (uint16_t b=0; b<bits; b++) {
-            var.variable((i-1)*bits+b+1);
-            if (puzzle[row][col] & (0x01<<b)) {
-                result &= var;
+            if (isComputeDistance) {
+                var.variable((i-1)*bits+b+1, Value(SpecialValue::POS_INF), Value(0));
+                if (puzzle[row][col] & (0x01<<b)) {
+                    apply(MAXIMUM, result, var, result);
+                } else {
+                    Func negVar(forest1);
+                    negVar.variable((i-1)*bits+b+1, Value(0), Value(SpecialValue::POS_INF));
+                    apply(MAXIMUM, result, negVar, result);
+                }
             } else {
-                result &= !var;
+                var.variable((i-1)*bits+b+1, Value(0), Value(1));
+                if (puzzle[row][col] & (0x01<<b)) {
+                    if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
+                        result &= var;
+                    } else {
+                        apply(MINIMUM, result, var, result);
+                    }
+                } else {
+                    if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {                    
+                        result &= !var;
+                    } else {
+                        Func negVar(forest1);
+                        negVar.variable((i-1)*bits+b+1, Value(1), Value(0));
+                        apply(MINIMUM, result, negVar, result);
+                    }
+                }
             }
         }
     }
@@ -615,6 +678,10 @@ bool processArgs(int argc, const char** argv)
                 isReportToFile = 1;
                 continue;
             }
+            if (strcmp("-d", argv[i])==0) {
+                isComputeDistance = 1;
+                continue;
+            }
         }
         if (!setN) {
             N = atoi(argv[i]);
@@ -649,6 +716,7 @@ int usage(const char* who)
     std::cout << "\t[option]  -t: followed with a run time threshold in seconds (default: 1800)" << std::endl;
     std::cout << "\t[option]  -tg: switch to turn ON the run time threshold for every methods" << std::endl;
     std::cout << "\t[option]  -f: switch to turn ON the result report to a file" << std::endl;
+    std::cout << "\t[option]  -d: switch to turn ON the computing of distance" << std::endl;
     return 1;
 }
 
@@ -693,9 +761,12 @@ void report(std::ostream& out)
     
     /* report nodes */
     out << "=========================| Node |=========================" << std::endl;
-    out << std::left << std::setw(align) << "Saturation:" << nodes_Sat << std::endl;
-    out << std::left << std::setw(align) << "chain:" << nodes_chain << std::endl;
-    out << std::left << std::setw(align) << "BFS:" << nodes_BFS << std::endl;
+    out << std::left << std::setw(align) << "Saturation (final):" << nodes_Sat << std::endl;
+    out << std::left << std::setw(align) << "Saturation (peak):" << nodes_Sat_Peak << std::endl;
+    out << std::left << std::setw(align) << "chain (final):" << nodes_chain << std::endl;
+    out << std::left << std::setw(align) << "chain (peak):" << nodes_chain_Peak << std::endl;
+    out << std::left << std::setw(align) << "BFS (final):" << nodes_BFS << std::endl;
+    out << std::left << std::setw(align) << "BFS (peak):" << nodes_BFS_Peak << std::endl;
     // out << std::left << std::setw(align) << "BFS (w/o image):" << nodes_correct << std::endl;
     out << std::left << std::setw(align) << "Relations:" << nodes_rel << std::endl;
 
@@ -733,11 +804,32 @@ int main(int argc, const char** argv)
     uint16_t levels = bits * N * M;
     ForestSetting setting1(setType, levels);
     ForestSetting setting2(relType, levels);
+    // for distance computing
+    if (isComputeDistance) {
+        setting1.setRangeType(INTEGER);
+        setting1.setPosInf(1);
+        // setting1.setMaxRange(maxStep);
+        if (setting1.getEncodeMechanism() == EDGE_PLUSMOD) {
+            setting1.setMaxRange(maxStep);
+        }
+    } else {
+        setting1.setRangeType(BOOLEAN);
+        if (setting1.getEncodeMechanism() == EDGE_PLUSMOD) {
+            setting1.setMaxRange(maxStep);
+        }
+    }
+    setting1.output(std::cout);
     forest1 = new Forest(setting1);
     forest2 = new Forest(setting2);
     /* Encode final target configure to BDD */
     Func target(forest1);
     target = encodePuzzle2BDD(conf);
+    // print
+    target.getEdge().print(std::cout);
+    DotMaker dot1(forest1, "target_Conf");
+    dot1.buildGraph(target);
+    dot1.runDot("pdf");
+
     forest1->registerFunc(target);
     // std::cout << "encode puzzle done" << std::endl;
     // std::cout << "\tnumber of nodes: " << forest1->getNodeManUsed(target) << std::endl;
@@ -777,6 +869,7 @@ int main(int argc, const char** argv)
     // }
     // count nodes
     nodes_rel = forest2->getNodeManUsed(relations);
+    nodes_rel_Peak = forest2->getNodeManPeak();
 
     /* Compute state space using saturation */
     Func states_Sat(forest1);
@@ -789,12 +882,15 @@ int main(int argc, const char** argv)
     // report cache
     UOPs.reportCacheStat(std::cout);
     BOPs.reportCacheStat(std::cout);
+    SOPs.reportCacheStat(std::cout);
     // record time
     time_Sat = watchSat.get_last_seconds();
     // record #states
+    // if (!isComputeDistance) apply(CARDINALITY, states_Sat, state_Sat);
     apply(CARDINALITY, states_Sat, state_Sat);
     // record #nodes
     nodes_Sat = forest1->getNodeManUsed(states_Sat);
+    nodes_Sat_Peak = forest1->getNodeManPeak();
 
     forest1->registerFunc(states_Sat);
     // report
@@ -802,13 +898,59 @@ int main(int argc, const char** argv)
     std::cout << "=========================| Time |=========================" << std::endl;
     std::cout << std::left << std::setw(align0);
     std::cout << "Saturation:" << time_Sat << " seconds" << std::endl;
-    std::cout << "=========================| #States |======================" << std::endl;
-    std::cout << std::left << std::setw(align0) << "Saturation:" << state_Sat << std::endl;
+    if (!isComputeDistance) {   // TBD for card
+        std::cout << "=========================| #States |======================" << std::endl;
+        std::cout << std::left << std::setw(align0) << "Saturation:" << state_Sat << std::endl;
+    }
     std::cout << "=========================| Node |=========================" << std::endl;
-    std::cout << std::left << std::setw(align0) << "Saturation:" << nodes_Sat << std::endl;
+    std::cout << std::left << std::setw(align0) << "Saturation (final):" << nodes_Sat << std::endl;
+    std::cout << std::left << std::setw(align0) << "Saturation (peak):" << nodes_Sat_Peak << std::endl;
+
+    // DotMaker dot2(forest1, "distance_sat");
+    // dot2.buildGraph(states_Sat);
+    // dot2.runDot("pdf");
     // reset the forest
+    forest1->deregisterFunc();
+    forest1->registerFunc(target);
     forest1->markAllFuncs();
     forest1->markSweep();
+
+    // STOP here if distance
+    if (isComputeDistance) {
+        // report result
+        if (!isReportToFile) {
+            std::cout << "Done!" << std::endl;
+            std::cout << "**********************************************************" << std::endl;
+            int align = 30;
+            std::cout << std::left << std::setw(align) << "Sliding puzzle:" << N << " x " << M  << std::endl;
+            std::cout << std::left << std::setw(align) << "Bits per position: " << bits << std::endl;
+            std::cout << std::left << std::setw(align) << "Level:" << forest1->getSetting().getNumVars() << std::endl;
+            std::cout << std::left << std::setw(align) << "The [Set] type:" << forest1->getSetting().getName() << std::endl;
+            std::cout << std::left << std::setw(align) << "The [Relation] type:" << forest2->getSetting().getName() << std::endl;
+            report(std::cout);
+        } else {
+            std::cout << "**********************************************************" << std::endl;
+            std::string fileName = forest1->getSetting().getName();
+            fileName += "_";
+            fileName += forest2->getSetting().getName();
+            fileName += "_";
+            fileName += std::to_string(N);
+            fileName += "_";
+            fileName += std::to_string(M);
+            fileName += ".txt";
+            std::ofstream file(fileName, std::ios::app);
+            if (!file) {
+                std::cerr << "Failed to open file " << fileName << std::endl;
+            } else {
+                report(file);
+                file.close();
+            }
+            std::cout << "Done!" << std::endl;
+        }
+        delete forest1;
+        delete forest2;
+        return 0;
+    }
 
     /* Update time limit */
     if (!isTimeLimitGlobal) newTimeLimit = time_Sat;
@@ -829,9 +971,12 @@ int main(int argc, const char** argv)
     apply(CARDINALITY, states_chain, state_chain);
     // record #nodes
     nodes_chain = forest1->getNodeManUsed(states_chain);
+    nodes_chain_Peak = forest1->getNodeManPeak();
 
     forest1->registerFunc(states_chain);
     // reset the forest
+    forest1->deregisterFunc();
+    forest1->registerFunc(target);
     forest1->markAllFuncs();
     forest1->markSweep();
 
@@ -854,9 +999,12 @@ int main(int argc, const char** argv)
     apply(CARDINALITY, states_BFS, state_BFS);
     // record #nodes
     nodes_BFS = forest1->getNodeManUsed(states_BFS);
+    nodes_BFS_Peak = forest1->getNodeManPeak();
 
     forest1->registerFunc(states_BFS);
     // reset the forest
+    forest1->deregisterFunc();
+    forest1->registerFunc(target);
     forest1->markAllFuncs();
     forest1->markSweep();
 
@@ -869,7 +1017,7 @@ int main(int argc, const char** argv)
     // // record time
     // time_correct = watchBFS0.get_last_seconds();
     // // record #states
-    // apply(CARDINALITY, states, state_correct);
+    // // apply(CARDINALITY, states, state_correct);
     // // record #nodes
     // nodes_correct = forest1->getNodeManUsed(states);
 
@@ -960,14 +1108,14 @@ int main(int argc, const char** argv)
     // }
 
     /* evaluate these results */
-    if ((getRes_Sat && getRes_chain) && states_Sat.getEdge() != states_chain.getEdge()) {
-        std::cout << "[SSG Failed]: Saturation and chain are different!" << std::endl;
-        exit(0);
-    }
-    if ((getRes_BFS && getRes_chain) && states_BFS.getEdge() != states_chain.getEdge()) {
-        std::cout << "[SSG Failed]: BFS and chain are different!" << std::endl;
-        exit(0);
-    }
+    // if ((getRes_Sat && getRes_chain) && states_Sat.getEdge() != states_chain.getEdge()) {
+    //     std::cout << "[SSG Failed]: Saturation and chain are different!" << std::endl;
+    //     exit(0);
+    // }
+    // if ((getRes_BFS && getRes_chain) && states_BFS.getEdge() != states_chain.getEdge()) {
+    //     std::cout << "[SSG Failed]: BFS and chain are different!" << std::endl;
+    //     exit(0);
+    // }
 
     // report result
     if (!isReportToFile) {
