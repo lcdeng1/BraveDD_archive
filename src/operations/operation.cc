@@ -180,7 +180,11 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
     // base cases:
     if (lvl == 0) {
         if (targetForest->getSetting().getEncodeMechanism() == TERMINAL) {
-            return source.getComp() ^ isTerminalOne(source.getEdgeHandle());
+            if (targetForest->setting.hasNegInf() || targetForest->setting.hasPosInf() || targetForest->setting.hasUnDef()) {
+                if (!isTerminalSpecial(source.getEdgeHandle())) return 1;
+            } else {
+                return source.getComp() ^ isTerminalOne(source.getEdgeHandle());
+            }
             // other value TBD
         } else {
             if (targetForest->setting.hasNegInf() || targetForest->setting.hasPosInf() || targetForest->setting.hasUnDef()) {
@@ -195,20 +199,27 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
     }
     if (source.getNodeLevel() == 0) {
         if (targetForest->getSetting().getEncodeMechanism() == TERMINAL) {
-            if (source.isConstantZero()) {
-                return 0;
-            } else if (source.isConstantOne()) {
-                return (targetForest->getSetting().isRelation()) ? (0x01 << (2*lvl)) : (0x01 << lvl);
-            } else if ((source.getRule() == RULE_EL1) || (source.getRule() == RULE_EH1)
-                        || (source.getRule() == RULE_AH0) || (source.getRule() == RULE_AL0)) {
-                return (0x01 << lvl) - 1;
-            } else if ((source.getRule() == RULE_EL0) || (source.getRule() == RULE_EH0)
-                        || (source.getRule() == RULE_AH1) || (source.getRule() == RULE_AL1)) {
-                return 1;
-            } else if (source.getRule() == RULE_I0) {
-                return 0x01 << lvl;
-            } else if (source.getRule() == RULE_I1) {
-                return (0x01 << (2*lvl)) - (0x01 << lvl);
+            if (targetForest->setting.hasNegInf() || targetForest->setting.hasPosInf() || targetForest->setting.hasUnDef()) {
+                // count path to non-special
+                if (!isTerminalSpecial(source.getEdgeHandle())) return (targetForest->getSetting().isRelation()) ? (0x01 << (2*lvl)) : (0x01 << lvl);
+                else return 0;
+            } else {
+                // count path to 1
+                if (source.isConstantZero()) {
+                    return 0;
+                } else if (source.isConstantOne()) {
+                    return (targetForest->getSetting().isRelation()) ? (0x01 << (2*lvl)) : (0x01 << lvl);
+                } else if ((source.getRule() == RULE_EL1) || (source.getRule() == RULE_EH1)
+                            || (source.getRule() == RULE_AH0) || (source.getRule() == RULE_AL0)) {
+                    return (0x01 << lvl) - 1;
+                } else if ((source.getRule() == RULE_EL0) || (source.getRule() == RULE_EH0)
+                            || (source.getRule() == RULE_AH1) || (source.getRule() == RULE_AL1)) {
+                    return 1;
+                } else if (source.getRule() == RULE_I0) {
+                    return 0x01 << lvl;
+                } else if (source.getRule() == RULE_I1) {
+                    return (0x01 << (2*lvl)) - (0x01 << lvl);
+                }
             }
         } else {
             if (targetForest->setting.hasNegInf() || targetForest->setting.hasPosInf() || targetForest->setting.hasUnDef()) {
