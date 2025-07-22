@@ -182,7 +182,16 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
         if (targetForest->getSetting().getEncodeMechanism() == TERMINAL) {
             return source.getComp() ^ isTerminalOne(source.getEdgeHandle());
             // other value TBD
-        } // other encodings TBD
+        } else {
+            if (targetForest->setting.hasNegInf() || targetForest->setting.hasPosInf() || targetForest->setting.hasUnDef()) {
+                if (isTerminalSpecial(SpecialValue::OMEGA, source.getEdgeHandle())) return 1;
+            } else {
+                if (isTerminalSpecial(SpecialValue::OMEGA, source.getEdgeHandle())
+                    && (source.getValue() == Value(1))) { // other value TBD
+                    return 1;
+                }
+            }
+        }
     }
     if (source.getNodeLevel() == 0) {
         if (targetForest->getSetting().getEncodeMechanism() == TERMINAL) {
@@ -200,6 +209,18 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
                 return 0x01 << lvl;
             } else if (source.getRule() == RULE_I1) {
                 return (0x01 << (2*lvl)) - (0x01 << lvl);
+            }
+        } else {
+            if (targetForest->setting.hasNegInf() || targetForest->setting.hasPosInf() || targetForest->setting.hasUnDef()) {
+                if (isTerminalSpecial(SpecialValue::OMEGA, source.getEdgeHandle())) return (targetForest->getSetting().isRelation()) ? (0x01 << (2*lvl)) : (0x01 << lvl);
+                else return 0;
+            } else {
+                if (isTerminalSpecial(SpecialValue::OMEGA, source.getEdgeHandle())
+                    && (source.getValue() == Value(1))) {
+                    return (targetForest->getSetting().isRelation()) ? (0x01 << (2*lvl)) : (0x01 << lvl);
+                } else {
+                    return 0;
+                }
             }
         }
     }
@@ -414,9 +435,9 @@ void UnaryList::reportCacheStat(std::ostream& out, int format) const
     out << "UnaryList:\n";
     while (curr) {
         out << "CT " << n << "=============================\n";
-        out << "Source Forest: " << curr->sourceForest << "\n";
-        out << "Result Forest: " << curr->targetForest << "\n";
-        out << "Operation Type: " << (int)curr->opType << "\n";
+        out << "Source Forest: " << curr->sourceForest->getSetting().getName() << "\n";
+        out << "Result Forest: " << curr->targetForest->getSetting().getName() << "\n";
+        out << "Operation Type: " << UOP2String(curr->opType) << "\n";
         out << "----------------------------------\n";
         curr->cache.reportStat(out, format);
         curr = curr->next;
@@ -661,6 +682,11 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
                 // for MT
                 Value tv1 = getTerminalValue(e1.getEdgeHandle());
                 Value tv2 = getTerminalValue(e2.getEdgeHandle());
+                // std::cout << "tv1: ";
+                // tv1.print(std::cout);
+                // std::cout << "; tv2: ";
+                // tv2.print(std::cout);
+                // std::cout << std::endl;
                 if (tv1 > tv2) {
                     return (opType == BinaryOperationType::BOP_MINIMUM) ? e2 : e1;
                 } else {
@@ -676,11 +702,11 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
                 // TBD for UnDef
             }
         }
-        /* Base case 3: two edges are the same edgeHandle but different edge value */
+        /* Base case 3: two edges are the same edgeHandle but different edge value, only for EV+ */
     #ifdef BRAVE_DD_OPERATION_TRACE
         std::cout << "checking base case 3\n";
     #endif
-        if ((e1.getEdgeHandle() == e2.getEdgeHandle()) && (e1.getValue() != e2.getValue())) {
+        if ((e1.getEdgeHandle() == e2.getEdgeHandle()) && (e1.getValue() != e2.getValue()) && (resForest->setting.getEncodeMechanism() != EDGE_PLUSMOD)) {
             if (e1.getValue() > e2.getValue()) {
                 return (opType == BinaryOperationType::BOP_MINIMUM) ? e2 : e1;
             } else {
@@ -751,14 +777,28 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "checking cache\n";
 #endif
+    Value originalVal;
+    if ((resForest->setting.getEncodeMechanism() != EDGE_PLUSMOD)   // not for EVmod
+        && ((opType == BinaryOperationType::BOP_MINIMUM) || (opType == BinaryOperationType::BOP_MAXIMUM))) {  // not for Plus
+        if (e1.getValue() < e2.getValue()) {
+            originalVal = e1.getValue();
+            e1.setValue(0);
+            e2.setValue(e2.getValue() - originalVal);
+        } else {
+            originalVal = e2.getValue();
+            e2.setValue(0);
+            e1.setValue(e1.getValue() - originalVal);
+        }
+    }
+    
     if (cache.check(lvl, e1, e2, ans) && !resForest->getSetting().isRelation()) {
+        ans.setValue(originalVal + ans.getValue());
         return ans;
     } else if (cache.check(m1, e1, e2, ans) && resForest->getSetting().isRelation()) {
         EdgeLabel root = 0;
         if (e1.getRule() == e2.getRule()) {
             packRule(root, e1.getRule());
             ans = resForest->mergeEdge(lvl, m1, root, ans);
-            return ans;
         } else if (opType == BinaryOperationType::BOP_INTERSECTION) {
             // assuming I1 is not considered, TBD
             if (lvl-m1 == 0) {
@@ -767,7 +807,6 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
                 packRule(root, RULE_I0);
             }
             ans = resForest->mergeEdge(lvl, m1, root, ans);
-            return ans;
         } else {
             // for operation like UNION
             packRule(root, RULE_X);
@@ -786,8 +825,9 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
                 tmp[3] = ans;
                 ans = resForest->reduceEdge(k, root, k, tmp);
             }
-            return ans;
         }
+        ans.setValue(originalVal + ans.getValue());
+        return ans;
     }
     /* -------------------------------------------------------------------------------------------------
     * Compute 
@@ -818,6 +858,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         ans = resForest->reduceEdge(lvl, root, lvl, tmp);
         // save to cache
         cache.add(lvl, e1, e2, ans);
+        ans.setValue(originalVal + ans.getValue());
         return ans;
     }
     /* -------------------------------------------------------------------------------------------------
@@ -853,6 +894,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         }
         // save cache
         cache.add(lvl, e1, e2, ans);
+        ans.setValue(originalVal + ans.getValue());
         return ans;
     } else {
         // For MXDs, recursively compute the bottom part, then cache and merge
@@ -893,6 +935,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
                 ans = resForest->reduceEdge(k, root, k, tmp);
             }
         }
+        ans.setValue(originalVal + ans.getValue());
         return ans;
     }
 }
@@ -1117,16 +1160,24 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "checking base case 1\n";
 #endif
-    if (s.isConstantZero() || r.isConstantZero()) {
+    if (s.isConstantZero()
+        || (s.isConstantOmega() && s.getValue() == Value(0))
+        || r.isConstantZero()) {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 1\n";
 #endif
-        EdgeHandle constant = makeTerminal(INT, 0);
-        if (source1Forest->getSetting().getValType() == FLOAT) {
-            constant = makeTerminal(FLOAT, 0.0f);
+        if (source1Forest->setting.getEncodeMechanism() == TERMINAL) {
+            EdgeHandle constant = makeTerminal(INT, 0);
+            if (source1Forest->getSetting().getValType() == FLOAT) {
+                constant = makeTerminal(FLOAT, 0.0f);
+            }
+            packRule(constant, RULE_X);
+            ans.setEdgeHandle(constant);
+        } else {
+            EdgeHandle constant = makeTerminal(VOID, SpecialValue::OMEGA);
+            packRule(constant, RULE_X);
+            ans.setEdgeHandle(constant);
         }
-        packRule(constant, RULE_X);
-        ans.setEdgeHandle(constant);
         ans = source1Forest->normalizeEdge(lvl, ans);
         return ans;
     }
@@ -1145,12 +1196,19 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 2: redundant\n";
 #endif
+        if (source1Forest->setting.getEncodeMechanism() == TERMINAL) {
             EdgeHandle constant = makeTerminal(INT, 1);
             if (source1Forest->getSetting().getValType() == FLOAT) {
                 constant = makeTerminal(FLOAT, 1.0f);
             }
             packRule(constant, RULE_X);
             ans.setEdgeHandle(constant);
+        } else {
+            EdgeHandle constant = makeTerminal(VOID, SpecialValue::OMEGA);
+            packRule(constant, RULE_X);
+            ans.setEdgeHandle(constant);
+            ans.setValue(1);
+        }
             ans = source1Forest->normalizeEdge(lvl, ans);
             return ans;
         }
@@ -1173,6 +1231,9 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
         if (source1Forest->getSetting().getValType() == FLOAT) {
             constant = makeTerminal(FLOAT, 0.0f);
         }
+        if (source1Forest->setting.getEncodeMechanism() != TERMINAL) {
+            constant = makeTerminal(VOID, SpecialValue::OMEGA);
+        }
         packRule(constant, RULE_X);
         for (size_t i=0; i<2; i++) {
             child[i].setEdgeHandle(constant);
@@ -1189,6 +1250,13 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "recursive computing\n";
 #endif
+            // Union of BDDs operation required
+            BinaryOperationType unionType = BinaryOperationType::BOP_UNION;
+            if (source1Forest->setting.getEncodeMechanism() != TERMINAL) unionType = BinaryOperationType::BOP_MAXIMUM;
+            BinaryOperation* un = BOPs.find(unionType, source1Forest, source1Forest, source1Forest);
+            if (!un) {
+                un = BOPs.add(new BinaryOperation(unionType, source1Forest, source1Forest, source1Forest));
+            }
             for (char i=0; i<4; i++) {
                 // if ((r.getRule() == RULE_I0) && (s.getNodeLevel() > m) && (i == 1 || i == 2)) continue;
                 char s0Idx = (isPre) ? (i&(0x01)) : ((i&(0x01<<1))>>1);
@@ -1196,11 +1264,6 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
                 sRec = source1Forest->cofact(m, s, s0Idx);
                 rRec = source2Forest->cofact(m, r, i);
                 resRec = computeImage(m-1, sRec, rRec, isPre);
-                // Union of BDDs operation required
-                BinaryOperation* un = BOPs.find(BinaryOperationType::BOP_UNION, source1Forest, source1Forest, source1Forest);
-                if (!un) {
-                    un = BOPs.add(new BinaryOperation(BinaryOperationType::BOP_UNION, source1Forest, source1Forest, source1Forest));
-                }
                 child[s1Idx] = un->computeElmtWise(m-1, child[s1Idx], resRec);
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "after union child[" << (int)s1Idx << "]: ";
@@ -1468,7 +1531,11 @@ void BinaryList::searchSweepCache(Forest* forest)
                 }
 
             } else if ((curr->opType == BinaryOperationType::BOP_UNION)
-                    || (curr->opType == BinaryOperationType::BOP_INTERSECTION)) {
+                        || (curr->opType == BinaryOperationType::BOP_INTERSECTION)
+                        || (curr->opType == BinaryOperationType::BOP_MINIMUM)
+                        || (curr->opType == BinaryOperationType::BOP_MAXIMUM)
+                        || (curr->opType == BinaryOperationType::BOP_PLUS)
+                        || (curr->opType == BinaryOperationType::BOP_MINUS)) {
                 if (isRes) {
                     curr->cache.sweep(forest, 0);
                     curr->cache.sweep(forest, 1);
@@ -1493,10 +1560,10 @@ void BinaryList::reportCacheStat(std::ostream& out, int format) const
     out << "BinaryList:\n";
     while (curr) {
         out << "CT " << n << " =============================\n";
-        out << "Source1 Forest: " << curr->source1Forest << "\n";
-        out << "Source2 Forest: " << curr->source2Forest << "\n";
+        out << "Source1 Forest: " << curr->source1Forest->getSetting().getName() << "\n";
+        out << "Source2 Forest: " << curr->source2Forest->getSetting().getName() << "\n";
         out << "Result Forest: " << curr->resForest << "\n";
-        out << "Operation Type: " << (int)curr->opType << "\n";
+        out << "Operation Type: " << BOP2String(curr->opType) << "\n";
         out << "----------------------------------\n";
         curr->cache.reportStat(out, format);
         curr = curr->next;
@@ -1630,7 +1697,10 @@ Edge SaturationOperation::computeSaturation(const uint16_t lvl, const Edge& sour
     /* -------------------------------------------------------------------------------------------------
     * Base case 1: constant initial set or constant zero relation
     * ------------------------------------------------------------------------------------------------*/
-    if (source1.isConstantZero() || source1.isConstantOne() || relations[begin].getEdge().isConstantZero()) {
+    if (source1.isConstantZero() || source1.isConstantOne()
+        || (source1.isConstantOmega() && source1.getValue() == Value(0))
+        || (source1.isConstantOmega() && source1.getValue() == Value(1))
+        || relations[begin].getEdge().isConstantZero()) {
         ans = source1Forest->normalizeEdge(lvl, ans);
         return ans;
     }
@@ -1638,12 +1708,15 @@ Edge SaturationOperation::computeSaturation(const uint16_t lvl, const Edge& sour
     * Base case 2: constant one relation
     * ------------------------------------------------------------------------------------------------*/
     if (relations[begin].getEdge().isConstantOne()) {
-        EdgeHandle constant = makeTerminal(INT, 1);
-        if (source1Forest->getSetting().getValType() == FLOAT) {
-            constant = makeTerminal(FLOAT, 1.0f);
-        }
-        packRule(constant, RULE_X);
-        ans.setEdgeHandle(constant);
+        if (source1Forest->setting.getEncodeMechanism() == TERMINAL) {
+            //
+            ans.setEdgeHandle(makeTerminal(1));
+            ans.setRule(RULE_X);
+        } else {
+            ans.setEdgeHandle(makeTerminal(SpecialValue::OMEGA));
+            ans.setRule(RULE_X);
+            ans.setValue(1);
+        };
         ans = source1Forest->normalizeEdge(lvl, ans);
         return ans;
     }
@@ -1674,13 +1747,17 @@ Edge SaturationOperation::computeSaturation(const uint16_t lvl, const Edge& sour
     if (fires.size() > 0) {
         size_t nextBegin = fires.size() + begin;
         // Union of BDDs operation required
-        BinaryOperation* un = BOPs.find(BinaryOperationType::BOP_UNION, source1Forest, source1Forest, source1Forest);
+        BinaryOperationType unionType = BinaryOperationType::BOP_UNION;
+        if (source1Forest->setting.getEncodeMechanism() != TERMINAL) unionType = BinaryOperationType::BOP_MAXIMUM;
+        BinaryOperation* un = BOPs.find(unionType, source1Forest, source1Forest, source1Forest);
         if (!un) {
-            un = BOPs.add(new BinaryOperation(BinaryOperationType::BOP_UNION, source1Forest, source1Forest, source1Forest));
+            un = BOPs.add(new BinaryOperation(unionType, source1Forest, source1Forest, source1Forest));
         }
 #ifdef BRAVE_DD_SAT_STRATEGY_1
         // child edges firing enough
-        bool must0 = !child[0].isConstantZero(), must1 = !child[1].isConstantZero();
+        // bool must0 = !child[0].isConstantZero(), must1 = !child[1].isConstantZero();
+        bool must0 = !(child[0].isConstantZero() || (child[0].isConstantOmega() && (child[0].getValue() == Value(0))));
+        bool must1 = !(child[1].isConstantZero() || (child[1].isConstantOmega() && (child[1].getValue() == Value(0))));
         while (must0 || must1) {
             Edge oldChild, rel, res;
             bool isChanged = 1;
@@ -1804,12 +1881,21 @@ Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Ed
     uint16_t m = (k < relations[begin].getEdge().getNodeLevel()) ? relations[begin].getEdge().getNodeLevel() : k;
 
     /* check in the cache */
-    if (cache.check(lvl, source1, ans)) return ans;
+    Value originalVal;
+    Edge source1Cache = source1;
+    if (source1Forest->setting.getEncodeMechanism() != EDGE_PLUSMOD) {
+        originalVal = source1.getValue();
+        source1Cache.setValue(0);
+    }
+    if (cache.check(lvl, source1Cache, ans)) {
+        ans.setValue(originalVal + ans.getValue());
+        return ans;
+    }
     std::vector<Edge> child(2);
     /* locate the begin even index for recursive calls */
     int childBegin = indexOfTopLessThan(m);
-    child[0] = source1Forest->cofact(m, source1, 0);
-    child[1] = source1Forest->cofact(m, source1, 1);
+    child[0] = source1Forest->cofact(m, source1Cache, 0);
+    child[1] = source1Forest->cofact(m, source1Cache, 1);
     if (childBegin != -1) {
         /* saturate child edges if there are still events left */
         child[0] = computeSaturationDistance(m-1, child[0], (size_t)childBegin);
@@ -1842,12 +1928,12 @@ Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Ed
         } else {
             constantOne.setEdgeHandle(makeTerminal(SpecialValue::OMEGA));
             constantOne.setRule(RULE_X);
-            constantOne.setValue(Value(1));
+            constantOne.setValue(1);
         }
 #ifdef BRAVE_DD_SAT_STRATEGY_1
         // child edges firing enough
-        bool must0 = !(child[0].isConstantZero() || (child[0].isConstantOmega() && (child[0].getValue() == Value(0))));
-        bool must1 = !(child[1].isConstantZero() || (child[1].isConstantOmega() && (child[1].getValue() == Value(0))));
+        bool must0 = !(child[0].isConstantZero() || (child[0].isConstantOmega() && (child[0].getValue() == Value(0))) || child[0].isConstantPosInf());
+        bool must1 = !(child[1].isConstantZero() || (child[1].isConstantOmega() && (child[1].getValue() == Value(0))) || child[1].isConstantPosInf());
         while (must0 || must1) {
             Edge oldChild, rel, res;
             bool isChanged = 1;
@@ -1937,8 +2023,9 @@ Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Ed
     EdgeLabel incoming = 0;
     packRule(incoming, source1.getRule());  // be careful!
     ans = source1Forest->mergeEdge(lvl, m, incoming, ans);
-    cache.add(lvl, source1, ans);
+    cache.add(lvl, source1Cache, ans);
 
+    ans.setValue(originalVal + ans.getValue());
     return ans;
 }
 
@@ -1958,22 +2045,33 @@ Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source
     s = source1Forest->normalizeEdge(lvl, source1);
     r = source2Forest->normalizeEdge(lvl, trans);
 
+    // setting info
+    EncodeMechanism em = source1Forest->setting.getEncodeMechanism();
+
     /* -------------------------------------------------------------------------------------------------
     * Base case 1: empty state or relation
     * ------------------------------------------------------------------------------------------------*/
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "checking base case 1\n";
 #endif
-    if (s.isConstantZero() || r.isConstantZero()) {
+    if (s.isConstantZero()
+        || (s.isConstantOmega() && (s.getValue() == Value(0)))
+        || r.isConstantZero()) {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 1\n";
 #endif
-        EdgeHandle constant = makeTerminal(INT, 0);
-        if (source1Forest->getSetting().getValType() == FLOAT) {
-            constant = makeTerminal(FLOAT, 0.0f);
+        if (em == TERMINAL) {
+            EdgeHandle constant = makeTerminal(INT, 0);
+            if (source1Forest->getSetting().getValType() == FLOAT) {
+                constant = makeTerminal(FLOAT, 0.0f);
+            }
+            packRule(constant, RULE_X);
+            ans.setEdgeHandle(constant);
+        } else {
+            EdgeHandle constant = makeTerminal(VOID, SpecialValue::OMEGA);
+            packRule(constant, RULE_X);
+            ans.setEdgeHandle(constant);
         }
-        packRule(constant, RULE_X);
-        ans.setEdgeHandle(constant);
         ans = source1Forest->normalizeEdge(lvl, ans);
         return ans;
     }
@@ -1985,7 +2083,9 @@ Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source
     std::cout << "checking base case 2\n";
 #endif
     if (r.getNodeLevel() == 0) {
-        if ((r.getRule() == RULE_I0) && (isTerminalOne(r.getEdgeHandle()) || isTerminalZero(r.getEdgeHandle())) && (r.getComp() ^ isTerminalOne(r.getEdgeHandle()))) {
+        if ((r.getRule() == RULE_I0)
+            && (isTerminalOne(r.getEdgeHandle()) || isTerminalZero(r.getEdgeHandle()))
+            && (r.getComp() ^ isTerminalOne(r.getEdgeHandle()))) {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 2: identity\n";
 #endif
@@ -1994,12 +2094,19 @@ Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 2: redundant\n";
 #endif
-            EdgeHandle constant = makeTerminal(INT, 1);
-            if (source1Forest->getSetting().getValType() == FLOAT) {
-                constant = makeTerminal(FLOAT, 1.0f);
+            if (em == TERMINAL) {
+                EdgeHandle constant = makeTerminal(INT, 1);
+                if (source1Forest->getSetting().getValType() == FLOAT) {
+                    constant = makeTerminal(FLOAT, 1.0f);
+                }
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+            } else {
+                EdgeHandle constant = makeTerminal(VOID, SpecialValue::OMEGA);
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+                ans.setValue(1);
             }
-            packRule(constant, RULE_X);
-            ans.setEdgeHandle(constant);
             ans = source1Forest->normalizeEdge(lvl, ans);
             return ans;
         }
@@ -2020,6 +2127,9 @@ Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source
         if (source1Forest->getSetting().getValType() == FLOAT) {
             constant = makeTerminal(FLOAT, 0.0f);
         }
+        if (em != TERMINAL) {
+            constant = makeTerminal(VOID, SpecialValue::OMEGA);
+        }
         packRule(constant, RULE_X);
         for (size_t i=0; i<2; i++) {
             child[i].setEdgeHandle(constant);
@@ -2039,9 +2149,11 @@ Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source
     std::cout << "recursive computing\n";
 #endif
             // Union of BDDs operation required
-            BinaryOperation* un = BOPs.find(BinaryOperationType::BOP_UNION, source1Forest, source1Forest, source1Forest);
+            BinaryOperationType unionType = BinaryOperationType::BOP_UNION;
+            if (source1Forest->setting.getEncodeMechanism() != TERMINAL) unionType = BinaryOperationType::BOP_MAXIMUM;
+            BinaryOperation* un = BOPs.find(unionType, source1Forest, source1Forest, source1Forest);
             if (!un) {
-                un = BOPs.add(new BinaryOperation(BinaryOperationType::BOP_UNION, source1Forest, source1Forest, source1Forest));
+                un = BOPs.add(new BinaryOperation(unionType, source1Forest, source1Forest, source1Forest));
             }
             for (char i=0; i<4; i++) {
                 // if ((r.getRule() == RULE_I0) && (s.getNodeLevel() > m) && (i == 1 || i == 2)) continue;
@@ -2113,28 +2225,32 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
     std::cout << "checking base case 2\n";
 #endif
     if (r.getNodeLevel() == 0) {
-        if ((r.getRule() == RULE_I0) && (isTerminalOne(r.getEdgeHandle()) || isTerminalZero(r.getEdgeHandle())) && (r.getComp() ^ isTerminalOne(r.getEdgeHandle()))) {
+        if ((r.getRule() == RULE_I0) 
+            && (isTerminalOne(r.getEdgeHandle()) || isTerminalZero(r.getEdgeHandle()))
+            && (r.getComp() ^ isTerminalOne(r.getEdgeHandle()))) {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 2: identity\n";
 #endif
             return s;
-        } else if (r.isConstantOne() && (isTerminal(s.getEdgeHandle()))) {
+        } else if (r.isConstantOne()) {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "base case 2: redundant\n";
 #endif
             // optimization TBD
-            if (source1Forest->setting.getEncodeMechanism() == TERMINAL) {
+            if ((source1Forest->setting.getEncodeMechanism() == TERMINAL) && (isTerminal(s.getEdgeHandle()))) {
                 EdgeHandle constant = makeTerminal(getTerminalValue(s.getEdgeHandle()));
                 packRule(constant, RULE_X);
                 ans.setEdgeHandle(constant);
-            } else {
+                ans = source1Forest->normalizeEdge(lvl, ans);
+                return ans;
+            } else if (source1Forest->setting.getEncodeMechanism() != TERMINAL) {
                 EdgeHandle constant = makeTerminal(VOID, SpecialValue::OMEGA);
                 packRule(constant, RULE_X);
                 ans.setEdgeHandle(constant);
                 ans.setValue(s.getValue());
+                ans = source1Forest->normalizeEdge(lvl, ans);
+                return ans;
             }
-            ans = source1Forest->normalizeEdge(lvl, ans);
-            return ans;
         }
     }
 
@@ -2146,6 +2262,11 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "checking cache\n";
 #endif
+    Value originalVal;
+    if (source1Forest->setting.getEncodeMechanism() != EDGE_PLUSMOD) {
+        originalVal = s.getValue();
+        s.setValue(0);
+    }
     if (!cacheRel.check(lvl, s, r, ans)) {
         // not cached, computing needed
         std::vector<Edge> child(2);
@@ -2200,6 +2321,7 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
         // cache
         cacheRel.add(lvl, s, r, ans);
     }
+    ans.setValue(originalVal + ans.getValue());
     return ans;
 }
 
@@ -2317,24 +2439,15 @@ void SaturationList::searchSweepCache(Forest* forest)
     while (curr) {
         if (isSource1 || isSource2 || isRes) {
             // sweep cache
-            // if ((curr->opType == BinaryOperationType::BOP_PREIMAGE) || (curr->opType == BinaryOperationType::BOP_POSTIMAGE)) {
-            //     if (isSource1) {
-            //         curr->cache.sweep(forest, 0);
-            //         curr->cache.sweep(forest, 1);
-            //     }
-            //     if (isSource2) {
-            //         curr->cache.sweep(forest, 2);
-            //     }
-
-            // } else if ((curr->opType == BinaryOperationType::BOP_UNION)
-            //         || (curr->opType == BinaryOperationType::BOP_INTERSECTION)) {
-            //     if (isRes) {
-            //         curr->cache.sweep(forest, 0);
-            //         curr->cache.sweep(forest, 1);
-            //         curr->cache.sweep(forest, 2);
-            //     }
-            // }
-            // other operations TBD
+            if (isSource1) {
+                curr->cache.sweep(forest, 0);
+                curr->cache.sweep(forest, 1);
+                curr->cacheRel.sweep(forest, 0);
+                curr->cacheRel.sweep(forest, 1);
+            }
+            if (isSource2) {
+                curr->cacheRel.sweep(forest, 2);
+            }
         }
         curr = curr->next;
         if (curr) {
@@ -2352,9 +2465,9 @@ void SaturationList::reportCacheStat(std::ostream& out, int format) const
     out << "SaturationList:\n";
     while (curr) {
         out << "CT " << n << " =============================\n";
-        out << "Source1 Forest: " << curr->source1Forest << "\n";
-        out << "Source2 Forest: " << curr->source2Forest << "\n";
-        out << "Result Forest: " << curr->resForest << "\n";
+        out << "Source1 Forest: " << curr->source1Forest->getSetting().getName() << "\n";
+        out << "Source2 Forest: " << curr->source2Forest->getSetting().getName() << "\n";
+        out << "Result Forest: " << curr->resForest->getSetting().getName() << "\n";
         out << "----------------------------------\n";
         curr->cache.reportStat(out, format);
         curr->cacheRel.reportStat(out, format);
