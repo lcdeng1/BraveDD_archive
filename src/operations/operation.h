@@ -33,6 +33,38 @@ namespace BRAVE_DD {
         UOP_UQUANTIFY,
         UOP_REORDER
     };
+    static inline std::string UOP2String(UnaryOperationType uop) {
+        std::string optype;
+        switch (uop)
+        {
+        case UnaryOperationType::UOP_COPY:
+            optype = "Copy";
+            break;
+        case UnaryOperationType::UOP_CARDINALITY:
+            optype = "Cardinality";
+            break;
+        case UnaryOperationType::UOP_COMPLEMENT:
+            optype = "Complement";
+            break;
+        case UnaryOperationType::UOP_CONCRETIZE_RST:
+            optype = "Concretize_Rst";
+            break;
+        case UnaryOperationType::UOP_CONCRETIZE_OSM:
+            optype = "Concretize_OSM";
+            break;
+        case UnaryOperationType::UOP_CONCRETIZE_TSM:
+            optype = "Concretize_TSM";
+            break;
+        case UnaryOperationType::UOP_LOWEST:
+            optype = "Lowest";
+            break;
+        
+        default:
+            optype = "Unknown";
+            break;
+        }
+        return optype;
+    }
     class UnaryOperation;
     class UnaryList;
     /// Built-in Binary operation type
