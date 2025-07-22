@@ -33,6 +33,7 @@ class BRAVE_DD::Func {
     inline bool isSameForest(const Func &e) const {return parent == e.getForest();}
 
     inline std::string getName() const {return name;}
+    inline void setForest(Forest* f) {parent = f;}
     inline void setEdge(const Edge& e) {edge = e;}
     inline void setName(std::string l) {name = l;}
 
