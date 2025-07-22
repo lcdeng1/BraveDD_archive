@@ -1179,6 +1179,7 @@ void Forest::markSweep()
     // sweep computing table (cache) related to this forest
     UOPs.sweepCache(this);
     BOPs.sweepCache(this);
+    SOPs.sweepCache(this);
 
     // sweep
     nodeMan->sweep();
