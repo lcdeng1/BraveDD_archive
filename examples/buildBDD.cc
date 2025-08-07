@@ -1,6 +1,12 @@
 #include <vector>
 #include <unordered_set>
 #include "/home/dara/Git/brave_dd/src/brave_dd.h"
+#include <algorithm>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
 
 
 
@@ -19,7 +25,11 @@ enum alphabet{
 
 int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments);
 int boolVariableToInt(int varType, int* parms);
+std::string intToBoolVariable(int varIndex);
 std::string boolVariableToInt(int varIndex);
+void printCurLevelVerticies(std::vector<uint64_t> curLevelVerticies);
+std::string intToAlphaString(int number);
+
 
 using namespace BRAVE_DD;
 
@@ -96,6 +106,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments){
     int curVertex = 0;
     boolVariableToIntParms1[0] = curVertex;
     std::string function;
+    std::string tempFunction = "";
     std::string childFunction;
 
 
@@ -105,12 +116,10 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments){
     uint64_t uniqueVertexName = (static_cast<uint64_t>(0x4) << 48) | curVertexHandle;
     std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
 
-
     curLevelVerticies.push_back(uniqueVertexName);
     seen.insert(uniqueVertexName);
 
-    
-    
+
     //build sat problem
     //root(v_a) belongs to q0
     function += "1 0\n";
@@ -125,19 +134,45 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments){
     vertecisOnLvl = curLevelVerticies.size();
     curVertexHandle = curLevelVerticies.back();
     //qrbdd.getEdge().getNodeLevel();
-    for (int i = 0; i < numAssignments; i++){
+    //gets two children of root
+    for (int x = 0; x < numAssignments; x++){
+        //prep for implication
+        boolVariableToIntParms1[0] = 0;
+        boolVariableToIntParms1[1] = 0;
+        //prep for high low child
+        boolVariableToIntParms1[2] = x;
+        //in this the parent is always 0
+        boolVariableToIntParms1[3] = 0;
         uniqueVertexName = static_cast<uint64_t>(0x3) << 48 | curVertexHandle;
         std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
         //check to see if already part of curLevelVerticies
-        if(seen.insert(static_cast<uint64_t>(0x3) << 48 | qrbdd.getForest()->getChildNodeHandle(4,curVertexHandle,i)).second){
+        if(seen.insert(static_cast<uint64_t>(0x3) << 48 | qrbdd.getForest()->getChildNodeHandle(4,curVertexHandle,x)).second){
             //add to the stack
-            curLevelVerticies.push_back(static_cast<uint64_t>(3) << 48 | qrbdd.getForest()->getChildNodeHandle(4,curVertexHandle,i));
+            curLevelVerticies.push_back(static_cast<uint64_t>(3) << 48 | qrbdd.getForest()->getChildNodeHandle(4,curVertexHandle,x));
+            //root's children belong to 1 of three states q0, q1, or q2 and if root belongs to 0 then we need 0 to point to what roots child belongs to
+            std::cout << function << std::endl;
+            function += "-" + std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1))+ " ";
+            std::cout << function << std::endl;
+            boolVariableToIntParms1[0] = x + 1;
+            for(int i = 0; i < std::max(3, numStates); i++){
+                //if root belongs to 0 then we need 0 to point to what roots child belongs to
+                //format of ((v_alpha belongs to q_i) & (delta (q_j,x) = q_i), {alpha, i, x, j})
+                boolVariableToIntParms1[1] = i;
+                function += std::to_string(boolVariableToInt(belongsAndDelta, boolVariableToIntParms1))+ " ";
+                //root's children belong to 1 of three states q0, q1, or q2
+                tempFunction += std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1))+ " ";
+            }
+            tempFunction += "0\n";
+            function += "0\n" + tempFunction;
+            std::cout << function << std::endl; 
         }
     }
-    curLevelVerticies.pop_back();
+    curLevelVerticies.erase(curLevelVerticies.begin());
+    printCurLevelVerticies(curLevelVerticies);
 
 
-    //root's children belong to 1 of three states q0, q1, or q2 but they don't ever belong to the same
+
+    /*// but they don't ever belong to the same
     //start with at least one
     vertecisOnLvl = curLevelVerticies.size();
     for(uint64_t i = 0; i < curLevelVerticies.size(); i++){
@@ -163,13 +198,50 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments){
         boolVariableToIntParms1[0] = curVertex;  
     }
 
-    curVertex -= curLevelVerticies.size();
-    boolVariableToIntParms1[0] = curVertex;
+    curVertex -= curLevelVerticies.size();std::endl
+    boolVariableToIntParms1[0] = curVertex;*/
     //Link variabls together 
 
 
 
-    //add p cnf <num variables> <num clauses> to tope of file
+
+    //add p cnf <num variables> <num clauses> to tope of file   
+    std::ofstream outFile("satFunctionForQRBDDtoDFA.txt");
+    if (!outFile) {
+        std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFA.txt" << std::endl; // O(1)
+        return;
+    }
+
+    outFile << function; // O(n) — writes each character of the string
+    outFile.close();    // O(1) — flushes and closes the file
+    
+
+    std::ifstream inFile("satFunctionForQRBDDtoDFA.txt");
+    if (!inFile) {
+        std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFA.txt" << std::endl; // O(1)
+        return;
+    }
+
+    std::string line;
+    // Loop over each line — O(m), where m is the number of lines
+    while (std::getline(inFile, line)) {
+        std::istringstream lineStream(line); // O(1)
+        std::string word;
+        bool isFirst = true;
+
+        // Loop over each word in the line — O(k), where k is the number of words in the line
+        while (lineStream >> word && word != "0") {
+            if (!isFirst){
+                std::cout << "\\vee ";
+            }
+            std::cout << intToBoolVariable(std::stoi(word)) << " "; // O(1)
+            isFirst = false;
+        }
+        std::cout << "\\wedge \\\\" << std::endl;
+    }
+
+    inFile.close(); // O(1)
+
     return 0;
 }
 
@@ -192,9 +264,9 @@ int boolVariableToInt(int varType, int* parms){
     //vertex alpha belongs to state i
     //there are n verticies (including terminal), there are |Q| states. there will be n * |Q| variables representing these from 1 -> n * |Q|
     //format of (v_alpha belongs to q_i) is (v_AlphBelongsToq_i, {alpha, i})
-    if(varType = v_AlphBelongsToq_i){
+    if(varType == v_AlphBelongsToq_i){
         // take vertex and multiply it by the number of states, add the state number and add 1 since minimum is 1
-        numStatesG * parms[0]+ 
+        return numStatesG * parms[0]+ 
         // alpha increments each time
         parms[1] + 
         // ofset up one so that we don't double dip an index since we are 1 indexing not 0 indexing
@@ -204,9 +276,9 @@ int boolVariableToInt(int varType, int* parms){
     //each of the |Q| states has x edges, each edge can go to |Q| states, so number of variables are |Q|(number of states edges from)*x*|Q|(number of states edges too)
     //goes from (n * |Q| + 1) -> (n * |Q| + |Q|*x*|Q|)
     //format of (delta (q_i,x) = q_j) is (deltaq_iXIsq_j, {i, x, j})
-    else if(varType = deltaq_iXIsq_j){
+    else if(varType == deltaq_iXIsq_j){
         // for each number of symbols in the alphavet times of incrementing x, increment j
-        numInAlphabet * numverticis * parms[1] +
+        return numInAlphabet * numverticis * parms[1] +
         // for each number of vertex times of incrementing i, increment x
         numverticis * parms[1] +
         // increment i each time
@@ -216,10 +288,10 @@ int boolVariableToInt(int varType, int* parms){
         // ofset up one so that we don't double dip an index since we are 1 indexing not 0 indexing
         1;
     }
-    //format of ((v_alpha belongs to q_i) & (delta (q_i,x) = q_j), {alpha, i, x, j})
-    else if(varType = belongsAndDelta){
+    //format of ((v_alpha belongs to q_i) & (delta (q_j,x) = q_i), {alpha, i, x, j})
+    else if(varType == belongsAndDelta){
         // for each numberOfSymbols in the alphabet increments of x, increment j
-        numInAlphabet * numverticis * numStatesG * parms[3] + 
+        return numInAlphabet * numverticis * numStatesG * parms[3] + 
         // there will be, the number of verticies befor incrementing x, so for each numberOfVerticie increments in i, incrment x. 
         numverticis * numStatesG * parms[2] +  
         // there are numStatesG options for i to change befor alpha changes. so for each increment of alpha, increase by numStatesG
@@ -237,6 +309,98 @@ int boolVariableToInt(int varType, int* parms){
 
 
 //from number to variable
-std::string boolVariableToInt(int varIndex){
-    return "";
+std::string intToBoolVariable(int varIndex){
+    //lets set up the variables
+    int numberOfv_AlphBelongsToq_i = numStatesG * numverticis;
+    u_int32_t numberOfdeltaq_iXIsq_j = numStatesG * numverticis;
+    std::string isNeg = "";
+    std::string alpha = "";
+    std::string i = "";
+    std::string x = "";
+    std::string j = "";
+    //vertex alpha belongs to state i
+    //there are n verticies (including terminal), there are |Q| states. there will be n * |Q| variables representing these from 1 -> n * |Q|
+    //format of (v_alpha belongs to q_i) isNegis (v_AlphBelongsToq_i, {alpha, i})
+    if(varIndex < 0){
+        isNeg = "\\neg ";
+    }
+    if(varIndex <= numberOfv_AlphBelongsToq_i){
+        // take vertex and multiply it by the number of states, add the state number and add 1 since minimum is 1
+        alpha = intToAlphaString(varIndex / numStatesG);
+        i = std::to_string(varIndex % numStatesG - 1);
+        return isNeg + "\\v_"+ alpha + "\\relSym\\q_"+ i ;
+    }
+    //delta (state i, assingment x) = state j
+    //each of the |Q| states has x edges, each edge can go to |Q| states, so number of variables are |Q|(number of states edges from)*x*|Q|(number of states edges too)
+    //goes from (n * |Q| + 1) -> (n * |Q| + |Q|*x*|Q|)
+    //format of (delta (q_i,x) = q_j) is (deltaq_iXIsq_j, {i, x, j})
+    /*else if(varIndex == deltaq_iXIsq_j){
+        // for each number of symbols in the alphavet times of incrementing x, increment j
+        return numInAlphabet * numverticis * parms[1] +
+        // for each number of vertex times of incrementing i, increment x
+        numverticis * parms[1] +
+        // increment i each time
+        parms[0] +
+        // move to the location of the last variable index before deltaq_iXIsq_j
+        numberOfv_AlphBelongsToq_i +
+        // ofset up one so that we don't double dip an index since we are 1 indexing not 0 indexing
+        1;
+    }*/
+    //format of ((v_alpha belongs to q_i) & (delta (q_j,x) = q_i), {alpha, i, x, j})
+    else {
+        // for each numberOfSymbols in the alphabet increments of x, increment j
+        varIndex -= numberOfv_AlphBelongsToq_i + numberOfv_AlphBelongsToq_i;
+        j = std::to_string(varIndex / (numInAlphabet * numverticis * numStatesG)); 
+        //std::cout << j << std::endl;
+        x = std::to_string(((varIndex / (numverticis * numStatesG)) % (numInAlphabet))); 
+        //std::cout << x << std::endl;
+        // there will be, the number of verticies befor incrementing x, so for each numberOfVerticie increments in i, incrment x. 
+        /*numverticis * numStatesG * parms[2] +  
+        // there are numStatesG options for i to change befor alpha changes. so for each increment of alpha, increase by numStatesG
+        numStatesG * parms[0] + 
+        // i will change every time
+        parms [1] + 
+        // ofset up one so that we don't double dip an index since we are 1 indexing not 0 indexing
+        1;*/
+        return isNeg + "\\v_ NIAlph \\relSym\\q_ NIi \\wedge (\\delta(\\q_" + j +", " + x + ")) = \\q_NIi";
+    }    
+
+
+    return "NI";//not implemented
 }
+void printCurLevelVerticies(std::vector<uint64_t> curLevelVerticies){
+    std::vector<uint64_t> temp = curLevelVerticies;
+    std::cout << "test" << std::endl;
+    for(int i = 0; i < temp.size(); i++){
+        std::cout << std::hex << "Result: 0x" << temp[i] << std::endl;
+    }
+}
+/**
+ * @brief Converts an integer to a custom alphabetic string (like Excel columns but 0-indexed).
+ *        a = 0, b = 1, ..., z = 25, aa = 26, ab = 27, ...
+ * @param number The integer to convert (must be >= 0).
+ * @return A string representing the encoded value.
+ * @note Time Complexity: O(log₍₂₆₎n) — each division reduces the number by a factor of 26.
+ */
+std::string intToAlphaString(int number) {
+    std::string result;
+
+    // Loop runs O(log₍₂₆₎n) times
+    while (number >= 0) {
+        int remainder = number % 26; // O(1)
+        result = static_cast<char>('a' + remainder) + result; // O(1)
+        number = number / 26 - 1; // O(1)
+    }
+
+    return result;
+}
+
+/*int main() {
+    int input = 27;
+
+    // Call to intToAlphaString — O(log₍₂₆₎n)
+    std::string output = intToAlphaString(input);
+
+    std::cout << "Encoded string: " << output << std::endl; // O(1)
+    return 0;
+}*/
