@@ -135,6 +135,10 @@ class BRAVE_DD::ComputeTable {
      */
     void enlarge(uint64_t newSize);
 
+    friend class UnaryOperation;
+    friend class BinaryOperation;
+    friend class SaturationOperation;
+
     std::vector<CacheEntry>     table;
     uint64_t                    numEntries;
     uint64_t                    size;

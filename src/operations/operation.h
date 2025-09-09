@@ -157,6 +157,26 @@ class BRAVE_DD::Operation {
     protected:
     /*-------------------------------------------------------------*/
     virtual ~Operation();
+
+    void cacheAdd(const uint16_t lvl, const Edge& a, const long& ans) {
+        // check if sweep and enlarg, and do it
+        sweepAndEnlarge();
+        // add to cache
+        cache.add(lvl, a, ans);
+    }
+    void cacheAdd(const uint16_t lvl, const Edge& a, const Edge& ans) {
+        // check if sweep and enlarg, and do it
+        sweepAndEnlarge();
+        // add to cache
+        cache.add(lvl, a, ans);
+    }
+    void cacheAdd(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& ans) {
+        // check if sweep and enlarg, and do it
+        sweepAndEnlarge();
+        // add to cache
+        cache.add(lvl, a, b, ans);
+    }
+    virtual void sweepAndEnlarge() {}
     // computing tables TBD
     ComputeTable        cache;
 
@@ -188,6 +208,7 @@ class BRAVE_DD::UnaryOperation : public Operation {
     protected:
     /*-------------------------------------------------------------*/
     virtual ~UnaryOperation();
+    void sweepAndEnlarge() override;
 
     /*-------------------------------------------------------------*/
     private:
@@ -295,6 +316,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
     protected:
     /*-------------------------------------------------------------*/
     virtual ~BinaryOperation();
+    void sweepAndEnlarge() override;
 
     /*-------------------------------------------------------------*/
     private:
@@ -426,6 +448,15 @@ class BRAVE_DD::SaturationOperation : public Operation {
     protected:
     /*-------------------------------------------------------------*/
     virtual ~SaturationOperation();
+
+    void cacheRelAdd(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& ans) {
+        // check if sweep and enlarg, and do it
+        sweepAndEnlargeRel();
+        // add to cache
+        cacheRel.add(lvl, a, b, ans);
+    }
+    void sweepAndEnlarge() override;
+    void sweepAndEnlargeRel();
     // computing table only for relation product
     ComputeTable        cacheRel;
 
