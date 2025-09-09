@@ -38,16 +38,6 @@ void DotMaker::buildGraph(const Func& func)
     CompSet cs = parent->getSetting().getCompType();
     SwapSet ss = parent->getSetting().getSwapType();
 #ifdef BRAVE_DD_DOT_TRACE
-    std::cout << "buildGraph: unmark" << std::endl;
-    std::cout << std::endl;
-#endif
-    parent->unmark();
-#ifdef BRAVE_DD_DOT_TRACE
-    std::cout << "buildGraph: marking" << std::endl;
-    std::cout << std::endl;
-#endif
-    parent->markNodes(func);
-#ifdef BRAVE_DD_DOT_TRACE
     std::cout << "buildGraph: start" << std::endl;
     std::cout << std::endl;
 #endif
@@ -82,7 +72,8 @@ void DotMaker::buildGraph(const Func& func)
     outfile << "\tv" << numVars+1 << " [label=\"" << label << "\"]\n";
     outfile << "\tv" << numVars+1 << " -> v" << numVars << " [style=invis]\n";
     /* build the function */
-    buildEdge(numVars, func.getEdge());
+    buildEdge(numVars+1, func.getEdge());
+    parent->unmark();
     /* end */
     outfile << "}";
     outfile.close();    // close out file
@@ -99,15 +90,6 @@ void DotMaker::buildGraph(const std::vector<Func>& func)
     int numRules = parent->getSetting().getReductionSize();
     CompSet cs = parent->getSetting().getCompType();
     SwapSet ss = parent->getSetting().getSwapType();
-#ifdef BRAVE_DD_DOT_TRACE
-    std::cout << "buildGraph: unmark" << std::endl;
-    std::cout << std::endl;
-#endif
-    parent->unmark();
-#ifdef BRAVE_DD_DOT_TRACE
-    std::cout << "buildGraph: marking" << std::endl;
-    std::cout << std::endl;
-#endif
 #ifdef BRAVE_DD_DOT_TRACE
     std::cout << "buildGraph: start" << std::endl;
     std::cout << std::endl;
@@ -139,10 +121,9 @@ void DotMaker::buildGraph(const std::vector<Func>& func)
     outfile << "\tv" << numVars+1 << " -> v" << numVars << " [style=invis]\n";
     /* build the function */
     for (size_t i=0; i<func.size(); i++) {
-        parent->markNodes(func[i]);
-        buildEdge(numVars, func[i].getEdge());
-        parent->unmark();
+        buildEdge(numVars+1, func[i].getEdge(), (NodeHandle)i);
     }
+    parent->unmark();
     /* end */
     outfile << "}";
     outfile.close();    // close out file
@@ -166,29 +147,44 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
     char numChild = (parent->getSetting().isRelation()) ? 4 : 2;
     /* edge lable */
     std::string label = "";
-    label += "<";
-    if (numRules > 0) {
-        ReductionRule rule = edge.getRule();
-        label += ((rule == RULE_X) && !parent->getSetting().hasReductionRule(rule)) ? "N" : rule2String(rule);
-    }
-    if (cs != NO_COMP) {
-        label += (edge.getComp()) ? ", c" : ", _";
-    }
-    if (ss != NO_SWAP) {
-        if (ss == ONE) {
-            label += (edge.getSwap(0)) ? ", s_o" : ", _";
-        } else if (ss == ALL) {
-            label += (edge.getSwap(0)) ? ", s_a" : ", _";
-        } else if (ss == FROM || ss == FROM_TO) {
-            label += (edge.getSwap(0)) ? ", s_f" : ", _";
-        } else if (ss == TO) {
-            label += (edge.getSwap(1)) ? ", s_t" : ", _";
+    if (em == EDGE_PLUS || em == EDGE_PLUSMOD) {
+        if (vt == INT) {
+            int ev;
+            edge.getValue().getValueTo(&ev,INT);
+            label += std::to_string(ev);
+        } else if (vt == LONG) {
+            long ev;
+            edge.getValue().getValueTo(&ev,LONG);
+            label += std::to_string(ev);
+        } else {
+            // other types
         }
-        if (ss == FROM_TO) {
-            label += (edge.getSwap(1)) ? ", s_t" : ", _";
+    } else {
+        label += "<";
+        if (numRules > 0) {
+            ReductionRule rule = edge.getRule();
+            label += ((rule == RULE_X) && !parent->getSetting().hasReductionRule(rule)) ? "N" : rule2String(rule);
         }
+        if (cs != NO_COMP) {
+            label += (edge.getComp()) ? ", c" : ", _";
+        }
+        if (ss != NO_SWAP) {
+            if (ss == ONE) {
+                label += (edge.getSwap(0)) ? ", s_o" : ", _";
+            } else if (ss == ALL) {
+                label += (edge.getSwap(0)) ? ", s_a" : ", _";
+            } else if (ss == FROM || ss == FROM_TO) {
+                label += (edge.getSwap(0)) ? ", s_f" : ", _";
+            } else if (ss == TO) {
+                label += (edge.getSwap(1)) ? ", s_t" : ", _";
+            }
+            if (ss == FROM_TO) {
+                label += (edge.getSwap(1)) ? ", s_t" : ", _";
+            }
+        }
+        label += ">";
     }
-    label += ">";
+    
     /* root edge */
     std::string root = "N";
     std::string style = "dashed";
@@ -199,85 +195,33 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
     } else if (st == 3) {
         style = "bold";
     }
-    if ((lvl == numVars) && (rootHandle == 0)) {
-        root += std::to_string(lvl+1);
-        outfile << "\t{rank=same v"<<numVars+1<<" "<<root<<" [shape = point]}\n";
+    if ((lvl == numVars + 1)) {
+        root += std::to_string(rootHandle);
+        outfile << "\t{rank=same v"<<numVars+1<<" "<<root<<" [label = \"F_" << rootHandle << "\"]}\n";
     } else {
         root += std::to_string(lvl);
         root += "_";
         root += std::to_string(rootHandle);
     }
-    if (em == TERMINAL) {
-        if (edge.getNodeLevel() == 0) {
-            EdgeHandle handle = edge.getEdgeHandle();
-            outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
-            outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
-        } else {
-            outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
-            outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
-            <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
-            // build child edges of target node if it's marked
-            if (parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
-                for (char i=0; i<numChild; i++) {
-                    buildEdge(edge.getNodeLevel(),
-                                parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
-                                edge.getNodeHandle(),
-                                i);
-                }
-            }
-            // unmark
-            parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
-        }
-    } else if (em == EDGE_PLUS || em == EDGE_PLUSMOD) {
-        if(vt == INT) {
-            int ev;
-            edge.getValue().getValueTo(&ev,INT);
-            if (edge.getNodeLevel() == 0) {
-                EdgeHandle handle = edge.getEdgeHandle();
-                outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
-                outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
-            } else {
-                outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
-                outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
-                <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
-                // build child edges of target node if it's marked
-                if (parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
-                    for (char i=0; i<numChild; i++) {
-                        buildEdge(edge.getNodeLevel(),
-                                    parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
-                                    edge.getNodeHandle(),
-                                    i);
-                    }
-                }
-                // unmark
-                parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
-            }
-        } else if (vt == LONG) {
-            long ev;
-            edge.getValue().getValueTo(&ev,LONG);
-            if (edge.getNodeLevel() == 0) {
-                EdgeHandle handle = edge.getEdgeHandle();
-                outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
-                outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
-            } else {
-                outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<ev<<"\"]\n";
-                outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
-                <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
-                // build child edges of target node if it's marked
-                if (parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
-                    for (char i=0; i<numChild; i++) {
-                        buildEdge(edge.getNodeLevel(),
-                                    parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
-                                    edge.getNodeHandle(),
-                                    i);
-                    }
-                }
-                // unmark
-                parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).unmark();
-            }
-        }
+    if (edge.getNodeLevel() == 0) {
+        EdgeHandle handle = edge.getEdgeHandle();
+        outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
+        outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
     } else {
-        // for other edge valued TBD
+        outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
+        outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
+        <<" [label = \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\", shape = circle]}\n";
+        // build child edges of target node if it's unmarked
+        if (!parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
+            for (char i=0; i<numChild; i++) {
+                buildEdge(edge.getNodeLevel(),
+                            parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
+                            edge.getNodeHandle(),
+                            i);
+            }
+        }
+        // mark
+        parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).mark();
     }
 }
 
