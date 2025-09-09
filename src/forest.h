@@ -395,18 +395,44 @@ class BRAVE_DD::Forest {
         }
     }
 
+    inline void markAllProtectedEdges() const {
+        for (size_t i=0; i<protectedEdges.size(); i++) {
+            markNodes(protectedEdges[i]);
+        }
+    }
+
     inline void registerFunc(const Func& func) {
         if (std::find(funcs.begin(), funcs.end(), func) == funcs.end()) funcs.push_back(func);
+    }
+
+    inline void registerEdge(const Edge& edge) {
+        // if (std::find(protectedEdges.begin(), protectedEdges.end(), edge) == protectedEdges.end()) protectedEdges.push_back(edge);
+        protectedEdges.push_back(edge.getEdgeHandle());
     }
 
     inline void deregisterFunc(const Func& func) {
         funcs.erase(std::remove(funcs.begin(), funcs.end(), func), funcs.end());
     }
 
+    inline void deregisterEdge(const Edge& edge) {
+        // protectedEdges.erase(std::remove(protectedEdges.begin(), protectedEdges.end(), edge), protectedEdges.end());
+        // Allow duplicates, remove one occurrence
+        auto it = std::find_if(protectedEdges.begin(), protectedEdges.end(), [&](const EdgeHandle& e) {
+            return (unpackLevel(e) == edge.getNodeLevel()) && (unpackTarget(e) == edge.getNodeHandle());
+        });
+        if (it != protectedEdges.end()) {
+            protectedEdges.erase(it);
+        }
+    }
+
     inline void deregisterFunc() {
         funcs.clear();
         // reset peak of nodeMan here?
         nodeMan->resetPeak();
+    }
+
+    inline void deregisterEdge() {
+        protectedEdges.clear();
     }
 
     inline bool isFuncRegistered(const Func& func) {
@@ -587,6 +613,7 @@ class BRAVE_DD::Forest {
 
     /* Marker */
     void markNodes(const Edge& edge) const;
+    void markNodes(const EdgeHandle& edge) const;
 
     /// =============================================================
     friend class NodeManager;
@@ -596,12 +623,13 @@ class BRAVE_DD::Forest {
     friend class UnaryOperation;
     friend class BinaryOperation;
     friend class SaturationOperation;
-    ForestSetting       setting;        // Specification setting of this forest.
-    NodeManager*        nodeMan;        // Node manager.
-    UniqueTable*        uniqueTable;    // Unique table.
-    std::vector<Func>   funcs;          // Registry of Func edges.
-    Statistics*         stats;          // Performance measurement.
-    int                 nodeSize;       // Number of uint32 slots for one Node storage.
+    ForestSetting               setting;        // Specification setting of this forest.
+    NodeManager*                nodeMan;        // Node manager.
+    UniqueTable*                uniqueTable;    // Unique table.
+    std::vector<Func>           funcs;          // Registry of Func edges.
+    std::vector<EdgeHandle>     protectedEdges; // Registry of protected edges, used for GC
+    Statistics*                 stats;          // Performance measurement.
+    int                         nodeSize;       // Number of uint32 slots for one Node storage.
 };
 
 

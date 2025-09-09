@@ -1327,3 +1327,21 @@ void Forest::markNodes(const Edge& edge) const
         }
     }
 }
+
+void Forest::markNodes(const EdgeHandle& edge) const
+{
+    char numChild = (setting.isRelation()) ? 4 : 2;
+    uint16_t level = unpackLevel(edge);
+    if (level > 0) {
+        NodeHandle target = unpackTarget(edge);
+        if (!getNode(level, target).isMarked()) {
+#ifdef BRAVE_DD_FOREST_TRACE
+    std::cout << "marking node " << target << " at level " << level << std::endl;
+#endif
+            getNode(edge).mark();
+            for (char i=0; i<numChild; i++) {
+                markNodes(getChildEdgeHandle(level, target, i));
+            }
+        }
+    }
+}

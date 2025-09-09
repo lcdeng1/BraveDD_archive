@@ -1,5 +1,6 @@
 #include "edge.h"
 #include "terminal.h"
+#include "forest.h"
 
 using namespace BRAVE_DD;
 // ******************************************************************
@@ -187,4 +188,11 @@ void Edge::print(std::ostream& out, int format) const
     } else {
         // more format TBD
     }
+}
+
+ProtectEdge::ProtectEdge(Forest* f, Edge& e) : parent(f), edge(e) {
+    parent->registerEdge(e);
+}
+ProtectEdge::~ProtectEdge() {
+    parent->deregisterEdge(edge);
 }

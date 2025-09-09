@@ -28,6 +28,7 @@ namespace BRAVE_DD {
     }
     class Value;
     class Edge;
+    class ProtectEdge;
     class Forest;
     // file I/O
     // TBD
@@ -601,5 +602,25 @@ class BRAVE_DD::Edge {
 
         // std::string     display;    // for displaying if needed in the future
 };
-
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                     ProtectEdge class                          *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+class BRAVE_DD::ProtectEdge {
+    /*-------------------------------------------------------------*/
+    public:
+    /*-------------------------------------------------------------*/
+        // ProtectEdge();
+        ProtectEdge(Forest* f, Edge& e);
+        ~ProtectEdge();
+    /*-------------------------------------------------------------*/
+    private:
+    /*-------------------------------------------------------------*/
+        /* Actual edge information */
+        Forest*      parent;    // parent forest to register or deregister
+        Edge         edge;      // Edge
+};
 #endif
