@@ -52,6 +52,10 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
         return h;
     }
     /* Free list is empty, so pull from the unallocated end portion */
+    if (firstUnalloc >= nodes.size()) {
+        std::cout << "[BRAVE_DD] ERROR!\t getFreeNodeHandle(): Completely full" << std::endl;
+        exit(0);
+    }
     new (&nodes[firstUnalloc]) Node(parent->nodeSize);
     nodes[firstUnalloc].assign(node, parent->nodeSize);
     if (firstUnalloc > peak) peak = firstUnalloc;   // update peak
