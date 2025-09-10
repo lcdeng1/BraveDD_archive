@@ -101,7 +101,7 @@ class BRAVE_DD::ParserPla : public Parser {
     // get bits info
     inline unsigned getInBits() { return inbits; }
     inline unsigned getOutBits() { return outbits; }
-    inline unsigned getNum() { return numf; }
+    inline unsigned long getNum() { return numf; }
 
     /*-------------------------------------------------------------*/
     private:

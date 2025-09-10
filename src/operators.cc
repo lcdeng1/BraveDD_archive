@@ -124,10 +124,10 @@ namespace BRAVE_DD {
     {
         // A xor B = (A or B) and not (A and B)
         Func out1, out2, out;
-        apply(UNION, e1, e2, out1);
-        apply(INTERSECTION, e1, e2, out2);
-        apply(COMPLEMENT, out2, out2);
-        apply(INTERSECTION, out1, out2, out);
+        out1 = e1 | e2;
+        out2 = e1 & e2;
+        out2 = !out2;
+        out = out1 & out2;
         return out;
     }
     Func operator!(const Func &e)

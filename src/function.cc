@@ -853,6 +853,7 @@ Edge ExplictFunc::buildEdge(Forest* forest, uint16_t lvl, size_t start, size_t s
         if (left >= right) break;
         // we have a 1 before a 0, swap them;
         SWAP(assignments[left], assignments[right]);
+        SWAP(outcomes[left], outcomes[right]);
         // for sure we can move them one spot
         ++left;
         --right;
