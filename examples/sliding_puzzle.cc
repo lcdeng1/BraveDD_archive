@@ -3,6 +3,51 @@
  * 
  */
 
+ /* The vector encoding a tiles configure: 
+  * conf[i][j] = k means that tile k on the position of row i and column j, 
+  * while k=0 for the empty.
+  * E.g., {
+  *          {1, 2, 3, 4},
+  *          {5, 6, 7, 8},
+  *          {9, 10, 11, 12},
+  *          {13, 14, 15, 0}
+  *       };
+  * position in [1, N*M]
+  * 
+  * [Default]:
+  * The BDDs encoding a tiles configure:
+  * levels[x~(x+bits-1)]=k: tile k at row r and column c,
+  * where x = ((r-1)*M+(c-1))*bits+1, bits = log2(N*M).
+  * 
+  * e.g.:
+  * levels[1~4]=2: tile 2 at row 1 and column 1;
+  * levels[5~8]=5: tile 5 at row 1 and column 2;
+  *  ...
+  * levels[57~60]=12: tile 12 at row 4 and column 3;
+  * levels[61~64]=4: tile 4 at row 4 and column 4;
+  * 
+  * BDD construction:
+  *  ...
+  * levels[5~8]=0101 (5 in binary)
+  *      N8[0] -> N7, N8[1] -> T0
+  *      N7[1] -> N6, N7[0] -> T0
+  *      N6[0] -> N5, N6[1] -> T0
+  *      N5[1] -> N4, N5[0] -> T0
+  * levels[1~4]=0010 (2 in binary)
+  *      N4[0] -> N3, N4[1] -> T0
+  *      N3[0] -> N2, N3[1] -> T0
+  *      N2[1] -> N1, N2[0] -> T0
+  *      N1[0] -> T1, N1[1] -> T0
+  *
+  * [Another] (if isEmptyTop or isEmptyBot):
+  * Its BDDs representation from bottom up is:
+  * [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 | 16]
+  *  ^                                              ^    ^
+  *  |______________________________________________|    |
+  *                           |                          |
+  *           Expand 2-D vector into a 1-D vector        +-- last elmt: the postion of empty (if isEmptyTop)
+  */
+
 #include <queue>
 #include <cmath>
 #include <iomanip>
@@ -20,11 +65,16 @@ int     maxStep = 40;
 using PuzzleState = std::vector<std::vector<uint16_t> >; // 2D representation of the puzzle
 
 // Timers
-timer watchSat, watchChain, watchBFS, watchBFS0;
+timer watchSat, watchChain, watchBFS, watchBFS0, watchBFS_ex;
 double timeLimit = 1800.0;
 bool isTimeLimitGlobal = 0;
+// program flags
 bool isReportToFile = 0;
 bool isComputeDistance = 0;
+bool isComputeDistanceBFS = 0;
+bool isRelationUnion = 0;
+bool isEmptyTop = 0;    // new way for encoding
+bool isEmptyBot = 0;    // ...
 
 /* flags if results are computed */
 bool getRes_Sat = 0, getRes_BFS = 0, getRes_chain = 0, getRes_correct = 0;
@@ -37,33 +87,31 @@ uint64_t nodes_Sat = 0, nodes_BFS = 0, nodes_chain = 0, nodes_correct = 0, nodes
 /* peak number of nodes */
 uint64_t nodes_Sat_Peak = 0, nodes_BFS_Peak = 0, nodes_chain_Peak = 0, nodes_rel_Peak = 0;
 
+// set of states reachable to target up to k steps
+std::vector<Func> distance;
+// set of states reachable to target at exact k steps
+std::vector<Func> distance_ex;
+// distribution for relations
+std::vector<long> distribution_rel_state;
+std::vector<long> distribution_rel_node;
+// distribution for "up-to" distance
+std::vector<long> distribution_state;
+std::vector<long> distribution_node;
+// distribution for "exact" distance
+std::vector<long> distribution_ex_state;
+std::vector<long> distribution_ex_node;
+// number of final nodes for "up-to" distance
+uint64_t nodes_dis_BFS = 0;
+// number of final nodes for "exact" distance
+uint64_t nodes_dis_ex_BFS = 0;
+// time for "exact" distance
+double time_BFS_ex = 0.0;
 
-/**
- * The BDDs encoding a tiles configure:
- * levels[x~(x+bits-1)]=k: tile k at row r and column c,
- * where x = ((r-1)*M+(c-1))*bits+1, bits = log2(N*M).
- * 
- * e.g.:
- * levels[1~4]=2: tile 2 at row 1 and column 1;
- * levels[5~8]=5: tile 5 at row 1 and column 2;
- *  ...
- * levels[57~60]=12: tile 12 at row 4 and column 3;
- * levels[61~64]=4: tile 4 at row 4 and column 4;
- * 
- * BDD construction:
- *  ...
- * levels[5~8]=0101 (5 in binary)
- *      N8[0] -> N7, N8[1] -> T0
- *      N7[1] -> N6, N7[0] -> T0
- *      N6[0] -> N5, N6[1] -> T0
- *      N5[1] -> N4, N5[0] -> T0
- * levels[1~4]=0010 (2 in binary)
- *      N4[0] -> N3, N4[1] -> T0
- *      N3[0] -> N2, N3[1] -> T0
- *      N2[1] -> N1, N2[0] -> T0
- *      N1[0] -> T1, N1[1] -> T0
- *
- */
+/* shape of state space */
+int radius = 0;
+int last_width = 0;
+int depth = 0;
+long max_width = 0;
 
 // BDD setting
 std::string setType, relType;
@@ -95,7 +143,138 @@ void printPuzzleState(const std::vector<std::vector<uint16_t> >& puzzle)
     std::cout << std::endl;
 }
 
+// Encode the puzzle state (configure) as a BDD
+Func encodePuzzle2BDD(const std::vector<std::vector<uint16_t> >& puzzle)
+{
+    /* Assuming forest1 is initialized and result starts from constant 1 */
+    Func result(forest1);
+    if (isComputeDistance) {
+        result.constant(0);
+    } else {
+        result.trueFunc();
+    }
+    /* Intermediates */
+    Func var(forest1);
+    uint16_t row, col;
+    /* Encoding */
+    if (isEmptyTop || isEmptyBot) {
+        bool foundEmpty = 0;
+        for (uint16_t i=1; i<=N*M; i++) {
+            row = (i%M==0) ? i/M-1 : i/M;
+            col = (i%M==0) ? M-1 : i%M-1;
+            // found the empty
+            if (puzzle[row][col] == 0) {
+                foundEmpty = 1;
+                uint16_t emptyLvl = (isEmptyTop) ? (N*M-1)*bits+1 : 1;
+                for (uint16_t b=0; b<bits; b++) {
+                    if (isComputeDistance) {
+                        // for distance
+                        var.variable(emptyLvl + b, Value(SpecialValue::POS_INF), Value(0));
+                        if (i & (0x01<<b)) {
+                            apply(MAXIMUM, result, var, result);
+                        } else {
+                            Func negVar(forest1);
+                            negVar.variable(emptyLvl + b, Value(0), Value(SpecialValue::POS_INF));
+                            apply(MAXIMUM, result, negVar, result);
+                        }
+                    } else {
+                        // for SSG
+                        var.variable(emptyLvl + b, Value(0), Value(1));
+                        if (i & (0x01<<b)) {
+                            if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
+                                result &= var;
+                            } else {
+                                apply(MINIMUM, result, var, result);
+                            }
+                        } else {
+                            if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {                    
+                                result &= !var;
+                            } else {
+                                Func negVar(forest1);
+                                negVar.variable(emptyLvl + b, Value(1), Value(0));
+                                apply(MINIMUM, result, negVar, result);
+                            }
+                        }
+                    }
+                }
+                continue;
+            }
+            uint16_t Lvl = (i-1)*bits+1;
+            if (foundEmpty) Lvl -= bits;
+            if (isEmptyBot) Lvl += bits;
+            for (uint16_t b=0; b<bits; b++) {
+                if (isComputeDistance) {
+                    // for distance
+                    var.variable(Lvl + b, Value(SpecialValue::POS_INF), Value(0));
+                    if (puzzle[row][col] & (0x01<<b)) {
+                        apply(MAXIMUM, result, var, result);
+                    } else {
+                        Func negVar(forest1);
+                        negVar.variable(Lvl + b, Value(0), Value(SpecialValue::POS_INF));
+                        apply(MAXIMUM, result, negVar, result);
+                    }
+                } else {
+                    // for SSG
+                    var.variable(Lvl + b, Value(0), Value(1));
+                    if (puzzle[row][col] & (0x01<<b)) {
+                        if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
+                            result &= var;
+                        } else {
+                            apply(MINIMUM, result, var, result);
+                        }
+                    } else {
+                        if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {                    
+                            result &= !var;
+                        } else {
+                            Func negVar(forest1);
+                            negVar.variable(Lvl + b, Value(1), Value(0));
+                            apply(MINIMUM, result, negVar, result);
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        // Default encoding:
+        for (uint16_t i=1; i<=N*M; i++) {
+            row = (i%M==0) ? i/M-1 : i/M;
+            col = (i%M==0) ? M-1 : i%M-1;
+            for (uint16_t b=0; b<bits; b++) {
+                if (isComputeDistance) {
+                    var.variable((i-1)*bits+b+1, Value(SpecialValue::POS_INF), Value(0));
+                    if (puzzle[row][col] & (0x01<<b)) {
+                        apply(MAXIMUM, result, var, result);
+                    } else {
+                        Func negVar(forest1);
+                        negVar.variable((i-1)*bits+b+1, Value(0), Value(SpecialValue::POS_INF));
+                        apply(MAXIMUM, result, negVar, result);
+                    }
+                } else {
+                    var.variable((i-1)*bits+b+1, Value(0), Value(1));
+                    if (puzzle[row][col] & (0x01<<b)) {
+                        if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
+                            result &= var;
+                        } else {
+                            apply(MINIMUM, result, var, result);
+                        }
+                    } else {
+                        if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {                    
+                            result &= !var;
+                        } else {
+                            Func negVar(forest1);
+                            negVar.variable((i-1)*bits+b+1, Value(1), Value(0));
+                            apply(MINIMUM, result, negVar, result);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
+
 /** 
+ * [Default]:
  * The MxDs encoding forward functions: down, up, left, right 
  * levels[x~(x+bits-1)]=k->0: transition from tile k to 0 at row r and column c,
  * levels[x~(x+bits-1)]=0->k: transition from tile 0 to k at row r and column c,
@@ -142,34 +321,92 @@ Func trans(uint16_t from, char direction)  // position FROM and direction
             std::cout << "Error: Unknown direction!" << std::endl;
             exit(1);
     }
-    /* Position FROM and TO's levels start point */
-    uint16_t startFrom = (from-1)*bits+1;
-    uint16_t startTo = (to-1)*bits+1;
-    /* Set dependance vector based on position FROM and TO*/
-    for (int i=0; i<bits; i++) {
-        dependance[startFrom+i] = 1;
-        dependance[startTo+i] = 1;
-    }
     /* Intermediates and constant zero*/
     Func varTo(forest2), varFrom(forest2), zero(forest2);
     zero.constant(0);
     /* result starts from constant true */
     result.constant(1);
-    /* Enabling */
-    // position TO is empty: X_to == 0
-    for (uint16_t i=0; i<bits; i++) {
-        varTo.variable(startTo+i, 0);
-        result &= ((varTo & zero) | ((!varTo) & (!zero)));    // equivalence interface for performance TBD
-    }
-
-    /* Firing */
-    // sliding tile at position FROM to position TO: X'_to = X_from, X'_from = 0
-    for (uint16_t i=0; i<bits; i++) {
-        varTo.variable(startTo+i, 1);
-        varFrom.variable(startFrom+i, 0);
-        result &= ((varTo & varFrom) | ((!varTo) & (!varFrom)));  // equivalence interface for performance TBD
-        varFrom.variable(startFrom+i, 1);
-        result &= ((varFrom & zero) | ((!varFrom) & (!zero)));    // equivalence interface for performance TBD
+    if (isEmptyTop || isEmptyBot) {
+        if ((direction == 3) || (direction == 4)) {
+            //
+        }
+        /* Enabling */
+        /* Left:    X_empty == from - 1 = to
+         * Right:   X_empty == from + 1
+         * Down:    X_empty == from + M
+         * Up:      X_empty == from - M
+         */
+        Func empty(forest2);
+        uint16_t emptyLvl = (isEmptyTop) ? (N*M-1)*bits+1 : 1;
+        for (uint16_t i=0; i<bits; i++) {
+            dependance[emptyLvl+i] = 1;
+            empty.variable(emptyLvl+i, 0);
+            if (!(to & (0x01<<i))) empty = !empty;
+            result &= empty;
+        }
+        /* Firing */
+        /* X'_empty = from
+         * "X'_to = X_from":
+         * Down:    X'_from = X_[to-M+1], X'_[from+1] = X_[to-M+2], ... X'_[to-1] = X_from
+         * Up:      X'_to = X_[from-1], X'_[to+1] = X_to, ... X'_[from-1] = X_[to+M-2]
+         */
+        for (uint16_t i=0; i<bits; i++) {
+            empty.variable(emptyLvl+i, 1);
+            if (!(from & (0x01<<i))) empty = !empty;
+            result &= empty;
+        }
+        if ((direction == 1) || (direction == 2)) { // Down or Up
+            uint16_t startFrom = (direction == 1) ? (from)*bits+1 : (to-1)*bits+1;
+            uint16_t startTo = (direction == 1) ? (from-1)*bits+1 : (to)*bits+1;
+            if (isEmptyBot) {
+                startFrom += bits;
+                startTo += bits;
+            }
+            // edge case
+            for (uint16_t b=0; b<bits; b++) {
+                uint16_t startFrom1 = (direction == 1) ? startFrom-bits : startFrom+(M-1)*bits;
+                uint16_t startTo1 = (direction == 1) ? startTo+(M-1)*bits : startTo-bits;
+                dependance[startFrom1+b] = 1;
+                dependance[startTo1+b] = 1;
+                varTo.variable(startTo1+b, 1);
+                varFrom.variable(startFrom1+b, 0);
+                result &= ((varTo & varFrom) | ((!varTo) & (!varFrom)));  // equivalence interface for performance TBD
+            }
+            for (uint16_t i=0; i<M-1; i++) {
+                for (uint16_t b=0; b<bits; b++) {
+                    dependance[startTo+i*bits+b] = 1;
+                    dependance[startFrom+i*bits+b] = 1;
+                    varTo.variable(startTo+i*bits+b, 1);
+                    varFrom.variable(startFrom+i*bits+b, 0);
+                    result &= ((varTo & varFrom) | ((!varTo) & (!varFrom)));  // equivalence interface for performance TBD
+                }
+            }
+        }
+    } else {
+        // [Default]
+        /* Position FROM and TO's levels start point */
+        uint16_t startFrom = (from-1)*bits+1;
+        uint16_t startTo = (to-1)*bits+1;
+        /* Set dependance vector based on position FROM and TO*/
+        for (int i=0; i<bits; i++) {
+            dependance[startFrom+i] = 1;
+            dependance[startTo+i] = 1;
+        }
+        /* Enabling */
+        // position TO is empty: X_to == 0
+        for (uint16_t i=0; i<bits; i++) {
+            varTo.variable(startTo+i, 0);
+            result &= ((varTo & zero) | ((!varTo) & (!zero)));    // equivalence interface for performance TBD
+        }
+        /* Firing */
+        // sliding tile at position FROM to position TO: X'_to = X_from, X'_from = 0
+        for (uint16_t i=0; i<bits; i++) {
+            varTo.variable(startTo+i, 1);
+            varFrom.variable(startFrom+i, 0);
+            result &= ((varTo & varFrom) | ((!varTo) & (!varFrom)));  // equivalence interface for performance TBD
+            varFrom.variable(startFrom+i, 1);
+            result &= ((varFrom & zero) | ((!varFrom) & (!zero)));    // equivalence interface for performance TBD
+        }
     }
 
     /* Identities (dependance) */
@@ -332,6 +569,7 @@ bool testImage(const Func& set, const std::vector<Func>& rels, const Func& res)
 bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& target, const double time)
 {
     Func curr = initial;
+    if (isComputeDistanceBFS) distance.push_back(curr);
     Func nextStep(forest1);
     Func FF(forest1);
     FF.falseFunc();
@@ -339,30 +577,34 @@ bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& targ
     unsigned long n = 0;
     long card_SS = 0, card_curr = 0;
     while (true) {
-        for (size_t i=0; i<relations.size(); i++) {
-            std::cout << "BFS image process: " << n << " : (" << i << "/" << relations.size() << ")" << std::endl;
-            // change for distance computing
-            apply(POST_IMAGE, curr, relations[i], nextStep);
-            if (isComputeDistance) {
-                apply(MINIMUM, FF, nextStep, FF);
-            } else {
-                if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
-                    FF |= nextStep;
+        if (!isRelationUnion) {
+            for (size_t i=0; i<relations.size(); i++) {
+                std::cout << "BFS image process: " << n << " : (" << i << "/" << relations.size() << ")" << std::endl;
+                // change for distance computing
+                apply(POST_IMAGE, curr, relations[i], nextStep);
+                if (isComputeDistance) {
+                    apply(MINIMUM, FF, nextStep, FF);
                 } else {
-                    apply(MAXIMUM, FF, nextStep, FF);
+                    if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
+                        FF |= nextStep;
+                    } else {
+                        apply(MAXIMUM, FF, nextStep, FF);
+                    }
                 }
             }
+        } else {
+            std::cout << "====================> BFS image process: " << n << " <====================" << std::endl;
+            // change for distance computing
+            apply(POST_IMAGE, curr, relations[0], FF);
         }
-        // if (!testImage(curr, relations, FF)) {
-        //     std::cout << "image test failed\n";
-        //     exit(0);
-        // }
+        
         n++;
         if (isComputeDistance) {
             apply(MINIMUM, curr, FF, SS);
         } else {
             if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
-                SS = curr | FF;
+                if (n==1) SS = curr | FF;
+                else SS = FF;
             } else {
                 apply(MAXIMUM, curr, FF, SS);
             }
@@ -381,17 +623,25 @@ bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& targ
         // check fixpoint
         if (SS == curr) break;
         curr = SS;
+        if (isComputeDistanceBFS) distance.push_back(curr);
         // GC
-        forest1->registerFunc(curr);
-        std::cout << "forest1 mark nodes; num funcs: " << forest1->numFuncs() << std::endl;
-        forest1->markAllFuncs();
-        std::cout << "forest1 mark and sweep: " << std::endl;
-        forest1->markSweep();
-        forest1->deregisterFunc(curr);
-        std::cout << "forest2 mark nodes; num funcs: " << forest2->numFuncs() << std::endl;
-        forest2->markAllFuncs();
-        std::cout << "forest2 mark and sweep: " << std::endl;
-        forest2->markSweep();
+        if (isComputeDistanceBFS) {
+            for (size_t i=0; i<distance.size(); i++) {
+                forest1->markNodes(distance[i]);
+            }
+            forest1->markSweep();
+        } else {
+            forest1->registerFunc(curr);
+            std::cout << "forest1 mark nodes; num funcs: " << forest1->numFuncs() << std::endl;
+            forest1->markAllFuncs();
+            std::cout << "forest1 mark and sweep: " << std::endl;
+            forest1->markSweep();
+            forest1->deregisterFunc(curr);
+        }
+        // std::cout << "forest2 mark nodes; num funcs: " << forest2->numFuncs() << std::endl;
+        // forest2->markAllFuncs();
+        // std::cout << "forest2 mark and sweep: " << std::endl;
+        // forest2->markSweep();
 
         FF.falseFunc();
 
@@ -469,56 +719,6 @@ bool SSG_chain(const Func& initial, const std::vector<Func>& relations, Func& ta
     }
     target = SS;
     return 1;
-}
-
-// Encode the puzzle state (configure) as a BDD
-Func encodePuzzle2BDD(const std::vector<std::vector<uint16_t> >& puzzle)
-{
-    /* Assuming forest1 is initialized and result starts from constant 1 */
-    Func result(forest1);
-    if (isComputeDistance) {
-        result.constant(0);
-    } else {
-        result.trueFunc();
-    }
-    /* Intermediates */
-    Func var(forest1);
-    uint16_t row, col;
-    /* Encoding */
-    for (uint16_t i=1; i<=N*M; i++) {
-        row = (i%M==0) ? i/M-1 : i/M;
-        col = (i%M==0) ? M-1 : i%M-1;
-        for (uint16_t b=0; b<bits; b++) {
-            if (isComputeDistance) {
-                var.variable((i-1)*bits+b+1, Value(SpecialValue::POS_INF), Value(0));
-                if (puzzle[row][col] & (0x01<<b)) {
-                    apply(MAXIMUM, result, var, result);
-                } else {
-                    Func negVar(forest1);
-                    negVar.variable((i-1)*bits+b+1, Value(0), Value(SpecialValue::POS_INF));
-                    apply(MAXIMUM, result, negVar, result);
-                }
-            } else {
-                var.variable((i-1)*bits+b+1, Value(0), Value(1));
-                if (puzzle[row][col] & (0x01<<b)) {
-                    if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
-                        result &= var;
-                    } else {
-                        apply(MINIMUM, result, var, result);
-                    }
-                } else {
-                    if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {                    
-                        result &= !var;
-                    } else {
-                        Func negVar(forest1);
-                        negVar.variable((i-1)*bits+b+1, Value(1), Value(0));
-                        apply(MINIMUM, result, negVar, result);
-                    }
-                }
-            }
-        }
-    }
-    return result;
 }
 
 // the correct answer
@@ -682,6 +882,22 @@ bool processArgs(int argc, const char** argv)
                 isComputeDistance = 1;
                 continue;
             }
+            if (strcmp("-mr", argv[i])==0) {
+                isComputeDistanceBFS = 1;
+                continue;
+            }
+            if (strcmp("-ru", argv[i])==0) {
+                isRelationUnion = 1;
+                continue;
+            }
+            if (strcmp("-et", argv[i])==0) {
+                isEmptyTop = 1;
+                continue;
+            }
+            if (strcmp("-eb", argv[i])==0) {
+                isEmptyBot = 1;
+                continue;
+            }
         }
         if (!setN) {
             N = atoi(argv[i]);
@@ -723,55 +939,279 @@ int usage(const char* who)
 void report(std::ostream& out)
 {
     int align = 30;
-    /* report time */
-    out << "=========================| Time |=========================" << std::endl;
-    out << std::left << std::setw(align);
-    if (getRes_Sat) {
-        out << "Saturation:" << time_Sat << " seconds" << std::endl;
+    if (isComputeDistanceBFS) {
+        out << "=========================| Node |=========================" << std::endl;
+        out << std::left << std::setw(align) << "BFS_distance (up-to):" << nodes_dis_BFS << std::endl;
+        out << std::left << std::setw(align) << "BFS_distance (exact):" << nodes_dis_ex_BFS << std::endl;
+        if (isRelationUnion) {
+            out << std::left << std::setw(align) << "Relations (Union):" << distribution_rel_node[0] << std::endl;
+        } else {
+            for (size_t i=0; i<distribution_rel_node.size(); i++) {
+                out << std::left << std::setw(15) << "Relations " << std::setw(15) << i << distribution_rel_node[i] << std::endl;
+            }
+        }
+        out << "====================| Distribution |======================" << std::endl;
+        out << std::left << std::setw(15) << "Up-to" << std::left << std::setw(15) << "#state" << std::left << std::setw(15) << "#node" << std::endl;
+        for (size_t i=0; i<distance.size(); i++) {
+            out << std::left << std::setw(15) << i 
+            << std::left << std::setw(15) << distribution_state[i] 
+            << std::left << std::setw(15) << distribution_node[i] << std::endl;
+        }
+        out << "----------------------------------------------------------" << std::endl;
+        out << std::left << std::setw(15) << "Exact" << std::left << std::setw(15) << "#state" << std::left << std::setw(15) << "#node" << std::endl;
+        for (size_t i=0; i<distance.size(); i++) {
+            out << std::left << std::setw(15) << i 
+            << std::left << std::setw(15) << distribution_ex_state[i] 
+            << std::left << std::setw(15) << distribution_ex_node[i] << std::endl;
+        }
+        out << "----------------------------------------------------------" << std::endl;
+        out << std::left << std::setw(15) << "Don't-care"
+            << std::left << std::setw(15) << distribution_ex_state.back()
+            << std::left << std::setw(15) << distribution_ex_node.back() << std::endl;
+        out << "=========================| Time |=========================" << std::endl;
+        out << std::left << std::setw(align) << "BFS_distance (up-to):" << time_BFS << std::endl;
+        out << std::left << std::setw(align) << "BFS_distance (exact):" << time_BFS_ex << std::endl;
+        //
     } else {
-        out << "Saturation:" << "TIME OUT" << std::endl;
-    }
-    out << std::left << std::setw(align);
-    if (getRes_chain) {
-        out << "chain:" << time_chain << " seconds" << std::endl;
-    } else {
-        out << "chain:" << "TIME OUT" << std::endl;
-    }
-    out << std::left << std::setw(align);
-    if (getRes_BFS) {
-        out << "BFS:" << time_BFS << " seconds" << std::endl;
-    } else {
-        out << "BFS:" << "TIME OUT" << std::endl;
-    }
-    // out << std::left << std::setw(align);
-    // if (getRes_correct) {
-    //     out << "BFS (w/o image):" << time_correct << " seconds" << std::endl;
-    // } else {
-    //     out << "BFS (w/o image):" <<  "TIME OUT" << std::endl;
-    // }
-    out << std::left << std::setw(30);
-    out << "" << "[TIME OUT: " << newTimeLimit << " seconds]" << std::endl;
+        /* report time */
+        out << "=========================| Time |=========================" << std::endl;
+        out << std::left << std::setw(align);
+        if (getRes_Sat) {
+            out << "Saturation:" << time_Sat << " seconds" << std::endl;
+        } else {
+            out << "Saturation:" << "TIME OUT" << std::endl;
+        }
+        out << std::left << std::setw(align);
+        if (getRes_chain) {
+            out << "chain:" << time_chain << " seconds" << std::endl;
+        } else {
+            out << "chain:" << "TIME OUT" << std::endl;
+        }
+        out << std::left << std::setw(align);
+        if (getRes_BFS) {
+            out << "BFS:" << time_BFS << " seconds" << std::endl;
+        } else {
+            out << "BFS:" << "TIME OUT" << std::endl;
+        }
+        out << std::left << std::setw(30);
+        out << "" << "[TIME OUT: " << newTimeLimit << " seconds]" << std::endl;
 
-    /* report expored #states */
-    out << "=========================| #States |======================" << std::endl;
-    out << std::left << std::setw(align) << "Saturation:" << state_Sat << std::endl;
-    out << std::left << std::setw(align) << "chain:" << state_chain << std::endl;
-    out << std::left << std::setw(align) << "BFS:" << state_BFS << std::endl;
-    // out << std::left << std::setw(align) << "BFS (w/o image):" << state_correct << std::endl;
-    
-    /* report nodes */
-    out << "=========================| Node |=========================" << std::endl;
-    out << std::left << std::setw(align) << "Saturation (final):" << nodes_Sat << std::endl;
-    out << std::left << std::setw(align) << "Saturation (peak):" << nodes_Sat_Peak << std::endl;
-    out << std::left << std::setw(align) << "chain (final):" << nodes_chain << std::endl;
-    out << std::left << std::setw(align) << "chain (peak):" << nodes_chain_Peak << std::endl;
-    out << std::left << std::setw(align) << "BFS (final):" << nodes_BFS << std::endl;
-    out << std::left << std::setw(align) << "BFS (peak):" << nodes_BFS_Peak << std::endl;
-    // out << std::left << std::setw(align) << "BFS (w/o image):" << nodes_correct << std::endl;
-    out << std::left << std::setw(align) << "Relations:" << nodes_rel << std::endl;
+        /* report expored #states */
+        out << "=========================| #States |======================" << std::endl;
+        out << std::left << std::setw(align) << "Saturation:" << state_Sat << std::endl;
+        out << std::left << std::setw(align) << "chain:" << state_chain << std::endl;
+        out << std::left << std::setw(align) << "BFS:" << state_BFS << std::endl;
+        // out << std::left << std::setw(align) << "BFS (w/o image):" << state_correct << std::endl;
+        
+        /* report nodes */
+        out << "=========================| Node |=========================" << std::endl;
+        out << std::left << std::setw(align) << "Saturation (final):" << nodes_Sat << std::endl;
+        out << std::left << std::setw(align) << "Saturation (peak):" << nodes_Sat_Peak << std::endl;
+        out << std::left << std::setw(align) << "chain (final):" << nodes_chain << std::endl;
+        out << std::left << std::setw(align) << "chain (peak):" << nodes_chain_Peak << std::endl;
+        out << std::left << std::setw(align) << "BFS (final):" << nodes_BFS << std::endl;
+        out << std::left << std::setw(align) << "BFS (peak):" << nodes_BFS_Peak << std::endl;
+        // out << std::left << std::setw(align) << "BFS (w/o image):" << nodes_correct << std::endl;
+        out << std::left << std::setw(align) << "Relations:" << nodes_rel << std::endl;
+    }
 
     /* the end */
     out << "**********************************************************" << std::endl;
+}
+
+void compute_saturation(const Func& target, const std::vector<Func>& relations)
+{
+    Func states_Sat(forest1);
+    // Timer start
+    watchSat.reset();
+    watchSat.note_time();
+    apply(SATURATE, target, relations, states_Sat);
+    watchSat.note_time();
+    getRes_Sat = 1;
+    // report cache
+    UOPs.reportCacheStat(std::cout);
+    BOPs.reportCacheStat(std::cout);
+    SOPs.reportCacheStat(std::cout);
+    // record time
+    time_Sat = watchSat.get_last_seconds();
+    // record #states
+    // if (!isComputeDistance) apply(CARDINALITY, states_Sat, state_Sat);
+    apply(CARDINALITY, states_Sat, state_Sat);
+    // record #nodes
+    nodes_Sat = forest1->getNodeManUsed(states_Sat);
+    nodes_Sat_Peak = forest1->getNodeManPeak();
+
+    forest1->registerFunc(states_Sat);
+    // report
+    int align0 = 30;
+    std::cout << "=========================| Time |=========================" << std::endl;
+    std::cout << std::left << std::setw(align0);
+    std::cout << "Saturation:" << time_Sat << " seconds" << std::endl;
+    std::cout << "=========================| #States |======================" << std::endl;
+    std::cout << std::left << std::setw(align0) << "Saturation:" << state_Sat << std::endl;
+    std::cout << "=========================| Node |=========================" << std::endl;
+    std::cout << std::left << std::setw(align0) << "Saturation (final):" << nodes_Sat << std::endl;
+    std::cout << std::left << std::setw(align0) << "Saturation (peak):" << nodes_Sat_Peak << std::endl;
+
+    if (N==2 && M==2){
+        DotMaker dot2(forest1, "distance_sat");
+        dot2.buildGraph(states_Sat);
+        dot2.runDot("pdf");
+    }
+    // reset the forest
+    forest1->deregisterFunc();
+    forest1->registerFunc(target);
+    forest1->markAllFuncs();
+    forest1->markSweep();
+
+    // STOP here if distance
+    // if (isComputeDistance) {
+    //     // report result
+    //     if (!isReportToFile) {
+    //         std::cout << "Done!" << std::endl;
+    //         std::cout << "**********************************************************" << std::endl;
+    //         int align = 30;
+    //         std::cout << std::left << std::setw(align) << "Sliding puzzle:" << N << " x " << M  << std::endl;
+    //         std::cout << std::left << std::setw(align) << "Bits per position: " << bits << std::endl;
+    //         std::cout << std::left << std::setw(align) << "Level:" << forest1->getSetting().getNumVars() << std::endl;
+    //         std::cout << std::left << std::setw(align) << "The [Set] type:" << forest1->getSetting().getName() << std::endl;
+    //         std::cout << std::left << std::setw(align) << "The [Relation] type:" << forest2->getSetting().getName() << std::endl;
+    //         report(std::cout);
+    //     } else {
+    //         std::cout << "**********************************************************" << std::endl;
+    //         std::string fileName = forest1->getSetting().getName();
+    //         fileName += "_";
+    //         fileName += forest2->getSetting().getName();
+    //         fileName += "_";
+    //         fileName += std::to_string(N);
+    //         fileName += "_";
+    //         fileName += std::to_string(M);
+    //         fileName += ".txt";
+    //         std::ofstream file(fileName, std::ios::app);
+    //         if (!file) {
+    //             std::cerr << "Failed to open file " << fileName << std::endl;
+    //         } else {
+    //             report(file);
+    //             file.close();
+    //         }
+    //         std::cout << "Done!" << std::endl;
+    //     }
+    //     delete forest1;
+    //     delete forest2;
+    //     return;
+    // }
+
+    /* Update time limit */
+    if (!isTimeLimitGlobal) newTimeLimit = time_Sat;
+}
+
+void compute_chain(const Func& target, const std::vector<Func>& relations)
+{
+    Func states_chain(forest1);
+    // Timer start
+    watchChain.reset();
+    watchChain.note_time();
+    getRes_chain = SSG_chain(target, relations, states_chain, newTimeLimit);
+    watchChain.note_time();
+    // report cache
+    UOPs.reportCacheStat(std::cout);
+    BOPs.reportCacheStat(std::cout);
+    // record time
+    time_chain = watchChain.get_last_seconds();
+    // record #states
+    apply(CARDINALITY, states_chain, state_chain);
+    // record #nodes
+    nodes_chain = forest1->getNodeManUsed(states_chain);
+    nodes_chain_Peak = forest1->getNodeManPeak();
+
+    forest1->registerFunc(states_chain);
+    // reset the forest
+    forest1->deregisterFunc();
+    forest1->registerFunc(target);
+    forest1->markAllFuncs();
+    forest1->markSweep();
+
+    /* Update time limit */
+    // if (!isTimeLimitGlobal) newTimeLimit = time_chain;
+}
+
+void compute_BFS(const Func& target, const std::vector<Func>& relations)
+{
+    Func states_BFS(forest1);
+    // Timer start
+    watchBFS.reset();
+    watchBFS.note_time();
+    getRes_BFS = SSG_BFS(target, relations, states_BFS, newTimeLimit);
+    watchBFS.note_time();
+    // report cache
+    UOPs.reportCacheStat(std::cout);
+    BOPs.reportCacheStat(std::cout);
+    // record time
+    time_BFS = watchBFS.get_last_seconds();
+    // record #states
+    apply(CARDINALITY, states_BFS, state_BFS);
+    // record #nodes
+    nodes_BFS = forest1->getNodeManUsed(states_BFS);
+    nodes_BFS_Peak = forest1->getNodeManPeak();
+
+    forest1->registerFunc(states_BFS);
+
+    // compute multi-root distance
+    if (isComputeDistanceBFS) {
+        // get number of final nodes
+        nodes_dis_BFS = forest1->getNodeManUsed(distance);
+        long num_state = 0;
+        // compute distance at step k
+        distance_ex.push_back(distance[0]);
+
+        watchBFS_ex.reset();
+        watchBFS_ex.note_time();
+        for (size_t i=1; i<distance.size(); i++) {
+            distance_ex.push_back(distance[i] ^ distance[i-1]);
+        }
+        watchBFS_ex.note_time();
+        time_BFS_ex = watchBFS_ex.get_last_seconds();
+
+        nodes_dis_ex_BFS = forest1->getNodeManUsed(distance_ex);
+
+        // compute distribution
+        for (size_t i=0; i<distance.size(); i++) {
+            apply(CARDINALITY, distance[i], num_state);
+            distribution_state.push_back(num_state);
+            distribution_node.push_back(forest1->getNodeManUsed(distance[i]));
+
+            apply(CARDINALITY, distance_ex[i], num_state);
+            distribution_ex_state.push_back(num_state);
+            distribution_ex_node.push_back(forest1->getNodeManUsed(distance_ex[i]));
+        }
+
+        // remove one 
+
+
+        // push back don't care set
+        Func all(forest1);
+        all.constant(1);
+        distance_ex.push_back(all ^ distance.back());
+        // push back #state and #node for don't-care set
+        apply(CARDINALITY, distance_ex.back(), num_state);
+        distribution_ex_state.push_back(num_state);
+        distribution_ex_node.push_back(forest1->getNodeManUsed(distance_ex.back()));
+
+        if (M == 2 && N == 2) {
+            DotMaker dot1(forest1, "BFS_distance");
+            dot1.buildGraph(distance_ex);
+            dot1.runDot("pdf");
+        }
+
+        // choose one to remove and concretize
+        // TBD
+    }
+
+    // reset the forest
+    forest1->deregisterFunc();
+    forest1->registerFunc(target);
+    forest1->markAllFuncs();
+    forest1->markSweep();
 }
 
 int main(int argc, const char** argv)
@@ -825,10 +1265,16 @@ int main(int argc, const char** argv)
     Func target(forest1);
     target = encodePuzzle2BDD(conf);
     // print
-    target.getEdge().print(std::cout);
-    DotMaker dot1(forest1, "target_Conf");
-    dot1.buildGraph(target);
-    dot1.runDot("pdf");
+    // if (isEmptyBot || isEmptyTop) {
+    //     target.getEdge().print(std::cout);
+    //     DotMaker dot1(forest1, "target_Conf");
+    //     dot1.buildGraph(target);
+    //     dot1.runDot("pdf");
+
+    //     delete forest1;
+    //     delete forest2;
+    //     return 0;
+    // }
 
     forest1->registerFunc(target);
     // std::cout << "encode puzzle done" << std::endl;
@@ -842,6 +1288,7 @@ int main(int argc, const char** argv)
     Func forward(forest2);
     // std::vector<Func> relations(4*M*N, Func(forest2));
     std::vector<Func> relations;
+    long numStateRel = 0;
     for (int position=1; position<=N*M; position++) {
         for (int direction = 1; direction<=4; direction++) {
             if (((direction == 1) && (position > (N-1)*M)) 
@@ -858,11 +1305,29 @@ int main(int argc, const char** argv)
             forest2->registerFunc(forward);
             // std::cout << "trans done, number of nodes: " << forest2->getNodeManUsed(relations[4*(position-1)+direction-1]) << std::endl;
             std::cout << "trans done, number of nodes: " << forest2->getNodeManUsed(forward) << std::endl;
+            distribution_rel_node.push_back(forest2->getNodeManUsed(forward));
+            apply(CARDINALITY, forward, numStateRel);
+            distribution_rel_state.push_back(numStateRel);
             forward.getEdge().print(std::cout);
             std::cout << std::endl;
         }
     }
     std::cout << "Number of valid relations: " << relations.size() << std::endl;
+    // union relations to relations[0]
+    if (isRelationUnion) {
+        for (size_t i=0; i<relations.size(); i++) {
+            relations[0] |= relations[i];
+        }
+        forest2->deregisterFunc();
+        forest2->registerFunc(relations[0]);
+        distribution_rel_node[0] = forest2->getNodeManUsed(relations[0]);
+        apply(CARDINALITY, relations[0], numStateRel);
+        distribution_rel_state[0] = numStateRel;
+    }
+    // DotMaker dot1(forest2, "relations");
+    // dot1.buildGraph(relations);
+    // dot1.runDot("pdf");
+
     // evaluate forward relation
     // if (!evalTrans(relations)) {
     //     exit(0);
@@ -871,142 +1336,20 @@ int main(int argc, const char** argv)
     nodes_rel = forest2->getNodeManUsed(relations);
     nodes_rel_Peak = forest2->getNodeManPeak();
 
-    /* Compute state space using saturation */
-    Func states_Sat(forest1);
-    // Timer start
-    watchSat.reset();
-    watchSat.note_time();
-    apply(SATURATE, target, relations, states_Sat);
-    watchSat.note_time();
-    getRes_Sat = 1;
-    // report cache
-    UOPs.reportCacheStat(std::cout);
-    BOPs.reportCacheStat(std::cout);
-    SOPs.reportCacheStat(std::cout);
-    // record time
-    time_Sat = watchSat.get_last_seconds();
-    // record #states
-    // if (!isComputeDistance) apply(CARDINALITY, states_Sat, state_Sat);
-    apply(CARDINALITY, states_Sat, state_Sat);
-    // record #nodes
-    nodes_Sat = forest1->getNodeManUsed(states_Sat);
-    nodes_Sat_Peak = forest1->getNodeManPeak();
+    /* ========================================================================================================
+        Compute state space using saturation 
+       =======================================================================================================*/
+    if (!isComputeDistanceBFS) compute_saturation(target, relations);
 
-    forest1->registerFunc(states_Sat);
-    // report
-    int align0 = 30;
-    std::cout << "=========================| Time |=========================" << std::endl;
-    std::cout << std::left << std::setw(align0);
-    std::cout << "Saturation:" << time_Sat << " seconds" << std::endl;
-    if (!isComputeDistance) {   // TBD for card
-        std::cout << "=========================| #States |======================" << std::endl;
-        std::cout << std::left << std::setw(align0) << "Saturation:" << state_Sat << std::endl;
-    }
-    std::cout << "=========================| Node |=========================" << std::endl;
-    std::cout << std::left << std::setw(align0) << "Saturation (final):" << nodes_Sat << std::endl;
-    std::cout << std::left << std::setw(align0) << "Saturation (peak):" << nodes_Sat_Peak << std::endl;
+    /* ========================================================================================================
+        Compute state space using chain search
+       =======================================================================================================*/
+    if (!isComputeDistanceBFS && !isComputeDistance) compute_chain(target, relations);
 
-    // DotMaker dot2(forest1, "distance_sat");
-    // dot2.buildGraph(states_Sat);
-    // dot2.runDot("pdf");
-    // reset the forest
-    forest1->deregisterFunc();
-    forest1->registerFunc(target);
-    forest1->markAllFuncs();
-    forest1->markSweep();
-
-    // STOP here if distance
-    if (isComputeDistance) {
-        // report result
-        if (!isReportToFile) {
-            std::cout << "Done!" << std::endl;
-            std::cout << "**********************************************************" << std::endl;
-            int align = 30;
-            std::cout << std::left << std::setw(align) << "Sliding puzzle:" << N << " x " << M  << std::endl;
-            std::cout << std::left << std::setw(align) << "Bits per position: " << bits << std::endl;
-            std::cout << std::left << std::setw(align) << "Level:" << forest1->getSetting().getNumVars() << std::endl;
-            std::cout << std::left << std::setw(align) << "The [Set] type:" << forest1->getSetting().getName() << std::endl;
-            std::cout << std::left << std::setw(align) << "The [Relation] type:" << forest2->getSetting().getName() << std::endl;
-            report(std::cout);
-        } else {
-            std::cout << "**********************************************************" << std::endl;
-            std::string fileName = forest1->getSetting().getName();
-            fileName += "_";
-            fileName += forest2->getSetting().getName();
-            fileName += "_";
-            fileName += std::to_string(N);
-            fileName += "_";
-            fileName += std::to_string(M);
-            fileName += ".txt";
-            std::ofstream file(fileName, std::ios::app);
-            if (!file) {
-                std::cerr << "Failed to open file " << fileName << std::endl;
-            } else {
-                report(file);
-                file.close();
-            }
-            std::cout << "Done!" << std::endl;
-        }
-        delete forest1;
-        delete forest2;
-        return 0;
-    }
-
-    /* Update time limit */
-    if (!isTimeLimitGlobal) newTimeLimit = time_Sat;
-
-    /* Compute state space using chain search */
-    Func states_chain(forest1);
-    // Timer start
-    watchChain.reset();
-    watchChain.note_time();
-    getRes_chain = SSG_chain(target, relations, states_chain, newTimeLimit);
-    watchChain.note_time();
-    // report cache
-    UOPs.reportCacheStat(std::cout);
-    BOPs.reportCacheStat(std::cout);
-    // record time
-    time_chain = watchChain.get_last_seconds();
-    // record #states
-    apply(CARDINALITY, states_chain, state_chain);
-    // record #nodes
-    nodes_chain = forest1->getNodeManUsed(states_chain);
-    nodes_chain_Peak = forest1->getNodeManPeak();
-
-    forest1->registerFunc(states_chain);
-    // reset the forest
-    forest1->deregisterFunc();
-    forest1->registerFunc(target);
-    forest1->markAllFuncs();
-    forest1->markSweep();
-
-    /* Update time limit */
-    // if (!isTimeLimitGlobal) newTimeLimit = time_chain;
-
-    /* Compute state space using BFS */
-    Func states_BFS(forest1);
-    // Timer start
-    watchBFS.reset();
-    watchBFS.note_time();
-    getRes_BFS = SSG_BFS(target, relations, states_BFS, newTimeLimit);
-    watchBFS.note_time();
-    // report cache
-    UOPs.reportCacheStat(std::cout);
-    BOPs.reportCacheStat(std::cout);
-    // record time
-    time_BFS = watchBFS.get_last_seconds();
-    // record #states
-    apply(CARDINALITY, states_BFS, state_BFS);
-    // record #nodes
-    nodes_BFS = forest1->getNodeManUsed(states_BFS);
-    nodes_BFS_Peak = forest1->getNodeManPeak();
-
-    forest1->registerFunc(states_BFS);
-    // reset the forest
-    forest1->deregisterFunc();
-    forest1->registerFunc(target);
-    forest1->markAllFuncs();
-    forest1->markSweep();
+    /* ========================================================================================================
+        Compute state space using BFS
+       =======================================================================================================*/
+    if (!isComputeDistance) compute_BFS(target, relations);
 
     // /* Compute state space using BFS without image */
     // Func states(forest1);
@@ -1126,6 +1469,10 @@ int main(int argc, const char** argv)
         std::cout << std::left << std::setw(align) << "Bits per position: " << bits << std::endl;
         std::cout << std::left << std::setw(align) << "Level:" << forest1->getSetting().getNumVars() << std::endl;
         std::cout << std::left << std::setw(align) << "The [Set] type:" << forest1->getSetting().getName() << std::endl;
+        std::string encodingType = "Default";
+        if (isEmptyBot) encodingType = "Empty_Bot";
+        if (isEmptyTop) encodingType = "Empty_Top";
+        std::cout << std::left << std::setw(align) << "Encoding type:" << encodingType << std::endl;
         std::cout << std::left << std::setw(align) << "The [Relation] type:" << forest2->getSetting().getName() << std::endl;
         report(std::cout);
     } else {
@@ -1137,6 +1484,11 @@ int main(int argc, const char** argv)
         fileName += std::to_string(N);
         fileName += "_";
         fileName += std::to_string(M);
+        if (isComputeDistance) fileName += "_Dis";
+        if (isComputeDistanceBFS) fileName += "_MR";
+        if (isRelationUnion) fileName += "_UR";
+        if (isEmptyTop) fileName += "_ET";
+        if (isEmptyBot) fileName += "_EB";
         fileName += ".txt";
         std::ofstream file(fileName, std::ios::app);
         if (!file) {
