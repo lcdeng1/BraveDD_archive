@@ -23,11 +23,11 @@ Under development ... :-)
 
 0. Building as preset:
     ```
-    cmake . --preset==release
+    cmake . --preset=release
     ```
     or
     ```
-    cmake . --preset==debug
+    cmake . --preset=debug
     cd build-debug
     make
     ```
