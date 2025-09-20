@@ -107,6 +107,23 @@ uint64_t nodes_dis_ex_BFS = 0;
 // time for "exact" distance
 double time_BFS_ex = 0.0;
 
+// For concretization
+std::vector<int> distance_permutation;
+std::vector<int> distance_permutation_opt;
+std::vector<int> distance_permutation_ex_opt;
+std::vector<Func> distance_rst;
+std::vector<Func> distance_ex_rst;
+std::vector<Func> distance_osm;
+std::vector<Func> distance_ex_osm;
+std::vector<Func> distance_tsm;
+std::vector<Func> distance_ex_tsm;
+uint64_t nodes_dis_rst = 0;
+uint64_t nodes_dis_osm = 0;
+uint64_t nodes_dis_tsm = 0;
+uint64_t nodes_dis_ex_rst = 0;
+uint64_t nodes_dis_ex_osm = 0;
+uint64_t nodes_dis_ex_tsm = 0;
+
 /* shape of state space */
 int radius = 0;
 int last_width = 0;
@@ -574,8 +591,8 @@ bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& targ
     Func FF(forest1);
     FF.falseFunc();
     Func SS = FF;
-    unsigned long n = 0;
-    long card_SS = 0, card_curr = 0;
+    int n = 0;
+    // long card_SS = 0, card_curr = 0;
     while (true) {
         if (!isRelationUnion) {
             for (size_t i=0; i<relations.size(); i++) {
@@ -593,11 +610,20 @@ bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& targ
                 }
             }
         } else {
-            std::cout << "====================> BFS image process: " << n << " <====================" << std::endl;
+            std::cout << "BFS image process: " << n << std::endl;
             // change for distance computing
-            apply(POST_IMAGE, curr, relations[0], FF);
+            if (isEmptyBot || isEmptyTop) {
+                apply(POST_IMAGE, curr, relations[0], nextStep);
+                FF |= nextStep;
+                apply(POST_IMAGE, curr, relations[1], nextStep);
+                FF |= nextStep;
+            } else {
+                apply(POST_IMAGE, curr, relations[0], FF);
+            }
+            // apply(POST_IMAGE, curr, relations[0], FF);
         }
-        
+
+        distance_permutation.push_back(n);
         n++;
         if (isComputeDistance) {
             apply(MINIMUM, curr, FF, SS);
@@ -610,16 +636,17 @@ bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& targ
             }
         }
 
-        apply(CARDINALITY, SS, card_SS);
-        apply(CARDINALITY, curr, card_curr);
-        std::cout << "BFS SS ";
-        SS.getEdge().print(std::cout);
-        std::cout << " card: " << card_SS << std::endl;
-        std::cout << "BFS curr ";
-        curr.getEdge().print(std::cout);
-        std::cout << " card: " << card_curr << std::endl;
-        std::cout << "BFS SS num: " << forest1->getNodeManUsed(SS) << std::endl;
-        std::cout << "BFS curr num: " << forest1->getNodeManUsed(curr) << std::endl;
+        // apply(CARDINALITY, SS, card_SS);
+        // apply(CARDINALITY, curr, card_curr);
+        // std::cout << "BFS SS ";
+        // SS.getEdge().print(std::cout);
+        // std::cout << " card: " << card_SS << std::endl;
+        // std::cout << "BFS curr ";
+        // curr.getEdge().print(std::cout);
+        // std::cout << " card: " << card_curr << std::endl;
+        // std::cout << "BFS SS num: " << forest1->getNodeManUsed(SS) << std::endl;
+        // std::cout << "BFS curr num: " << forest1->getNodeManUsed(curr) << std::endl;
+
         // check fixpoint
         if (SS == curr) break;
         curr = SS;
@@ -638,10 +665,6 @@ bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& targ
             forest1->markSweep();
             forest1->deregisterFunc(curr);
         }
-        // std::cout << "forest2 mark nodes; num funcs: " << forest2->numFuncs() << std::endl;
-        // forest2->markAllFuncs();
-        // std::cout << "forest2 mark and sweep: " << std::endl;
-        // forest2->markSweep();
 
         FF.falseFunc();
 
@@ -842,6 +865,486 @@ bool SSG(bool isPrint, Func& target, const double time)
     return 1;
 }
 
+// Restrict
+// ===============================================================================================================================================================
+// concretize a given edge with corresponding don't-care edge in forest1
+Edge concretize_rst(const uint16_t level, const Edge& initial, const Edge& dc)
+{
+    // terminal case
+    if (initial.getNodeLevel() == 0) {
+        return initial;
+    }
+    uint16_t lvl = (initial.getNodeLevel() >= dc.getNodeLevel()) ? initial.getNodeLevel() : dc.getNodeLevel();
+    Edge lc = forest1->cofact(lvl, initial, 0);
+    Edge hc = forest1->cofact(lvl, initial, 1);
+    Edge lc_dc = forest1->cofact(lvl, dc, 0);
+    Edge hc_dc = forest1->cofact(lvl, dc, 1);
+    if (lc_dc.isConstantOne()) {
+        return concretize_rst(lvl-1, hc, hc_dc);
+    } else if (hc_dc.isConstantOne()) {
+        return concretize_rst(lvl-1, lc, lc_dc);
+    }
+    // recursively compute
+    std::vector<Edge> child(2);
+    child[0] = concretize_rst(lvl-1, lc, lc_dc);
+    child[1] = concretize_rst(lvl-1, hc, hc_dc);
+    // reduce edge
+    Edge result;
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = forest1->reduceEdge(level, root, lvl, child);
+    return result;
+}
+Func concretizeFunc_rst(const Func& initial, const Func& dc)
+{
+    Func result(forest1);
+    result.setEdge(concretize_rst(forest1->getSetting().getNumVars(), initial.getEdge(), dc.getEdge()));
+    return result;
+}
+
+// main function to concretize using restrict
+void concretize_rst()
+{
+    if (isComputeDistanceBFS) {
+        // for up-to
+        distance_rst.push_back(concretizeFunc_rst(distance[distance_permutation[0]], distance_ex.back()));
+        // std::cout << "*********************** Distance "<< distance_permutation[0] <<"***********************" << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[0]] << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[0]) << std::endl;
+        Func dc = distance_ex.back();
+        for (size_t i=1; i<distance_permutation.size()-1; i++) {    // -1: remove the last one
+            // update dc
+            for (size_t k=0; k<i; k++) {
+                dc |= distance[distance_permutation[k]];
+            }
+            // concretizing
+            distance_rst.push_back(concretizeFunc_rst(distance[distance_permutation[i]], dc));
+            // std::cout << "*********************** Distance "<< distance_permutation[i] <<"***********************" << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[i]] << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[i]) << std::endl;
+        }
+        nodes_dis_rst = forest1->getNodeManUsed(distance_rst);
+        distance_permutation_opt = distance_permutation;
+
+        // update permutation
+        for (size_t i=0; i<distance_permutation.size(); i++) {
+            distance_permutation[i] = i;
+        }
+        std::sort(distance_permutation.begin(), distance_permutation.end(),
+                    [&](size_t i, size_t j) { return distribution_ex_node[i] < distribution_ex_node[j]; });
+        // for (int x : distance_permutation) {
+        //     std::cout << x << " ";
+        // }
+        // std::cout << std::endl;
+
+        // for exact
+        distance_ex_rst.push_back(concretizeFunc_rst(distance_ex[distance_permutation[0]], distance_ex.back()));
+        // std::cout << "*********************** Distance "<< distance_permutation[0] <<"***********************" << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[0]] << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[0]) << std::endl;
+        dc = distance_ex.back();
+        for (size_t i=1; i<distance_permutation.size()-1; i++) {    // -1: remove the last one
+            // update dc
+            for (size_t k=0; k<i; k++) {
+                dc |= distance_ex[distance_permutation[k]];
+            }
+            // concretizing
+            distance_ex_rst.push_back(concretizeFunc_rst(distance_ex[distance_permutation[i]], dc));
+            // std::cout << "*********************** Distance "<< distance_permutation[i] <<"***********************" << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[i]] << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[i]) << std::endl;
+        }
+        nodes_dis_ex_rst = forest1->getNodeManUsed(distance_ex_rst);
+        distance_permutation_ex_opt = distance_permutation;
+        // test 
+        // for (size_t d = 0; d<distance_permutation.size()-1; d++) {
+        //     std::vector<bool> assignment(forest1->getSetting().getNumVars()+1, 0);
+        //     for (unsigned long n=0; n<(0x01UL<<forest1->getSetting().getNumVars()); n++) {
+        //         for (size_t k=1; k<=assignment.size()-1; k++) {
+        //             assignment[k] = n & (1<<(k-1));
+        //         }
+        //         if ((distance_ex[distance_permutation[d]].evaluate(assignment) == Value(1)) && (distance_ex_rst[d].evaluate(assignment) != Value(1))) {
+        //             std::cout << "Error! Evaluation for concretization\n";
+        //             delete forest1;
+        //             delete forest2;
+        //             exit(1);
+        //         }
+        //     }
+        // }
+    } else {
+        // for non multi-root
+    }
+}
+// ===============================================================================================================================================================
+
+// One-sided-match
+// ===============================================================================================================================================================
+unsigned char compare_osm(const Edge& e1, const Edge& e2, const Edge& dc1, const Edge& dc2)
+{
+    // terminal cases
+    if (e1 == e2) {return '=';}
+    if (dc1.isConstantOne()) {return '>';}
+    if (dc2.isConstantOne()) {return '<';}
+    if ((e1.getNodeLevel() == e2.getNodeLevel()) && (e1.getNodeLevel() == 0)) {return '!';}   // both different terminal value and not dc
+
+    // the highest level
+    uint16_t highest = e1.getNodeLevel();
+    if (e2.getNodeLevel() > highest) {highest = e2.getNodeLevel();}
+    if (dc1.getNodeLevel() > highest) {highest = dc1.getNodeLevel();}
+    if (dc2.getNodeLevel() > highest) {highest = dc2.getNodeLevel();}
+
+    // if (highest > e1.getNodeLevel() && highest > e2.getNodeLevel()) {
+    //     std::cout << "highest level error?\n";
+    //     delete forest1;
+    //     delete forest2;
+    //     exit(1);
+    // }
+
+    // recursively compare
+    unsigned char ans, comp0, comp1;
+    comp0 = compare_osm(forest1->cofact(highest, e1, 0),
+                        forest1->cofact(highest, e2, 0),
+                        forest1->cofact(highest, dc1, 0),
+                        forest1->cofact(highest, dc2, 0));
+    comp1 = compare_osm(forest1->cofact(highest, e1, 1),
+                        forest1->cofact(highest, e2, 1),
+                        forest1->cofact(highest, dc1, 1),
+                        forest1->cofact(highest, dc2, 1));
+    // uint16_t lvl1 = e1.getNodeLevel(), lvl2 = e2.getNodeLevel();
+    // comp0 = compare_osm((lvl1 < lvl2) ? e1 : forest1->cofact(lvl1, e1, 0),
+    //                     (lvl1 > lvl2) ? e2 : forest1->cofact(lvl2, e2, 0),
+    //                     forest1->cofact((lvl1 < lvl2) ? lvl2 : lvl1, dc1, 0),
+    //                     forest1->cofact((lvl1 < lvl2) ? lvl2 : lvl1, dc2, 0));
+    // comp1 = compare_osm((lvl1 < lvl2) ? e1 : forest1->cofact(lvl1, e1, 1),
+    //                     (lvl1 > lvl2) ? e2 : forest1->cofact(lvl2, e2, 1),
+    //                     forest1->cofact((lvl1 < lvl2) ? lvl2 : lvl1, dc1, 1),
+    //                     forest1->cofact((lvl1 < lvl2) ? lvl2 : lvl1, dc2, 1));
+    
+    if ((comp0 == '=') || (comp0 == comp1)) {
+        ans = comp1;
+    } else {
+        ans = '!';
+    }
+    return ans;
+}
+
+Edge concretize_osm(const uint16_t level, const Edge& initial, const Edge& dc)
+{
+    // terminal case
+    if (initial.getNodeLevel() == 0) {
+        return initial;
+    }
+    uint16_t lvl = (initial.getNodeLevel() >= dc.getNodeLevel()) ? initial.getNodeLevel() : dc.getNodeLevel();
+    // uint16_t lvl = initial.getNodeLevel();
+    Edge lc = forest1->cofact(lvl, initial, 0);
+    Edge hc = forest1->cofact(lvl, initial, 1);
+    Edge lc_dc = forest1->cofact(lvl, dc, 0);
+    Edge hc_dc = forest1->cofact(lvl, dc, 1);
+    if (lc_dc.isConstantOne()) {
+        return concretize_osm(lvl-1, hc, hc_dc);
+    } else if (hc_dc.isConstantOne()) {
+        return concretize_osm(lvl-1, lc, lc_dc);
+    }
+    // compare child edges
+    unsigned comp = compare_osm(lc, hc, lc_dc, hc_dc);
+    if (comp == '<') {
+        return concretize_osm(lvl-1, lc, lc_dc);
+    }
+    if (comp == '>') {
+        return concretize_osm(lvl-1, hc, hc_dc);
+    }
+    // new node
+    std::vector<Edge> child(2);
+    child[0] = concretize_osm(lvl-1, lc, lc_dc);
+    child[1] = concretize_osm(lvl-1, hc, hc_dc);
+    // reduce edge
+    Edge result;
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = forest1->reduceEdge(level, root, lvl, child);
+    return result;
+}
+
+Func concretizeFunc_osm(const Func& initial, const Func& dc)
+{
+    Func result(forest1);
+    result.setEdge(concretize_osm(forest1->getSetting().getNumVars(), initial.getEdge(), dc.getEdge()));
+    return result;
+}
+
+// main function to concretize using one-sided-match
+void concretize_osm()
+{
+    if (isComputeDistanceBFS) {
+        // initial permutation
+        for (size_t i=0; i<distance_permutation.size(); i++) {
+            distance_permutation[i] = i;
+        }
+        // for up-to
+        distance_osm.push_back(concretizeFunc_osm(distance[distance_permutation[0]], distance_ex.back()));
+        // std::cout << "*********************** Distance "<< distance_permutation[0] <<"***********************" << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[0]] << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[0]) << std::endl;
+        Func dc = distance_ex.back();
+        for (size_t i=1; i<distance_permutation.size()-1; i++) {    // -1: remove the last one
+            // update dc
+            for (size_t k=0; k<i; k++) {
+                dc |= distance[distance_permutation[k]];
+            }
+            // concretizing
+            distance_osm.push_back(concretizeFunc_osm(distance[distance_permutation[i]], dc));
+            // std::cout << "*********************** Distance "<< distance_permutation[i] <<"***********************" << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[i]] << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[i]) << std::endl;
+        }
+        nodes_dis_osm = forest1->getNodeManUsed(distance_osm);
+        distance_permutation_opt = distance_permutation;
+
+        // update permutation
+        for (size_t i=0; i<distance_permutation.size(); i++) {
+            distance_permutation[i] = i;
+        }
+        std::sort(distance_permutation.begin(), distance_permutation.end(),
+                    [&](size_t i, size_t j) { return distribution_ex_node[i] < distribution_ex_node[j]; });
+        // for (int x : distance_permutation) {
+        //     std::cout << x << " ";
+        // }
+        // std::cout << std::endl;
+
+        // for exact
+        distance_ex_osm.push_back(concretizeFunc_osm(distance_ex[distance_permutation[0]], distance_ex.back()));
+        // std::cout << "*********************** Distance "<< distance_permutation[0] <<"***********************" << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[0]] << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[0]) << std::endl;
+        dc = distance_ex.back();
+        for (size_t i=1; i<distance_permutation.size()-1; i++) {    // -1: remove the last one
+            // update dc
+            for (size_t k=0; k<i; k++) {
+                dc |= distance_ex[distance_permutation[k]];
+            }
+            // concretizing
+            distance_ex_osm.push_back(concretizeFunc_osm(distance_ex[distance_permutation[i]], dc));
+            // std::cout << "*********************** Distance "<< distance_permutation[i] <<"***********************" << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[i]] << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[i]) << std::endl;
+        }
+        nodes_dis_ex_osm = forest1->getNodeManUsed(distance_ex_osm);
+        distance_permutation_ex_opt = distance_permutation;
+
+        // test 
+        // for (size_t d = 0; d<distance_permutation.size()-1; d++) {
+        //     std::vector<bool> assignment(forest1->getSetting().getNumVars()+1, 0);
+        //     for (unsigned long n=0; n<(0x01UL<<forest1->getSetting().getNumVars()); n++) {
+        //         for (size_t k=1; k<=assignment.size()-1; k++) {
+        //             assignment[k] = n & (1<<(k-1));
+        //         }
+        //         if ((distance_ex[distance_permutation[d]].evaluate(assignment) == Value(1)) && (distance_ex_osm[d].evaluate(assignment) != Value(1))) {
+        //             std::cout << "Error! Evaluation for concretization\n";
+        //             delete forest1;
+        //             delete forest2;
+        //             exit(1);
+        //         }
+        //     }
+        // }
+    } else {
+        // for non multi-root
+    }
+}
+// ===============================================================================================================================================================
+
+// Two-sided-match
+// ===============================================================================================================================================================
+bool has_common_tsm(const Edge& e1, const Edge& e2, const Edge& dc1, const Edge& dc2)
+{
+    // terminal cases
+    if (dc1.isConstantOne()) {return true;}
+    if (dc2.isConstantOne()) {return true;}
+    if (e1 == e2) {return true;}
+    if ((e1.getNodeLevel() == e2.getNodeLevel()) && (e1.getNodeLevel() == 0)) {return false;}   // both different terminal value and not dc
+
+    // the highest level
+    uint16_t highest = e1.getNodeLevel();
+    if (e2.getNodeLevel() > highest) {highest = e2.getNodeLevel();}
+    if (dc1.getNodeLevel() > highest) {highest = dc1.getNodeLevel();}
+    if (dc2.getNodeLevel() > highest) {highest = dc2.getNodeLevel();}
+
+    // recursively check
+    bool ans, cmp0, cmp1;
+    cmp0 = has_common_tsm(forest1->cofact(highest, e1, 0),
+                            forest1->cofact(highest, e2, 0),
+                            forest1->cofact(highest, dc1, 0),
+                            forest1->cofact(highest, dc2, 0));
+    cmp1 = has_common_tsm(forest1->cofact(highest, e1, 1),
+                            forest1->cofact(highest, e2, 1),
+                            forest1->cofact(highest, dc1, 1),
+                            forest1->cofact(highest, dc2, 1));
+    ans = (cmp0 && cmp1);
+    return ans;
+}
+
+Edge common_tsm(const uint16_t level, const Edge& e1, const Edge& e2, const Edge& dc1, const Edge& dc2)
+{
+    // terminal cases
+    if (dc1.isConstantOne()) {return e2;}
+    if (dc2.isConstantOne()) {return e1;}
+    if (e1 == e2) {return e1;}
+
+    // the highest level
+    uint16_t highest = e1.getNodeLevel();
+    if (e2.getNodeLevel() > highest) {highest = e2.getNodeLevel();}
+    if (dc1.getNodeLevel() > highest) {highest = dc1.getNodeLevel();}
+    if (dc2.getNodeLevel() > highest) {highest = dc2.getNodeLevel();}
+
+    std::vector<Edge> child(2);
+    child[0] = common_tsm(highest - 1,
+                        forest1->cofact(highest, e1, 0),
+                        forest1->cofact(highest, e2, 0),
+                        forest1->cofact(highest, dc1, 0),
+                        forest1->cofact(highest, dc2, 0));
+    child[1] = common_tsm(highest - 1,
+                        forest1->cofact(highest, e1, 1),
+                        forest1->cofact(highest, e2, 1),
+                        forest1->cofact(highest, dc1, 1),
+                        forest1->cofact(highest, dc2, 1));
+    // reduce edge
+    Edge result;
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = forest1->reduceEdge(level, root, highest, child);
+    return result;
+}
+
+Edge concretize_tsm(const uint16_t level, const Edge& initial, const Edge& dc)
+{
+    // terminal case
+    if (initial.getNodeLevel() == 0) {
+        return initial;
+    }
+    uint16_t lvl = (initial.getNodeLevel() >= dc.getNodeLevel()) ? initial.getNodeLevel() : dc.getNodeLevel();
+    Edge lc = forest1->cofact(lvl, initial, 0);
+    Edge hc = forest1->cofact(lvl, initial, 1);
+    Edge lc_dc = forest1->cofact(lvl, dc, 0);
+    Edge hc_dc = forest1->cofact(lvl, dc, 1);
+    if (lc_dc.isConstantOne()) {
+        return concretize_tsm(lvl-1, hc, hc_dc);
+    } else if (hc_dc.isConstantOne()) {
+        return concretize_tsm(lvl-1, lc, lc_dc);
+    }
+    // check child edges
+    if (has_common_tsm(lc, hc, lc_dc, hc_dc)) {
+        Edge child_common = common_tsm(lvl - 1, lc, hc, lc_dc, hc_dc);
+        if ((lvl > initial.getNodeLevel())) {
+            // new dc is lc_dc & hc_dc !!!
+            Func flcdc(forest1), fhcdc(forest1);
+            flcdc.setEdge(lc_dc);
+            fhcdc.setEdge(hc_dc);
+            flcdc &= fhcdc;
+            return concretize_tsm(lvl-1, child_common, flcdc.getEdge());
+        }
+        return concretize_tsm(level, child_common, dc);
+    }
+    // new node
+    std::vector<Edge> child(2);
+    child[0] = concretize_tsm(lvl-1, lc, lc_dc);
+    child[1] = concretize_tsm(lvl-1, hc, hc_dc);
+    // reduce edge
+    Edge result;
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = forest1->reduceEdge(level, root, lvl, child);
+    return result;
+}
+
+Func concretizeFunc_tsm(const Func& initial, const Func& dc)
+{
+    Func result(forest1);
+    result.setEdge(concretize_tsm(forest1->getSetting().getNumVars(), initial.getEdge(), dc.getEdge()));
+    return result;
+}
+
+// main function to concretize using two-sided-match
+void concretize_tsm()
+{
+    if (isComputeDistanceBFS) {
+        // initial permutation
+        for (size_t i=0; i<distance_permutation.size(); i++) {
+            distance_permutation[i] = i;
+        }
+        // for up-to
+        distance_tsm.push_back(concretizeFunc_tsm(distance[distance_permutation[0]], distance_ex.back()));
+        // std::cout << "*********************** Distance "<< distance_permutation[0] <<"***********************" << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[0]] << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[0]) << std::endl;
+        Func dc = distance_ex.back();
+        for (size_t i=1; i<distance_permutation.size()-1; i++) {    // -1: remove the last one
+            // update dc
+            for (size_t k=0; k<i; k++) {
+                dc |= distance[distance_permutation[k]];
+            }
+            // concretizing
+            distance_tsm.push_back(concretizeFunc_tsm(distance[distance_permutation[i]], dc));
+            // std::cout << "*********************** Distance "<< distance_permutation[i] <<"***********************" << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[i]] << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[i]) << std::endl;
+        }
+        nodes_dis_tsm = forest1->getNodeManUsed(distance_tsm);
+        distance_permutation_opt = distance_permutation;
+
+        // update permutation
+        for (size_t i=0; i<distance_permutation.size(); i++) {
+            distance_permutation[i] = i;
+        }
+        std::sort(distance_permutation.begin(), distance_permutation.end(),
+                    [&](size_t i, size_t j) { return distribution_ex_node[i] < distribution_ex_node[j]; });
+
+        // for exact
+        distance_ex_tsm.push_back(concretizeFunc_tsm(distance_ex[distance_permutation[0]], distance_ex.back()));
+        // std::cout << "*********************** Distance "<< distance_permutation[0] <<"***********************" << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[0]] << std::endl;
+        // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[0]) << std::endl;
+        dc = distance_ex.back();
+        for (size_t i=1; i<distance_permutation.size()-1; i++) {    // -1: remove the last one
+            // update dc
+            for (size_t k=0; k<i; k++) {
+                dc |= distance_ex[distance_permutation[k]];
+            }
+            // concretizing
+            distance_ex_tsm.push_back(concretizeFunc_tsm(distance_ex[distance_permutation[i]], dc));
+            // std::cout << "*********************** Distance "<< distance_permutation[i] <<"***********************" << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_ex:" << distribution_ex_node[distance_permutation[i]] << std::endl;
+            // std::cout << std::left << std::setw(15) << "Distance_rst:" << forest1->getNodeManUsed(distance_ex_rst[i]) << std::endl;
+        }
+        nodes_dis_ex_tsm = forest1->getNodeManUsed(distance_ex_tsm);
+        distance_permutation_ex_opt = distance_permutation;
+
+        // test 
+        // for (size_t d = 0; d<distance_permutation.size()-1; d++) {
+        //     std::vector<bool> assignment(forest1->getSetting().getNumVars()+1, 0);
+        //     for (unsigned long n=0; n<(0x01UL<<forest1->getSetting().getNumVars()); n++) {
+        //         for (size_t k=1; k<=assignment.size()-1; k++) {
+        //             assignment[k] = n & (1<<(k-1));
+        //         }
+        //         bool before = 0;
+        //         for (size_t i=0; i<d; i++) {
+        //             if (distance_ex_tsm[i].evaluate(assignment) == Value(1)) {
+        //                 before = 1;
+        //                 break;
+        //             }
+        //         }
+        //         if ((distance_ex[distance_permutation[d]].evaluate(assignment) == Value(1)) && ((distance_ex_tsm[d].evaluate(assignment) != Value(1)) || before)) {
+        //             std::cout << "Error [exact]! Evaluation for concretization\n";
+        //             delete forest1;
+        //             delete forest2;
+        //             exit(1);
+        //         }
+        //     }
+        // }
+    } else {
+        // for non multi-root
+    }
+}
+// ===============================================================================================================================================================
+
 bool processArgs(int argc, const char** argv)
 {
     // default types
@@ -938,18 +1441,33 @@ int usage(const char* who)
 
 void report(std::ostream& out)
 {
-    int align = 30;
+    int align = 36;
     if (isComputeDistanceBFS) {
         out << "=========================| Node |=========================" << std::endl;
-        out << std::left << std::setw(align) << "BFS_distance (up-to):" << nodes_dis_BFS << std::endl;
-        out << std::left << std::setw(align) << "BFS_distance (exact):" << nodes_dis_ex_BFS << std::endl;
         if (isRelationUnion) {
-            out << std::left << std::setw(align) << "Relations (Union):" << distribution_rel_node[0] << std::endl;
+            out << std::left << std::setw(align/2) << "Relations" << std::setw(align/3) << "(Union):" << distribution_rel_node[0] << std::endl;
         } else {
             for (size_t i=0; i<distribution_rel_node.size(); i++) {
-                out << std::left << std::setw(15) << "Relations " << std::setw(15) << i << distribution_rel_node[i] << std::endl;
+                out << std::left << std::setw(15) << "Relations " << std::setw(10) << i << distribution_rel_node[i] << std::endl;
             }
         }
+        out << "----------------------------------------------------------" << std::endl;
+        out << std::left << std::setw(align/2) << "BFS_distance" << std::setw(align/3) << "(up-to):" << nodes_dis_BFS << std::endl;
+        out << std::left << std::setw(align/2) << "*Restrict" << std::setw(align/3) << "(up-to):" << nodes_dis_rst << std::endl;
+        out << std::left << std::setw(align/2) << "*One-sided-match" << std::setw(align/3) << "(up-to):" << nodes_dis_osm << std::endl;
+        out << std::left << std::setw(align/2) << "*Two-sided-match" << std::setw(align/3) << "(up-to):" << nodes_dis_tsm << std::endl;
+
+        out << "----------------------------------------------------------" << std::endl;
+
+        out << std::left << std::setw(align/2) << "BFS_distance" << std::setw(align/3) << "(exact):" << nodes_dis_ex_BFS << std::endl;
+        out << std::left << std::setw(align/2) << "*Restrict" << std::setw(align/3) << "(exact):" << nodes_dis_ex_rst << std::endl;
+        out << std::left << std::setw(align/2) << "*One-sided-match" << std::setw(align/3) << "(exact):" << nodes_dis_ex_osm << std::endl;
+        out << std::left << std::setw(align/2) << "*Two-sided-match" << std::setw(align/3) << "(exact):" << nodes_dis_ex_tsm << std::endl;
+        for (size_t i=0; i<distance_permutation_ex_opt.size()-1; i++) {
+            out << distance_permutation_ex_opt[i] << " ";
+        }
+        out << std::endl;
+
         out << "====================| Distribution |======================" << std::endl;
         out << std::left << std::setw(15) << "Up-to" << std::left << std::setw(15) << "#state" << std::left << std::setw(15) << "#node" << std::endl;
         for (size_t i=0; i<distance.size(); i++) {
@@ -966,7 +1484,8 @@ void report(std::ostream& out)
         }
         out << "----------------------------------------------------------" << std::endl;
         out << std::left << std::setw(15) << "Don't-care"
-            << std::left << std::setw(15) << distribution_ex_state.back()
+            // << std::left << std::setw(15) << distribution_ex_state.back()
+            << std::left << std::setw(15) << ((0x01UL<<forest1->getSetting().getNumVars()) - distribution_state.back())
             << std::left << std::setw(15) << distribution_ex_node.back() << std::endl;
         out << "=========================| Time |=========================" << std::endl;
         out << std::left << std::setw(align) << "BFS_distance (up-to):" << time_BFS << std::endl;
@@ -1185,9 +1704,6 @@ void compute_BFS(const Func& target, const std::vector<Func>& relations)
             distribution_ex_node.push_back(forest1->getNodeManUsed(distance_ex[i]));
         }
 
-        // remove one 
-
-
         // push back don't care set
         Func all(forest1);
         all.constant(1);
@@ -1208,10 +1724,10 @@ void compute_BFS(const Func& target, const std::vector<Func>& relations)
     }
 
     // reset the forest
-    forest1->deregisterFunc();
-    forest1->registerFunc(target);
-    forest1->markAllFuncs();
-    forest1->markSweep();
+    // forest1->deregisterFunc();
+    // forest1->registerFunc(target);
+    // forest1->markAllFuncs();
+    // forest1->markSweep();
 }
 
 int main(int argc, const char** argv)
@@ -1310,20 +1826,33 @@ int main(int argc, const char** argv)
             distribution_rel_state.push_back(numStateRel);
             forward.getEdge().print(std::cout);
             std::cout << std::endl;
+            // try to union relations differently
+            if (isRelationUnion) {
+                if (isEmptyBot || isEmptyTop) {
+                    if (direction == 1 || direction == 2) { // up and down
+                        relations[0] |= forward;
+                    } else {    // left and right
+                        relations[1] |=forward;
+                    }
+                } else {
+                    relations[0] |= forward;
+                }
+            }
         }
     }
     std::cout << "Number of valid relations: " << relations.size() << std::endl;
     // union relations to relations[0]
-    if (isRelationUnion) {
-        for (size_t i=0; i<relations.size(); i++) {
-            relations[0] |= relations[i];
-        }
-        forest2->deregisterFunc();
-        forest2->registerFunc(relations[0]);
-        distribution_rel_node[0] = forest2->getNodeManUsed(relations[0]);
-        apply(CARDINALITY, relations[0], numStateRel);
-        distribution_rel_state[0] = numStateRel;
-    }
+    // if (isRelationUnion) {
+    //     for (size_t i=0; i<relations.size(); i++) {
+    //         relations[0] |= relations[i];
+    //     }
+    //     forest2->deregisterFunc();
+    //     forest2->registerFunc(relations[0]);
+    //     distribution_rel_node[0] = forest2->getNodeManUsed(relations[0]);
+    //     apply(CARDINALITY, relations[0], numStateRel);
+    //     distribution_rel_state[0] = numStateRel;
+    // }
+
     // DotMaker dot1(forest2, "relations");
     // dot1.buildGraph(relations);
     // dot1.runDot("pdf");
@@ -1364,103 +1893,16 @@ int main(int argc, const char** argv)
     // // record #nodes
     // nodes_correct = forest1->getNodeManUsed(states);
 
+    /* ========================================================================================================
+        Concretization
+       =======================================================================================================*/
+    concretize_rst();
+    concretize_osm();
+    concretize_tsm();
 
-    // // check with the correct answer
-    // if ((getRes_BFS && getRes_correct) && (states.getEdge() != states_BFS.getEdge())) {
-    //     std::cout << "[SSG Failed]: BFS is different from the correct!" << std::endl;
-    //     std::cout << "\tcorrect answer: ";
-    //     states.getEdge().print(std::cout);
-    //     std::cout << std::endl;
-    //     std::cout << "\tBFS answer: ";
-    //     states_BFS.getEdge().print(std::cout);
-    //     std::cout << std::endl;
-    //     // check if encode the same function
-    //     std::cout << "Checking if they're encoding different functions!" << std::endl;
-    //     num = N*M*bits;
-    //     std::vector<bool> assign(num+1, 0);
-    //     bool isDiff = 0;
-    //     for (long i=0; i<(1<<num); i++) {
-    //         for (uint16_t k=1; k<=num; k++) {
-    //             assign[k] = i&(1<<(k-1));
-    //         }
-    //         int valIntS, valIntBFS;
-    //         Value evalS = states.evaluate(assign);
-    //         Value evalBFS = states_BFS.evaluate(assign);
-    //         evalS.getValueTo(&valIntS, INT);
-    //         evalBFS.getValueTo(&valIntBFS, INT);
-    //         if (valIntS != valIntBFS) {
-    //             isDiff = 1;
-    //             break;
-    //         }
-    //     }
-    //     if (isDiff) {
-    //         std::cout << "\tDifferent functions!" << std::endl;
-    //     } else {
-    //         std::cout << "\tSame functions!" << std::endl;
-    //     }
-    //     // graph
-    //     DotMaker dot0(forest1, "states");
-    //     dot0.buildGraph(states);
-    //     dot0.runDot("pdf");
-
-    //     DotMaker dot1(forest1, "states_BFS");
-    //     dot1.buildGraph(states_BFS);
-    //     dot1.runDot("pdf");
-    // }
-
-    // if ((getRes_chain && getRes_correct) && (states.getEdge() != states_chain.getEdge())) {
-    //     std::cout << "[SSG Failed]: chain is different from the correct!" << std::endl;
-    //     std::cout << "\tcorrect answer: ";
-    //     states.getEdge().print(std::cout);
-    //     std::cout << std::endl;
-    //     std::cout << "\tchain answer: ";
-    //     states_chain.getEdge().print(std::cout);
-    //     std::cout << std::endl;
-    //     // check if encode the same function
-    //     std::cout << "Checking if they're encoding different functions!" << std::endl;
-    //     num = N*M*bits;
-    //     std::vector<bool> assign(num+1, 0);
-    //     bool isDiff = 0;
-    //     for (long i=0; i<(1<<num); i++) {
-    //         for (uint16_t k=1; k<=num; k++) {
-    //             assign[k] = i&(1<<(k-1));
-    //         }
-    //         int valIntS, valIntChain;
-    //         Value evalS = states.evaluate(assign);
-    //         Value evalChain = states_chain.evaluate(assign);
-    //         evalS.getValueTo(&valIntS, INT);
-    //         evalChain.getValueTo(&valIntChain, INT);
-    //         if (valIntS != valIntChain) {
-    //             isDiff = 1;
-    //             break;
-    //         }
-    //     }
-    //     if (isDiff) {
-    //         std::cout << "\tDifferent functions!" << std::endl;
-    //     } else {
-    //         std::cout << "\tSame functions!" << std::endl;
-    //     }
-    //     // graph
-    //     DotMaker dot0(forest1, "states");
-    //     dot0.buildGraph(states);
-    //     dot0.runDot("pdf");
-
-    //     DotMaker dot1(forest1, "states_chain");
-    //     dot1.buildGraph(states_chain);
-    //     dot1.runDot("pdf");
-    // }
-
-    /* evaluate these results */
-    // if ((getRes_Sat && getRes_chain) && states_Sat.getEdge() != states_chain.getEdge()) {
-    //     std::cout << "[SSG Failed]: Saturation and chain are different!" << std::endl;
-    //     exit(0);
-    // }
-    // if ((getRes_BFS && getRes_chain) && states_BFS.getEdge() != states_chain.getEdge()) {
-    //     std::cout << "[SSG Failed]: BFS and chain are different!" << std::endl;
-    //     exit(0);
-    // }
-
-    // report result
+    /* ========================================================================================================
+        Report result
+       =======================================================================================================*/
     if (!isReportToFile) {
         std::cout << "Done!" << std::endl;
         std::cout << "**********************************************************" << std::endl;
@@ -1484,11 +1926,21 @@ int main(int argc, const char** argv)
         fileName += std::to_string(N);
         fileName += "_";
         fileName += std::to_string(M);
-        if (isComputeDistance) fileName += "_Dis";
-        if (isComputeDistanceBFS) fileName += "_MR";
-        if (isRelationUnion) fileName += "_UR";
-        if (isEmptyTop) fileName += "_ET";
-        if (isEmptyBot) fileName += "_EB";
+        if (isComputeDistance) {
+            fileName += "_Dis";
+        }
+        if (isComputeDistanceBFS) {
+            fileName += "_MR";
+        }
+        if (isRelationUnion) {
+            fileName += "_UR";
+        }
+        if (isEmptyTop) {
+            fileName += "_ET";
+        }
+        if (isEmptyBot) {
+            fileName += "_EB";
+        }
         fileName += ".txt";
         std::ofstream file(fileName, std::ios::app);
         if (!file) {
