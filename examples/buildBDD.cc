@@ -29,6 +29,7 @@ std::string intToBoolVariable(int varIndex);
 std::string boolVariableToInt(int varIndex);
 void printCurLevelVerticies(std::vector<uint64_t> curLevelVerticies);
 std::string intToAlphaString(int number);
+std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t>& vertexNames);
 
 
 using namespace BRAVE_DD;
@@ -88,6 +89,7 @@ int main () {
 int numverticis = 12;
 int numInAlphabet = 2;  
 int numStatesG;
+int maxLvl = 4;
 
 /**
  *Mathod QRBDDToBoolForDFA
@@ -98,7 +100,7 @@ int numStatesG;
 **/
 int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments){
     //this counter increaments everytime a clause is added to our boolean function
-    int numClauses = 0;
+    int numClauses = numverticis;
     numStatesG = numStates;
     int vertecisOnLvl;
     int boolVariableToIntParms1 [4];
@@ -115,22 +117,82 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments){
     BRAVE_DD::NodeHandle curVertexHandle = qrbdd.getEdge().getNodeHandle();
     uint64_t uniqueVertexName = (static_cast<uint64_t>(0x4) << 48) | curVertexHandle;
     std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
-
     curLevelVerticies.push_back(uniqueVertexName);
     seen.insert(uniqueVertexName);
+
+    std::vector<uint64_t> allVerticies;
+    allVerticies.push_back(uniqueVertexName);
+    int verticiesOnLvl = curLevelVerticies.size();
+    for(int lvl = maxLvl -1; lvl > 0; lvl --){
+        for (verticiesOnLvl; verticiesOnLvl > 0; verticiesOnLvl --){
+            for (int x = 0; x < numAssignments; x++){
+                //get handle of the vertecy
+                curVertexHandle = qrbdd.getForest()->getChildNodeHandle(lvl + 1,curVertexHandle,x);
+                //create a unique name from handle and level
+                uniqueVertexName = static_cast<uint64_t>(lvl) << 48 | curVertexHandle;
+                std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
+                //check if seen befor and add it to seen if not
+                if(seen.insert(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl+1,curVertexHandle,x)).second){
+                    //add to the stack
+                    curLevelVerticies.push_back(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl+1,curVertexHandle,x));
+                    //add to all verticies
+                    allVerticies.push_back(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl+1,curVertexHandle,x));
+                }
+            }
+            curLevelVerticies.erase(curLevelVerticies.begin());
+        }
+        verticiesOnLvl = curLevelVerticies.size();
+    }
+
+
+
+    auto renamed = renameVertices(allVerticies);
+
+    for (const auto& [name, id] : renamed) {
+        std::cout << "Vertex " << name << " -> ID " << id << "\n";
+    }
+
+    return 0;
 
 
     //build sat problem
     //root(v_a) belongs to q0
     function += "1 0\n";
     curVertex++;
-    //so when boolVariableToInt setting i for (delta (q_i,x) = q_j)
-    boolVariableToIntParms1[0] = curVertex;
     numClauses++;
+    //each of the remaning vertecies can be in at least 1 of each state
+    for (curVertex; curVertex < numverticis; curVertex++){
+        boolVariableToIntParms1[0] = curVertex;
+        //incrementing the state
+        for (int i = 0; i < numStatesG; i++){
+            boolVariableToIntParms1[1] = i;
+            function += std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1))+ " ";
+        }
+        function += "0\n" + tempFunction;
+    }
+    std::cout << function << std::endl; 
 
-
-
+    
+    curVertex = 0;
+    int parent = curVertex;
+    int child;
     //find number of children that root has and add them to the stack
+    for(int lvl = 3; lvl > 0; lvl --){
+        for (int x = 0; x < numAssignments; x++){
+            curVertexHandle = qrbdd.getForest()->getChildNodeHandle(lvl + 1,curVertexHandle,x);
+            uniqueVertexName = static_cast<uint64_t>(lvl) << 48 | curVertexHandle;
+            std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
+            //check to see if already part of curLevelVerticies
+            if(seen.insert(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl+1,curVertexHandle,x)).second){
+                //add to the stack
+                curLevelVerticies.push_back(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl+1,curVertexHandle,x));
+            }
+        }
+    }
+    
+
+
+    /*//find number of children that root has and add them to the stack
     vertecisOnLvl = curLevelVerticies.size();
     curVertexHandle = curLevelVerticies.back();
     //qrbdd.getEdge().getNodeLevel();
@@ -140,9 +202,9 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments){
         boolVariableToIntParms1[0] = 0;
         boolVariableToIntParms1[1] = 0;
         //prep for high low child
-        boolVariableToIntParms1[2] = x;
+        //boolVariableToIntParms1[2] = x;
         //in this the parent is always 0
-        boolVariableToIntParms1[3] = 0;
+        //boolVariableToIntParms1[3] = 0;
         uniqueVertexName = static_cast<uint64_t>(0x3) << 48 | curVertexHandle;
         std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
         //check to see if already part of curLevelVerticies
@@ -151,24 +213,24 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments){
             curLevelVerticies.push_back(static_cast<uint64_t>(3) << 48 | qrbdd.getForest()->getChildNodeHandle(4,curVertexHandle,x));
             //root's children belong to 1 of three states q0, q1, or q2 and if root belongs to 0 then we need 0 to point to what roots child belongs to
             std::cout << function << std::endl;
-            function += "-" + std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1))+ " ";
-            std::cout << function << std::endl;
+            //function += "-" + std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1))+ " ";
+            //std::cout << function << std::endl;
             boolVariableToIntParms1[0] = x + 1;
-            for(int i = 0; i < std::max(3, numStates); i++){
+            for(int i = 0; i < numStates; i++){
                 //if root belongs to 0 then we need 0 to point to what roots child belongs to
                 //format of ((v_alpha belongs to q_i) & (delta (q_j,x) = q_i), {alpha, i, x, j})
                 boolVariableToIntParms1[1] = i;
-                function += std::to_string(boolVariableToInt(belongsAndDelta, boolVariableToIntParms1))+ " ";
+                //function += std::to_string(boolVariableToInt(belongsAndDelta, boolVariableToIntParms1))+ " ";
                 //root's children belong to 1 of three states q0, q1, or q2
-                tempFunction += std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1))+ " ";
+                function += std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1))+ " ";
             }
-            tempFunction += "0\n";
+            //tempFunction += "0\n";
             function += "0\n" + tempFunction;
             std::cout << function << std::endl; 
         }
     }
     curLevelVerticies.erase(curLevelVerticies.begin());
-    printCurLevelVerticies(curLevelVerticies);
+    printCurLevelVerticies(curLevelVerticies);*/
 
 
 
@@ -204,7 +266,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments){
 
 
 
-
+    std::cout << function;
     //add p cnf <num variables> <num clauses> to tope of file   
     std::ofstream outFile("satFunctionForQRBDDtoDFA.txt");
     if (!outFile) {
@@ -267,7 +329,7 @@ int boolVariableToInt(int varType, int* parms){
     if(varType == v_AlphBelongsToq_i){
         // take vertex and multiply it by the number of states, add the state number and add 1 since minimum is 1
         return numStatesG * parms[0]+ 
-        // alpha increments each time
+        // i increments each time
         parms[1] + 
         // ofset up one so that we don't double dip an index since we are 1 indexing not 0 indexing
         1;
@@ -395,10 +457,49 @@ std::string intToAlphaString(int number) {
     return result;
 }
 
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+#include <string>
+
+/**
+ * @brief Renames each vertex in a DAG to a unique integer ID from 0 to N-1.
+ *
+ * @param vertexNames A vector of strings representing the original names of the vertices.
+ * @return std::unordered_map<std::string, int> A map from original vertex names to new integer IDs.
+ *
+ * @note The order of IDs is based on the order of names in the input vector.
+ *       If you want topological order, you must run a topological sort first.
+ *
+ * @complexity Time Complexity: O(N), where N is the number of vertices.
+ *             Space Complexity: O(N), for storing the mapping.
+ */
+std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t>& vertexNames) {
+    std::unordered_map<uint64_t, int> nameToId;
+
+    for (size_t i = 0; i < vertexNames.size(); ++i) {
+        nameToId[vertexNames[i]] = static_cast<int>(i);
+    }
+
+    return nameToId;
+}
+
+
 /*int main() {
     int input = 27;
 
-    // Call to intToAlphaString — O(log₍₂₆₎n)
+    // Call to intToAlphaString — O(log₍₂₆₎1 0
+5 6 7 8 0
+9 10 11 12 0
+13 14 15 16 0
+17 18 19 20 0
+21 22 23 24 0
+25 26 27 28 0
+29 30 31 32 0
+33 34 35 36 0
+37 38 39 40 0
+41 42 43 44 0
+45 46 47 48 0n)
     std::string output = intToAlphaString(input);
 
     std::cout << "Encoded string: " << output << std::endl; // O(1)
