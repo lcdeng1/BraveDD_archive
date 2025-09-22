@@ -169,11 +169,6 @@ namespace BRAVE_DD {
         return e1;
     }
 
-    bool operator==(const Edge &e1, const Edge &e2)
-    {
-        return 0;
-    }
-
     /* These will let us do C++ style output, with our output class */
 
     inline Output& operator<<(Output &s, const ForestSetting &setting)

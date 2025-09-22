@@ -47,9 +47,6 @@ namespace BRAVE_DD {
     Func operator&=(Func &e1, const Func &e2);
     Func operator|=(Func &e1, const Func &e2);
 
-    /* Operators for comparing */
-    bool operator==(const Edge &e1, const Edge &e2);
-
     /* These will let us do C++ style output, with our output class */
     
     inline Output& operator<<(Output &s, const ForestSetting &setting);
