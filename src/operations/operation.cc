@@ -39,6 +39,7 @@ UnaryOperation::UnaryOperation(UnaryOperationType type, Forest* source, Forest* 
     sourceForest = source;
     targetForest = target;
     targetType = OpndType::FOREST;
+    caches.resize(1);
 }
 UnaryOperation::UnaryOperation(UnaryOperationType type, Forest* source, OpndType target)
 :opType(type)
@@ -46,23 +47,24 @@ UnaryOperation::UnaryOperation(UnaryOperationType type, Forest* source, OpndType
     sourceForest = source;
     targetForest = source;
     targetType = target;
+    caches.resize(1);
 }
 UnaryOperation::~UnaryOperation()
 {
-    cache.~ComputeTable();
+    caches.clear();
     sourceForest = nullptr;
     targetForest = nullptr;
 }
 
-void UnaryOperation::sweepAndEnlarge()
+void UnaryOperation::sweepAndEnlarge(const size_t cacheID)
 {
     // first check if number of entries reach to the thresholds
-    double ratio = static_cast<double>(cache.numEntries) / cache.size;
+    double ratio = static_cast<double>(caches[cacheID].numEntries) / caches[cacheID].size;
     // it's time to sweep? TBD
     // it's time to enlarge?
-    if ((ratio > thresholdsEnlarge) && (cache.size < (uint64_t)0x01 << 62)) {
-        cache.size *= 2;
-        cache.enlarge(cache.size);
+    if ((ratio > thresholdsEnlarge) && (caches[0].size < (uint64_t)0x01 << 62)) {
+        caches[0].size *= 2;
+        caches[0].enlarge(caches[0].size);
     }
 }
 
@@ -171,7 +173,7 @@ Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
     } else {
         Edge cacheEdge = source;
         // check cache
-        if (cache.check(lvl, source, ans)) return ans;
+        if (caches[0].check(lvl, source, ans)) return ans;
         // protect edge for sweep
         // ProtectEdge protectSource(targetForest, cacheEdge);
         std::vector<Edge> childEdges;
@@ -188,7 +190,7 @@ Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
         packRule(label, compRule(source.getRule()));
         ans = targetForest->reduceEdge(lvl, label, source.getNodeLevel(), childEdges);
         // cache
-        cacheAdd(lvl, source, ans);
+        cacheAdd(0, lvl, source, ans);
     }
     return ans;
 }
@@ -259,7 +261,7 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
     long num = 0;
     // protect edge for sweep
     // ProtectEdge protectSource(targetForest, cacheEdge);
-    if (!cache.check(source.getNodeLevel(), cacheEdge, num)) {
+    if (!caches[0].check(source.getNodeLevel(), cacheEdge, num)) {
         // compute recursively
         std::vector<Edge> child;
         if (targetForest->getSetting().isRelation()) {
@@ -274,7 +276,7 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
         }
         num = newNum;
         // save to the cache
-        cacheAdd(source.getNodeLevel(), cacheEdge, newNum);
+        cacheAdd(0, source.getNodeLevel(), cacheEdge, newNum);
     }
     // consider the incoming edge rule
     int multiplier = 1;
@@ -438,14 +440,14 @@ void UnaryList::searchSweepCache(Forest* forest)
             // sweep cache
             // if opType is COPY, check if it's source or target forest
             if (curr->opType == UnaryOperationType::UOP_COPY) {
-                curr->cache.sweep(forest, (isSource) ? 1 : 0);
+                curr->caches[0].sweep(forest, (isSource) ? 1 : 0);
             } else if (curr->opType == UnaryOperationType::UOP_COMPLEMENT) {
                 if (isTarget) {
-                    curr->cache.sweep(forest, 0);
-                    curr->cache.sweep(forest, 1);
+                    curr->caches[0].sweep(forest, 0);
+                    curr->caches[0].sweep(forest, 1);
                 }
             } else if (curr->opType == UnaryOperationType::UOP_CARDINALITY) {
-                curr->cache.sweep(forest, 1);
+                curr->caches[0].sweep(forest, 1);
             } else {
                 // other operations, TBD
                 std::cout << "other operation not implemented" << std::endl;
@@ -470,7 +472,7 @@ void UnaryList::reportCacheStat(std::ostream& out, int format) const
         out << "Result Forest: " << curr->targetForest->getSetting().getName() << "\n";
         out << "Operation Type: " << UOP2String(curr->opType) << "\n";
         out << "----------------------------------\n";
-        curr->cache.reportStat(out, format);
+        curr->caches[0].reportStat(out, format);
         curr = curr->next;
         n++;
     }
@@ -491,6 +493,7 @@ BinaryOperation::BinaryOperation(BinaryOperationType type, Forest* source1, Fore
     source2Forest = source2;
     source2Type = OpndType::FOREST;
     resForest = res;
+    caches.resize(1);
 }
 BinaryOperation::BinaryOperation(BinaryOperationType type, Forest* source1, OpndType source2, Forest* res)
 :opType(type)
@@ -499,19 +502,20 @@ BinaryOperation::BinaryOperation(BinaryOperationType type, Forest* source1, Opnd
     source2Forest = source1;
     source2Type = source2;
     resForest = res;
+    caches.resize(1);
 }
 BinaryOperation::~BinaryOperation()
 {
-    cache.~ComputeTable();
+    caches.clear();
     source1Forest = nullptr;
     source2Forest = nullptr;
     resForest = nullptr;
 }
 
-void BinaryOperation::sweepAndEnlarge()
+void BinaryOperation::sweepAndEnlarge(const size_t cacheID)
 {
     // first check if number of entries reach to the thresholds
-    double ratio = static_cast<double>(cache.numEntries) / cache.size;
+    double ratio = static_cast<double>(caches[cacheID].numEntries) / caches[cacheID].size;
     // std::cout << "[sweep and enlarge] in " << BOP2String(this->opType) << "; ratio: " << ratio << std::endl;
     // ---------------------------------------------------------------------------------------------------------------
     // bool sweepDone = 0;
@@ -529,14 +533,14 @@ void BinaryOperation::sweepAndEnlarge()
     //     }
     //     sweepDone = 1;
     //     // update ratio
-    //     ratio = static_cast<double>(cache.numEntries) / cache.size;
+    //     ratio = static_cast<double>(caches[0].numEntries) / caches[0].size;
     // }
     // // it's time to enlarge?
-    // if (sweepDone && (ratio > thresholdsEnlarge) && (cache.size < (uint64_t)0x01 << 62)) {
+    // if (sweepDone && (ratio > thresholdsEnlarge) && (caches[0].size < (uint64_t)0x01 << 62)) {
     // ---------------------------------------------------------------------------------------------------------------
-    if ((ratio > thresholdsEnlarge) && (cache.size < (uint64_t)0x01 << 62)) {
-        cache.size *= 2;
-        cache.enlarge(cache.size);
+    if ((ratio > thresholdsEnlarge) && (caches[cacheID].size < (uint64_t)0x01 << 62)) {
+        caches[cacheID].size *= 2;
+        caches[cacheID].enlarge(caches[cacheID].size);
     }
 }
 
@@ -588,7 +592,7 @@ void BinaryOperation::compute(const Func& source1, const Func& source2, Func& re
     }
     // passing result
     res.setEdge(ans);
-    // cache.reportStat(std::cout);
+    // caches[0].reportStat(std::cout);
 }
 
 void BinaryOperation::compute(const Func& source1, const ExplictFunc& source2, Func& res)
@@ -857,10 +861,10 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
     // ProtectEdge pe1(resForest, e1);
     // ProtectEdge pe2(resForest, e2);
     
-    if (cache.check(lvl, e1, e2, ans) && !resForest->getSetting().isRelation()) {
-        ans.setValue(originalVal + ans.getValue());
+    if (caches[0].check(lvl, e1, e2, ans) && !resForest->getSetting().isRelation()) {
+        if (!ans.isConstantPosInf() && !ans.isConstantNegInf()) ans.setValue(originalVal + ans.getValue());
         return ans;
-    } else if (cache.check(m1, e1, e2, ans) && resForest->getSetting().isRelation()) {
+    } else if (caches[0].check(m1, e1, e2, ans) && resForest->getSetting().isRelation()) {
         EdgeLabel root = 0;
         if (e1.getRule() == e2.getRule()) {
             packRule(root, e1.getRule());
@@ -892,7 +896,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
                 ans = resForest->reduceEdge(k, root, k, tmp);
             }
         }
-        ans.setValue(originalVal + ans.getValue());
+        if (!ans.isConstantPosInf() && !ans.isConstantNegInf()) ans.setValue(originalVal + ans.getValue());
         return ans;
     }
     /* -------------------------------------------------------------------------------------------------
@@ -926,8 +930,8 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         // ProtectEdge protectAns(resForest, ans);
 
         // save to cache
-        cacheAdd(lvl, e1, e2, ans);
-        ans.setValue(originalVal + ans.getValue());
+        cacheAdd(0, lvl, e1, e2, ans);
+        if (!ans.isConstantPosInf() && !ans.isConstantNegInf()) ans.setValue(originalVal + ans.getValue());
         return ans;
     }
     /* -------------------------------------------------------------------------------------------------
@@ -962,8 +966,8 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
             }
         }
         // save cache
-        cacheAdd(lvl, e1, e2, ans);
-        ans.setValue(originalVal + ans.getValue());
+        cacheAdd(0, lvl, e1, e2, ans);
+        if (!ans.isConstantPosInf() && !ans.isConstantNegInf()) ans.setValue(originalVal + ans.getValue());
         return ans;
     } else {
         // For MXDs, recursively compute the bottom part, then cache and merge
@@ -977,7 +981,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
         packRule(root, RULE_X);
         ans = resForest->reduceEdge(m1, root, m1, tmp);
         // save to cache
-        cacheAdd(m1, e1, e2, ans);
+        cacheAdd(0, m1, e1, e2, ans);
         // merge edge
         if (e1.getRule() == e2.getRule()) {
             packRule(root, e1.getRule());
@@ -1004,7 +1008,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
                 ans = resForest->reduceEdge(k, root, k, tmp);
             }
         }
-        ans.setValue(originalVal + ans.getValue());
+        if (!ans.isConstantPosInf() && !ans.isConstantNegInf()) ans.setValue(originalVal + ans.getValue());
         return ans;
     }
 }
@@ -1045,7 +1049,7 @@ Edge BinaryOperation::computeUnion(const uint16_t lvl, const Edge& source1, cons
     }
     
     // check cache here
-    if (cache.check(lvl, e1, e2, ans)) return ans;
+    if (caches[0].check(lvl, e1, e2, ans)) return ans;
 
     // Case that edge1 is a short edge
     if (m1 == lvl) {
@@ -1062,7 +1066,7 @@ Edge BinaryOperation::computeUnion(const uint16_t lvl, const Edge& source1, cons
         ans = resForest->reduceEdge(lvl, root, lvl, child);
 
         // save to cache
-        cacheAdd(lvl, e1, e2, ans);
+        cacheAdd(0, lvl, e1, e2, ans);
         return ans;
     }
 
@@ -1090,7 +1094,7 @@ Edge BinaryOperation::computeUnion(const uint16_t lvl, const Edge& source1, cons
         }
     }
     // save cache
-    cacheAdd(lvl, e1, e2, ans);
+    cacheAdd(0, lvl, e1, e2, ans);
     return ans;
 }
 
@@ -1138,7 +1142,7 @@ Edge BinaryOperation::computeIntersection(const uint16_t lvl, const Edge& source
     }
     
     // check cache here
-    if (cache.check(lvl, e1, e2, ans)) return ans;
+    if (caches[0].check(lvl, e1, e2, ans)) return ans;
 
     // Case that edge1 is a short edge
     if (m1 == lvl) {
@@ -1166,7 +1170,7 @@ Edge BinaryOperation::computeIntersection(const uint16_t lvl, const Edge& source
     ans.print(std::cout);
     std::cout << std::endl;
 #endif
-        cacheAdd(lvl, e1, e2, ans);
+        cacheAdd(0, lvl, e1, e2, ans);
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "\tsave done\n";
 #endif
@@ -1202,7 +1206,7 @@ Edge BinaryOperation::computeIntersection(const uint16_t lvl, const Edge& source
     ans.print(std::cout);
     std::cout << std::endl;
 #endif
-    cacheAdd(lvl, e1, e2, ans);
+    cacheAdd(0, lvl, e1, e2, ans);
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "\tsave done\n";
 #endif
@@ -1293,7 +1297,7 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "\tchecking cache\n";
 #endif
-    if (!cache.check(m, sCache, rCache, ans)) {
+    if (!caches[0].check(m, sCache, rCache, ans)) {
         // -----------------------------------------------------------
         // protect edge
         // ProtectEdge protectS(source1Forest, sCache);
@@ -1372,7 +1376,7 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
         // }
         // -----------------------------------------------------------
         // cache
-        cacheAdd(m, sCache, rCache, ans);
+        cacheAdd(0, m, sCache, rCache, ans);
     }
     // merge with the incoming edge rule
     EdgeLabel incoming = 0;
@@ -1619,11 +1623,11 @@ void BinaryList::searchSweepCache(Forest* forest)
             // sweep cache
             if ((curr->opType == BinaryOperationType::BOP_PREIMAGE) || (curr->opType == BinaryOperationType::BOP_POSTIMAGE)) {
                 if (isSource1) {
-                    curr->cache.sweep(forest, 0);
-                    curr->cache.sweep(forest, 1);
+                    curr->caches[0].sweep(forest, 0);
+                    curr->caches[0].sweep(forest, 1);
                 }
                 if (isSource2) {
-                    curr->cache.sweep(forest, 2);
+                    curr->caches[0].sweep(forest, 2);
                 }
 
             } else if ((curr->opType == BinaryOperationType::BOP_UNION)
@@ -1633,9 +1637,9 @@ void BinaryList::searchSweepCache(Forest* forest)
                         || (curr->opType == BinaryOperationType::BOP_PLUS)
                         || (curr->opType == BinaryOperationType::BOP_MINUS)) {
                 if (isRes) {
-                    curr->cache.sweep(forest, 0);
-                    curr->cache.sweep(forest, 1);
-                    curr->cache.sweep(forest, 2);
+                    curr->caches[0].sweep(forest, 0);
+                    curr->caches[0].sweep(forest, 1);
+                    curr->caches[0].sweep(forest, 2);
                 }
             }
             // other operations TBD
@@ -1661,7 +1665,7 @@ void BinaryList::reportCacheStat(std::ostream& out, int format) const
         out << "Result Forest: " << curr->resForest->getSetting().getName() << "\n";
         out << "Operation Type: " << BOP2String(curr->opType) << "\n";
         out << "----------------------------------\n";
-        curr->cache.reportStat(out, format);
+        curr->caches[0].reportStat(out, format);
         curr = curr->next;
         n++;
     }
@@ -1693,12 +1697,12 @@ SaturationOperation::SaturationOperation(Forest* source1, Forest* source2, Fores
     source2Forest = source2;
     resForest = res;
     isPre = 0;
+    caches.resize(2);
 }
 
 SaturationOperation::~SaturationOperation()
 {
-    cache.~ComputeTable();
-    cacheRel.~ComputeTable();
+    caches.clear();
     source1Forest = nullptr;
     source2Forest = nullptr;
     resForest = nullptr;
@@ -1716,10 +1720,10 @@ void SaturationOperation::setDirection(const bool dir)
     isPre = dir;
 }
 
-void SaturationOperation::sweepAndEnlarge()
+void SaturationOperation::sweepAndEnlarge(const size_t cacheID)
 {
     // first check if number of entries reach to the thresholds
-    double ratio = static_cast<double>(cache.numEntries) / cache.size;
+    double ratio = static_cast<double>(caches[cacheID].numEntries) / caches[cacheID].size;
     // std::cout << "[sweep and enlarge] in satuartion; ratio: " << ratio << std::endl;
     // ---------------------------------------------------------------------------------------------------------------
     // bool sweepDone = 0;
@@ -1733,44 +1737,15 @@ void SaturationOperation::sweepAndEnlarge()
     //     source1Forest->markSweep();
     //     sweepDone = 1;
     //     // update ratio
-    //     ratio = static_cast<double>(cache.numEntries) / cache.size;
+    //     ratio = static_cast<double>(caches[0].numEntries) / caches[0].size;
     //     std::cout << "after ratio: " << ratio << std::endl;
     // }
     // // it's time to enlarge?
-    // if (sweepDone && (ratio > thresholdsEnlarge) && (cache.size < (uint64_t)0x01 << 62)) {
+    // if (sweepDone && (ratio > thresholdsEnlarge) && (caches[0].size < (uint64_t)0x01 << 62)) {
     // ---------------------------------------------------------------------------------------------------------------
-    if ((ratio > thresholdsEnlarge) && (cache.size < (uint64_t)0x01 << 62)) {
-        cache.size *= 2;
-        cache.enlarge(cache.size);
-    }
-}
-
-void SaturationOperation::sweepAndEnlargeRel()
-{
-    // first check if number of entries reach to the thresholds
-    double ratio = static_cast<double>(cacheRel.numEntries) / cacheRel.size;
-    // std::cout << "[sweep and enlarge] in satuartionRel; ratio: " << ratio << std::endl;
-    // ---------------------------------------------------------------------------------------------------------------
-    // bool sweepDone = 0;
-    // // it's time to sweep?
-    // if ((ratio > thresholdsSweep)) {
-    //     std::cout << "sweep rel now... ratio: " << ratio ;
-    //     // mark all resgitered function and protected edges
-    //     source1Forest->markAllFuncs();
-    //     source1Forest->markAllProtectedEdges();
-    //     // sweep
-    //     source1Forest->markSweep();
-    //     sweepDone = 1;
-    //     // update ratio
-    //     ratio = static_cast<double>(cacheRel.numEntries) / cacheRel.size;
-    //     std::cout << "after ratio: " << ratio << std::endl;
-    // }
-    // // it's time to enlarge?
-    // if (sweepDone && (ratio > thresholdsEnlarge) && (cacheRel.size < (uint64_t)0x01 << 62)) {
-    // ---------------------------------------------------------------------------------------------------------------
-    if ((ratio > thresholdsEnlarge) && (cacheRel.size < (uint64_t)0x01 << 62)) {
-        cacheRel.size *= 2;
-        cacheRel.enlarge(cacheRel.size);
+    if ((ratio > thresholdsEnlarge) && (caches[cacheID].size < (uint64_t)0x01 << 62)) {
+        caches[cacheID].size *= 2;
+        caches[cacheID].enlarge(caches[cacheID].size);
     }
 }
 
@@ -1888,7 +1863,7 @@ Edge SaturationOperation::computeSaturation(const uint16_t lvl, const Edge& sour
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "\tchecking cache\n";
 #endif
-    if (cache.check(lvl, source1, ans)) return ans;
+    if (caches[0].check(lvl, source1, ans)) return ans;
     // ----------------------------------------------------
     /* protect source edge */
     // Edge s = source1;
@@ -2060,7 +2035,7 @@ Edge SaturationOperation::computeSaturation(const uint16_t lvl, const Edge& sour
     // ------------------------------------------------------------
 
     /* add cache */
-    cacheAdd(lvl, source1, ans);
+    cacheAdd(0, lvl, source1, ans);
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "\tafter saturation, ans: ";
     ans.print(std::cout);
@@ -2108,8 +2083,8 @@ Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Ed
         originalVal = source1.getValue();
         source1Cache.setValue(0);
     }
-    if (cache.check(lvl, source1Cache, ans)) {
-        ans.setValue(originalVal + ans.getValue());
+    if (caches[0].check(lvl, source1Cache, ans)) {
+        if (!ans.isConstantPosInf() && !ans.isConstantNegInf()) ans.setValue(originalVal + ans.getValue());
         return ans;
     }
     std::vector<Edge> child(2);
@@ -2244,9 +2219,9 @@ Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Ed
     EdgeLabel incoming = 0;
     packRule(incoming, source1.getRule());  // be careful!
     ans = source1Forest->mergeEdge(lvl, m, incoming, ans);
-    cacheAdd(lvl, source1Cache, ans);
+    cacheAdd(0, lvl, source1Cache, ans);
 
-    ans.setValue(originalVal + ans.getValue());
+    if (!ans.isConstantPosInf() && !ans.isConstantNegInf()) ans.setValue(originalVal + ans.getValue());
     return ans;
 }
 
@@ -2343,7 +2318,7 @@ Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source
 #endif
     // // protect edge
     // ProtectEdge protectS(source1Forest, s);
-    if (!cacheRel.check(lvl, s, r, ans)) {
+    if (!caches[1].check(lvl, s, r, ans)) {
         // ------------------------------------------------
         // // protect edges
         // std::vector<Edge> protectChild;
@@ -2433,7 +2408,7 @@ Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source
         // }
         // ---------------------------------------------------------------
         // cache
-        cacheRelAdd(lvl, s, r, ans);
+        cacheAdd(1, lvl, s, r, ans);
     }
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "\tafter imageSat at level: " << lvl << ", ans: ";
@@ -2525,7 +2500,7 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
         originalVal = s.getValue();
         s.setValue(0);
     }
-    if (!cacheRel.check(lvl, s, r, ans)) {
+    if (!caches[1].check(lvl, s, r, ans)) {
         // not cached, computing needed
         std::vector<Edge> child(2);
         EdgeHandle constant = makeTerminal(VOID, SpecialValue::POS_INF);
@@ -2577,9 +2552,9 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
         // saturate before cache
         if (begin < relations.size() ) ans = computeSaturationDistance(lvl, ans, begin);
         // cache
-        cacheRelAdd(lvl, s, r, ans);
+        cacheAdd(1, lvl, s, r, ans);
     }
-    ans.setValue(originalVal + ans.getValue());
+    if (!ans.isConstantPosInf() && !ans.isConstantNegInf()) ans.setValue(originalVal + ans.getValue());
     return ans;
 }
 
@@ -2698,13 +2673,13 @@ void SaturationList::searchSweepCache(Forest* forest)
         if (isSource1 || isSource2 || isRes) {
             // sweep cache
             if (isSource1) {
-                curr->cache.sweep(forest, 0);
-                curr->cache.sweep(forest, 1);
-                curr->cacheRel.sweep(forest, 0);
-                curr->cacheRel.sweep(forest, 1);
+                curr->caches[0].sweep(forest, 0);
+                curr->caches[0].sweep(forest, 1);
+                curr->caches[1].sweep(forest, 0);
+                curr->caches[1].sweep(forest, 1);
             }
             if (isSource2) {
-                curr->cacheRel.sweep(forest, 2);
+                curr->caches[1].sweep(forest, 2);
             }
         }
         curr = curr->next;
@@ -2727,8 +2702,8 @@ void SaturationList::reportCacheStat(std::ostream& out, int format) const
         out << "Source2 Forest: " << curr->source2Forest->getSetting().getName() << "\n";
         out << "Result Forest: " << curr->resForest->getSetting().getName() << "\n";
         out << "----------------------------------\n";
-        curr->cache.reportStat(out, format);
-        curr->cacheRel.reportStat(out, format);
+        curr->caches[0].reportStat(out, format);
+        curr->caches[1].reportStat(out, format);
         curr = curr->next;
         n++;
     }

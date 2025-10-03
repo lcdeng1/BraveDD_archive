@@ -39,17 +39,33 @@ class BRAVE_DD::CacheEntry {
         key[1] = b;
         isInUse = 0;
     }
+    CacheEntry(const uint16_t level, const Edge& a, const Edge& b, const Edge& c, const Edge& d) {
+        lvl = level;
+        key = std::vector<Edge>(4);
+        key[0] = a;
+        key[1] = b;
+        key[2] = c;
+        key[3] = d;
+        isInUse = 0;
+    }
 
     inline void setResult(const Edge& r) {
         res = r;
         // only be in use when the result is set
         isInUse = 1;
     }
-
     inline void setResult(const long v) {
         Value value;
         value.setValue(v, LONG);
         res.setValue(value);
+        isInUse = 1;
+    }
+    inline void setResult(const char v) {
+        res.setEdgeHandle((EdgeHandle) v);
+        isInUse = 1;
+    }
+    inline void setResult(const bool v) {
+        res.setEdgeHandle((EdgeHandle) v);
         isInUse = 1;
     }
 
@@ -116,10 +132,20 @@ class BRAVE_DD::ComputeTable {
     bool check(const uint16_t lvl, const Edge& a, long& ans);
     bool check(const uint16_t lvl, const Edge& a, Edge& ans);
     bool check(const uint16_t lvl, const Edge& a, const Edge& b, Edge& ans);
+    bool check(const uint16_t lvl, const Edge& a, const Edge& b, char& ans);
+    bool check(const uint16_t lvl, const Edge& a, const Edge& b, bool& ans);
+    bool check(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, Edge& ans);
+    bool check(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, char& ans);
+    bool check(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, bool& ans);
 
     void add(const uint16_t lvl, const Edge& a, const long& ans);
     void add(const uint16_t lvl, const Edge& a, const Edge& ans);
     void add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& ans);
+    void add(const uint16_t lvl, const Edge& a, const Edge& b, const char& ans);
+    void add(const uint16_t lvl, const Edge& a, const Edge& b, const bool& ans);
+    void add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const Edge& ans);
+    void add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const char& ans);
+    void add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const bool& ans);
 
     // role: 0 for ans; 1 for key0; 2 for key1
     void sweep(Forest* forest, int role);
@@ -134,6 +160,7 @@ class BRAVE_DD::ComputeTable {
      * 
      */
     void enlarge(uint64_t newSize);
+    void sweepAndEnlarge(Forest* forest);
 
     friend class UnaryOperation;
     friend class BinaryOperation;

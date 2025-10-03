@@ -158,27 +158,27 @@ class BRAVE_DD::Operation {
     /*-------------------------------------------------------------*/
     virtual ~Operation();
 
-    void cacheAdd(const uint16_t lvl, const Edge& a, const long& ans) {
+    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const long& ans) {
         // check if sweep and enlarg, and do it
-        sweepAndEnlarge();
+        sweepAndEnlarge(cacheID);
         // add to cache
-        cache.add(lvl, a, ans);
+        caches[cacheID].add(lvl, a, ans);
     }
-    void cacheAdd(const uint16_t lvl, const Edge& a, const Edge& ans) {
+    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& ans) {
         // check if sweep and enlarg, and do it
-        sweepAndEnlarge();
+        sweepAndEnlarge(cacheID);
         // add to cache
-        cache.add(lvl, a, ans);
+        caches[cacheID].add(lvl, a, ans);
     }
-    void cacheAdd(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& ans) {
+    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const Edge& ans) {
         // check if sweep and enlarg, and do it
-        sweepAndEnlarge();
+        sweepAndEnlarge(cacheID);
         // add to cache
-        cache.add(lvl, a, b, ans);
+        caches[cacheID].add(lvl, a, b, ans);
     }
-    virtual void sweepAndEnlarge() {}
-    // computing tables TBD
-    ComputeTable        cache;
+    virtual void sweepAndEnlarge(const size_t cacheID) {}
+    // computing tables
+    std::vector<ComputeTable>   caches;
 
     /*-------------------------------------------------------------*/
     private:
@@ -202,13 +202,14 @@ class BRAVE_DD::UnaryOperation : public Operation {
     /* Main part: check forest comatability and then calls corresponding op compute */
     void compute(const Func& source, Func& target);
     void compute(const Func& source, long& target);
+    void compute(const Func& source, unsigned long& target);    // for large numbers? TBD
     void compute(const Func& source, double& target);
     void compute(const Func& source, Func& target, const Value val);
     /*-------------------------------------------------------------*/
     protected:
     /*-------------------------------------------------------------*/
     virtual ~UnaryOperation();
-    void sweepAndEnlarge() override;
+    void sweepAndEnlarge(const size_t cacheID) override;
 
     /*-------------------------------------------------------------*/
     private:
@@ -218,6 +219,7 @@ class BRAVE_DD::UnaryOperation : public Operation {
     Edge computeCOPY(const uint16_t lvl, const Edge& source);
     Edge computeCOMPLEMENT(const uint16_t lvl, const Edge& source);
     long computeCARD(const uint16_t lvl, const Edge& source);
+    unsigned long computeCARD64(const uint16_t lvl, const Edge& source);
     // concretizing
     Edge computeRESTRICT(const uint16_t lvl, const Edge& source, const Value val);
     Edge computeOSM(const uint16_t lvl, const Edge& source, const Value val);
@@ -316,7 +318,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
     protected:
     /*-------------------------------------------------------------*/
     virtual ~BinaryOperation();
-    void sweepAndEnlarge() override;
+    void sweepAndEnlarge(const size_t cacheID) override;
 
     /*-------------------------------------------------------------*/
     private:
@@ -449,16 +451,7 @@ class BRAVE_DD::SaturationOperation : public Operation {
     /*-------------------------------------------------------------*/
     virtual ~SaturationOperation();
 
-    void cacheRelAdd(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& ans) {
-        // check if sweep and enlarg, and do it
-        sweepAndEnlargeRel();
-        // add to cache
-        cacheRel.add(lvl, a, b, ans);
-    }
-    void sweepAndEnlarge() override;
-    void sweepAndEnlargeRel();
-    // computing table only for relation product
-    ComputeTable        cacheRel;
+    void sweepAndEnlarge(const size_t cacheID) override;
 
     /*-------------------------------------------------------------*/
     private:

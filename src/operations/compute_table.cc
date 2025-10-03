@@ -98,6 +98,136 @@ bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, Edge&
     return 0;
 }
 
+bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, char& ans)
+{
+    countCalls++;
+    CacheEntry entry(lvl, a, b);
+    uint64_t id = entry.hash() % size;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
+#ifdef BRAVE_DD_CACHE_TRACE
+    std::cout << "checking in cache, id = " << id << "; size = " << size << std::endl;
+#endif
+    /* probing the entries*/
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (table[probId].isInUse) {
+            /* Valid entry, then check if match */
+            if ((table[probId].lvl == lvl) && (table[probId].key.size() == 2)
+                && (table[probId].key[0] == a) && (table[probId].key[1] == b)) {
+                countHits++;
+                ans = (char)table[probId].res.getEdgeHandle();
+                return 1;
+            }
+        }
+    }
+    /* Not cached */
+    return 0;
+}
+
+bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, bool& ans)
+{
+    countCalls++;
+    CacheEntry entry(lvl, a, b);
+    uint64_t id = entry.hash() % size;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
+#ifdef BRAVE_DD_CACHE_TRACE
+    std::cout << "checking in cache, id = " << id << "; size = " << size << std::endl;
+#endif
+    /* probing the entries*/
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (table[probId].isInUse) {
+            /* Valid entry, then check if match */
+            if ((table[probId].lvl == lvl) && (table[probId].key.size() == 2)
+                && (table[probId].key[0] == a) && (table[probId].key[1] == b)) {
+                countHits++;
+                ans = (bool)table[probId].res.getEdgeHandle();
+                return 1;
+            }
+        }
+    }
+    /* Not cached */
+    return 0;
+}
+
+bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, Edge& ans)
+{
+    countCalls++;
+    CacheEntry entry(lvl, a, b, c, d);
+    uint64_t id = entry.hash() % size;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
+#ifdef BRAVE_DD_CACHE_TRACE
+    std::cout << "checking in cache, id = " << id << "; size = " << size << std::endl;
+#endif
+    /* probing the entries*/
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (table[probId].isInUse) {
+            /* Valid entry, then check if match */
+            if ((table[probId].lvl == lvl) && (table[probId].key.size() == 4)
+                && (table[probId].key[0] == a) && (table[probId].key[1] == b) && (table[probId].key[2] == c) && (table[probId].key[3] == d)) {
+                countHits++;
+                ans = table[probId].res;
+                return 1;
+            }
+        }
+    }
+    /* Not cached */
+    return 0;
+}
+
+bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, char& ans)
+{
+    countCalls++;
+    CacheEntry entry(lvl, a, b, c, d);
+    uint64_t id = entry.hash() % size;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
+#ifdef BRAVE_DD_CACHE_TRACE
+    std::cout << "checking in cache, id = " << id << "; size = " << size << std::endl;
+#endif
+    /* probing the entries*/
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (table[probId].isInUse) {
+            /* Valid entry, then check if match */
+            if ((table[probId].lvl == lvl) && (table[probId].key.size() == 4)
+                && (table[probId].key[0] == a) && (table[probId].key[1] == b) && (table[probId].key[2] == c) && (table[probId].key[3] == d)) {
+                countHits++;
+                ans = (char)table[probId].res.getEdgeHandle();
+                return 1;
+            }
+        }
+    }
+    /* Not cached */
+    return 0;
+}
+
+bool ComputeTable::check(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, bool& ans)
+{
+    countCalls++;
+    CacheEntry entry(lvl, a, b, c, d);
+    uint64_t id = entry.hash() % size;
+    // uint64_t id = entry.hash() >> (64 - sizeBits);
+#ifdef BRAVE_DD_CACHE_TRACE
+    std::cout << "checking in cache, id = " << id << "; size = " << size << std::endl;
+#endif
+    /* probing the entries*/
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (table[probId].isInUse) {
+            /* Valid entry, then check if match */
+            if ((table[probId].lvl == lvl) && (table[probId].key.size() == 4)
+                && (table[probId].key[0] == a) && (table[probId].key[1] == b) && (table[probId].key[2] == c) && (table[probId].key[3] == d)) {
+                countHits++;
+                ans = (bool)table[probId].res.getEdgeHandle();
+                return 1;
+            }
+        }
+    }
+    /* Not cached */
+    return 0;
+}
+
 void ComputeTable::add(const uint16_t lvl, const Edge& a, const long& ans)
 {
     CacheEntry entry(lvl, a);
@@ -219,6 +349,102 @@ void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const E
     table[id].res.print(std::cout);
     std::cout << std::endl;
 #endif
+}
+
+void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const char& ans)
+{
+    CacheEntry entry(lvl, a, b);
+    entry.setResult(ans);
+    uint64_t id = entry.hash() % size;
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (!table[probId].isInUse) {
+            numEntries++;
+            table[probId] = entry;
+            break;
+        } else if (s == probingSteps - 1) {
+            countOverwrite++;
+            table[probId] = entry;
+        } else {
+            continue;
+        }
+    }
+}
+void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const bool& ans)
+{
+    CacheEntry entry(lvl, a, b);
+    entry.setResult(ans);
+    uint64_t id = entry.hash() % size;
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (!table[probId].isInUse) {
+            numEntries++;
+            table[probId] = entry;
+            break;
+        } else if (s == probingSteps - 1) {
+            countOverwrite++;
+            table[probId] = entry;
+        } else {
+            continue;
+        }
+    }
+}
+void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const Edge& ans)
+{
+    CacheEntry entry(lvl, a, b, c, d);
+    entry.setResult(ans);
+    uint64_t id = entry.hash() % size;
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (!table[probId].isInUse) {
+            numEntries++;
+            table[probId] = entry;
+            break;
+        } else if (s == probingSteps - 1) {
+            countOverwrite++;
+            table[probId] = entry;
+        } else {
+            continue;
+        }
+    }
+}
+void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const char& ans)
+{
+    CacheEntry entry(lvl, a, b, c, d);
+    entry.setResult(ans);
+    uint64_t id = entry.hash() % size;
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (!table[probId].isInUse) {
+            numEntries++;
+            table[probId] = entry;
+            break;
+        } else if (s == probingSteps - 1) {
+            countOverwrite++;
+            table[probId] = entry;
+        } else {
+            continue;
+        }
+    }
+}
+void ComputeTable::add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const bool& ans)
+{
+    CacheEntry entry(lvl, a, b, c, d);
+    entry.setResult(ans);
+    uint64_t id = entry.hash() % size;
+    for (size_t s=0; s<probingSteps; s++) {
+        size_t probId = (id + s) % size;
+        if (!table[probId].isInUse) {
+            numEntries++;
+            table[probId] = entry;
+            break;
+        } else if (s == probingSteps - 1) {
+            countOverwrite++;
+            table[probId] = entry;
+        } else {
+            continue;
+        }
+    }
 }
 
 void ComputeTable::sweep(Forest* forest, int role)
