@@ -75,6 +75,7 @@ bool isComputeDistanceBFS = 0;
 bool isRelationUnion = 0;
 bool isEmptyTop = 0;    // new way for encoding
 bool isEmptyBot = 0;    // ...
+bool isConcretize = 0;
 
 /* flags if results are computed */
 bool getRes_Sat = 0, getRes_BFS = 0, getRes_chain = 0, getRes_correct = 0;
@@ -102,8 +103,10 @@ std::vector<long> distribution_ex_state;
 std::vector<long> distribution_ex_node;
 // number of final nodes for "up-to" distance
 uint64_t nodes_dis_BFS = 0;
+uint64_t nodes_dis_BFS_peak = 0;
 // number of final nodes for "exact" distance
 uint64_t nodes_dis_ex_BFS = 0;
+uint64_t nodes_dis_ex_BFS_peak = 0;
 // time for "exact" distance
 double time_BFS_ex = 0.0;
 
@@ -117,6 +120,7 @@ std::vector<Func> distance_osm;
 std::vector<Func> distance_ex_osm;
 std::vector<Func> distance_tsm;
 std::vector<Func> distance_ex_tsm;
+Func distance_one_root, distance_one_root_rst, distance_one_root_osm, distance_one_root_tsm;
 uint64_t nodes_dis_rst = 0;
 uint64_t nodes_dis_osm = 0;
 uint64_t nodes_dis_tsm = 0;
@@ -865,6 +869,53 @@ bool SSG(bool isPrint, Func& target, const double time)
     return 1;
 }
 
+// for test
+bool hasConstantPosInf(const Edge& e)
+{
+    if (e.getNodeLevel() == 0) {
+        if (e.isConstantPosInf()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    Edge lc = forest1->cofact(e.getNodeLevel(), e, 0);
+    Edge hc = forest1->cofact(e.getNodeLevel(), e, 1);
+    bool ans = false;
+    if (hasConstantPosInf(lc)) {ans = true;}
+    if (!ans && hasConstantPosInf(hc)) {ans = true;}
+    return ans;
+}
+bool hasConstantPosInfValue(const Edge& e)
+{
+    if (e.getNodeLevel() == 0) {
+        if (e.isConstantPosInf() && (e.getValue() != Value(0))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    Edge lc = forest1->cofact(e.getNodeLevel(), e, 0);
+    Edge hc = forest1->cofact(e.getNodeLevel(), e, 1);
+    bool ans = false;
+    if (hasConstantPosInfValue(lc)) {ans = true;}
+    if (!ans && hasConstantPosInfValue(hc)) {ans = true;}
+    return ans;
+}
+bool hasBothChildPosInf(const Edge& e)
+{
+    if (e.getNodeLevel() == 0) {return false;}
+    Edge lc = forest1->cofact(e.getNodeLevel(), e, 0);
+    Edge hc = forest1->cofact(e.getNodeLevel(), e, 1);
+    bool ans = false;
+    if (lc.isConstantPosInf() && hc.isConstantPosInf()) {
+        ans = true;
+    } else {
+        ans = hasBothChildPosInf(lc) || hasBothChildPosInf(hc);
+    }
+    return ans;
+}
+
 // Restrict
 // ===============================================================================================================================================================
 // concretize a given edge with corresponding don't-care edge in forest1
@@ -874,6 +925,11 @@ Edge concretize_rst(const uint16_t level, const Edge& initial, const Edge& dc)
     if (initial.getNodeLevel() == 0) {
         return initial;
     }
+    // only for reduction rules
+    // if (dc.isConstantOne()) {
+    //     Edge ans(makeTerminal(0), Value(0));
+    //     return ans;
+    // }
     uint16_t lvl = (initial.getNodeLevel() >= dc.getNodeLevel()) ? initial.getNodeLevel() : dc.getNodeLevel();
     Edge lc = forest1->cofact(lvl, initial, 0);
     Edge hc = forest1->cofact(lvl, initial, 1);
@@ -895,10 +951,57 @@ Edge concretize_rst(const uint16_t level, const Edge& initial, const Edge& dc)
     result = forest1->reduceEdge(level, root, lvl, child);
     return result;
 }
+Edge concretize_rst(const uint16_t level, const Edge& initial)
+{
+    // terminal case
+    if ((initial.getNodeLevel() == 0)) {
+        return initial;
+    }
+    uint16_t lvl = initial.getNodeLevel();
+    Edge lc = forest1->cofact(lvl, initial, 0);
+    Edge hc = forest1->cofact(lvl, initial, 1);
+    if (lc.isConstantPosInf() && hc.isConstantPosInf()) {
+        std::cout << "concretize_rst: both child posinf\n";
+        lc.print(std::cout);
+        std::cout << std::endl;
+        hc.print(std::cout);
+        std::cout << std::endl;
+        Func error(forest1, initial);
+        DotMaker dot1(forest1, "error_child_func");
+        dot1.buildGraph(error);
+        dot1.runDot("pdf");
+        delete forest1;
+        delete forest2;
+        exit(1);
+    }
+    if (lc.isConstantPosInf()) {
+        return concretize_rst(lvl-1, hc);
+    } else if (hc.isConstantPosInf()) {
+        return concretize_rst(lvl-1, lc);
+    }
+    // recursively compute
+    std::vector<Edge> child(2);
+    child[0] = concretize_rst(lvl-1, lc);
+    child[1] = concretize_rst(lvl-1, hc);
+    // reduce edge
+    Edge result;
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = forest1->reduceEdge(level, root, lvl, child);
+    return result;
+}
+// for multi-root
 Func concretizeFunc_rst(const Func& initial, const Func& dc)
 {
     Func result(forest1);
     result.setEdge(concretize_rst(forest1->getSetting().getNumVars(), initial.getEdge(), dc.getEdge()));
+    return result;
+}
+// for non multi-root
+Func concretizeFunc_rst(const Func& initial)
+{
+    Func result(forest1);
+    result.setEdge(concretize_rst(forest1->getSetting().getNumVars(), initial.getEdge()));
     return result;
 }
 
@@ -956,6 +1059,8 @@ void concretize_rst()
         }
         nodes_dis_ex_rst = forest1->getNodeManUsed(distance_ex_rst);
         distance_permutation_ex_opt = distance_permutation;
+        std::cout << "done rst\n";
+
         // test 
         // for (size_t d = 0; d<distance_permutation.size()-1; d++) {
         //     std::vector<bool> assignment(forest1->getSetting().getNumVars()+1, 0);
@@ -963,16 +1068,48 @@ void concretize_rst()
         //         for (size_t k=1; k<=assignment.size()-1; k++) {
         //             assignment[k] = n & (1<<(k-1));
         //         }
-        //         if ((distance_ex[distance_permutation[d]].evaluate(assignment) == Value(1)) && (distance_ex_rst[d].evaluate(assignment) != Value(1))) {
+        //         if (distance_ex[distance_permutation[d]].evaluate(assignment) != Value(1)) {continue;}
+        //         bool before = 0;
+        //         for (size_t i=0; i<d; i++) {
+        //             if (distance_ex_rst[i].evaluate(assignment) == Value(1)) {
+        //                 before = 1;
+        //                 break;
+        //             }
+        //         }
+        //         if ((distance_ex[distance_permutation[d]].evaluate(assignment) == Value(1)) && ((distance_ex_rst[d].evaluate(assignment) != Value(1)) || before)) {
         //             std::cout << "Error! Evaluation for concretization\n";
-        //             delete forest1;
-        //             delete forest2;
         //             exit(1);
         //         }
         //     }
         // }
     } else {
         // for non multi-root
+        // test posinf in result
+        // if (hasBothChildPosInf(distance_one_root.getEdge())) {
+        //     std::cout << "concretize_rst: distance_one_root has both child PosInf\n";
+        //     exit(1);
+        // }
+        distance_one_root_rst = concretizeFunc_rst(distance_one_root);
+        nodes_dis_ex_rst = forest1->getNodeManUsed(distance_one_root_rst);
+        std::cout << "done rst\n";
+        // test posinf
+        // if (hasConstantPosInf(distance_one_root_rst.getEdge())) {
+        //     std::cout << "concretize_rst: result has PosInf\n";
+        //     exit(1);
+        // }
+        // // test
+        // std::vector<bool> assignment(forest1->getSetting().getNumVars()+1, 0);
+        // for (unsigned long n=0; n<(0x01UL<<forest1->getSetting().getNumVars()); n++) {
+        //     for (size_t k=1; k<=assignment.size()-1; k++) {
+        //         assignment[k] = n & (1<<(k-1));
+        //     }
+        //     if (distance_one_root.evaluate(assignment) == Value(SpecialValue::POS_INF)) {continue;}
+        //     if ((distance_one_root.evaluate(assignment) != Value(SpecialValue::POS_INF))
+        //         && (distance_one_root.evaluate(assignment) != distance_one_root_rst.evaluate(assignment))) {
+        //         std::cout << "Error! Evaluation for concretization\n";
+        //         exit(1);
+        //     }
+        // }
     }
 }
 // ===============================================================================================================================================================
@@ -982,23 +1119,18 @@ void concretize_rst()
 unsigned char compare_osm(const Edge& e1, const Edge& e2, const Edge& dc1, const Edge& dc2)
 {
     // terminal cases
-    if (e1 == e2) {return '=';}
     if (dc1.isConstantOne()) {return '>';}
     if (dc2.isConstantOne()) {return '<';}
-    if ((e1.getNodeLevel() == e2.getNodeLevel()) && (e1.getNodeLevel() == 0)) {return '!';}   // both different terminal value and not dc
+    // if (e1 == e2) {return '=';}
+    if ((e1 == e2) && (dc1.isConstantZero() && dc2.isConstantZero())) {return '=';}
+    // if ((e1.getNodeLevel() == e2.getNodeLevel()) && (e1.getNodeLevel() == 0)) {return '!';}   // both different terminal value and not dc
+    if ((e1.getNodeLevel() == e2.getNodeLevel()) && (e1.getNodeLevel() == 0) && (dc1.isConstantZero() && dc2.isConstantZero())) {return '!';}   // both different terminal value and not dc
 
     // the highest level
     uint16_t highest = e1.getNodeLevel();
     if (e2.getNodeLevel() > highest) {highest = e2.getNodeLevel();}
     if (dc1.getNodeLevel() > highest) {highest = dc1.getNodeLevel();}
     if (dc2.getNodeLevel() > highest) {highest = dc2.getNodeLevel();}
-
-    // if (highest > e1.getNodeLevel() && highest > e2.getNodeLevel()) {
-    //     std::cout << "highest level error?\n";
-    //     delete forest1;
-    //     delete forest2;
-    //     exit(1);
-    // }
 
     // recursively compare
     unsigned char ans, comp0, comp1;
@@ -1010,24 +1142,44 @@ unsigned char compare_osm(const Edge& e1, const Edge& e2, const Edge& dc1, const
                         forest1->cofact(highest, e2, 1),
                         forest1->cofact(highest, dc1, 1),
                         forest1->cofact(highest, dc2, 1));
-    // uint16_t lvl1 = e1.getNodeLevel(), lvl2 = e2.getNodeLevel();
-    // comp0 = compare_osm((lvl1 < lvl2) ? e1 : forest1->cofact(lvl1, e1, 0),
-    //                     (lvl1 > lvl2) ? e2 : forest1->cofact(lvl2, e2, 0),
-    //                     forest1->cofact((lvl1 < lvl2) ? lvl2 : lvl1, dc1, 0),
-    //                     forest1->cofact((lvl1 < lvl2) ? lvl2 : lvl1, dc2, 0));
-    // comp1 = compare_osm((lvl1 < lvl2) ? e1 : forest1->cofact(lvl1, e1, 1),
-    //                     (lvl1 > lvl2) ? e2 : forest1->cofact(lvl2, e2, 1),
-    //                     forest1->cofact((lvl1 < lvl2) ? lvl2 : lvl1, dc1, 1),
-    //                     forest1->cofact((lvl1 < lvl2) ? lvl2 : lvl1, dc2, 1));
     
     if ((comp0 == '=') || (comp0 == comp1)) {
         ans = comp1;
+    } else if (comp1 == '=') {
+        ans = comp0;
     } else {
         ans = '!';
     }
     return ans;
 }
+unsigned char compare_osm(const Edge& e1, const Edge& e2)
+{
+    // terminal cases
+    if (e1.isConstantPosInf()) {return '>';}
+    if (e2.isConstantPosInf()) {return '<';}
+    if (e1 == e2) {return '=';}
+    if ((e1.getNodeLevel() == e2.getNodeLevel()) && (e1.getNodeLevel() == 0)) {return '!';}   // both different terminal value and not dc
 
+    // the highest level
+    uint16_t highest = e1.getNodeLevel();
+    if (e2.getNodeLevel() > highest) {highest = e2.getNodeLevel();}
+
+    // recursively compare
+    unsigned char ans, comp0, comp1;
+    comp0 = compare_osm(forest1->cofact(highest, e1, 0),
+                        forest1->cofact(highest, e2, 0));
+    comp1 = compare_osm(forest1->cofact(highest, e1, 1),
+                        forest1->cofact(highest, e2, 1));
+    
+    if ((comp0 == '=') || (comp0 == comp1)) {
+        ans = comp1;
+    } else if (comp1 == '=') {
+        ans = comp0;
+    } else {
+        ans = '!';
+    }
+    return ans;
+}
 Edge concretize_osm(const uint16_t level, const Edge& initial, const Edge& dc)
 {
     // terminal case
@@ -1035,7 +1187,6 @@ Edge concretize_osm(const uint16_t level, const Edge& initial, const Edge& dc)
         return initial;
     }
     uint16_t lvl = (initial.getNodeLevel() >= dc.getNodeLevel()) ? initial.getNodeLevel() : dc.getNodeLevel();
-    // uint16_t lvl = initial.getNodeLevel();
     Edge lc = forest1->cofact(lvl, initial, 0);
     Edge hc = forest1->cofact(lvl, initial, 1);
     Edge lc_dc = forest1->cofact(lvl, dc, 0);
@@ -1047,6 +1198,19 @@ Edge concretize_osm(const uint16_t level, const Edge& initial, const Edge& dc)
     }
     // compare child edges
     unsigned comp = compare_osm(lc, hc, lc_dc, hc_dc);
+    // if (comp == '=') {
+    //     if (lc == hc) {
+    //         std::cout << "concretize_osm: equal child\n";
+    //     }
+    //     if (lc_dc != hc_dc) {
+    //         std::cout << "concretize_osm: equal but different dc!\n";
+    //     } else {
+    //         std::cout << "concretize_osm: equal but same dc!\n";
+    //     }
+    //     if (!lc_dc.isConstantZero()) {
+    //         std::cout << "concretize_osm: child has PosInf\n";
+    //     }
+    // }
     if (comp == '<') {
         return concretize_osm(lvl-1, lc, lc_dc);
     }
@@ -1064,11 +1228,49 @@ Edge concretize_osm(const uint16_t level, const Edge& initial, const Edge& dc)
     result = forest1->reduceEdge(level, root, lvl, child);
     return result;
 }
-
+Edge concretize_osm(const uint16_t level, const Edge& initial)
+{
+    // terminal case
+    if ((initial.getNodeLevel() == 0)) {
+        return initial;
+    }
+    uint16_t lvl = initial.getNodeLevel();
+    Edge lc = forest1->cofact(lvl, initial, 0);
+    Edge hc = forest1->cofact(lvl, initial, 1);
+    if (lc.isConstantPosInf()) {
+        return concretize_osm(lvl-1, hc);
+    } else if (hc.isConstantPosInf()) {
+        return concretize_osm(lvl-1, lc);
+    }
+    // compare child edges
+    unsigned comp = compare_osm(lc, hc);
+    if (comp == '<') {
+        return concretize_osm(lvl-1, lc);
+    }
+    if (comp == '>') {
+        return concretize_osm(lvl-1, hc);
+    }
+    // new node
+    std::vector<Edge> child(2);
+    child[0] = concretize_osm(lvl-1, lc);
+    child[1] = concretize_osm(lvl-1, hc);
+    // reduce edge
+    Edge result;
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = forest1->reduceEdge(level, root, lvl, child);
+    return result;
+}
 Func concretizeFunc_osm(const Func& initial, const Func& dc)
 {
     Func result(forest1);
     result.setEdge(concretize_osm(forest1->getSetting().getNumVars(), initial.getEdge(), dc.getEdge()));
+    return result;
+}
+Func concretizeFunc_osm(const Func& initial)
+{
+    Func result(forest1);
+    result.setEdge(concretize_osm(forest1->getSetting().getNumVars(), initial.getEdge()));
     return result;
 }
 
@@ -1130,6 +1332,7 @@ void concretize_osm()
         }
         nodes_dis_ex_osm = forest1->getNodeManUsed(distance_ex_osm);
         distance_permutation_ex_opt = distance_permutation;
+        std::cout << "done osm\n";
 
         // test 
         // for (size_t d = 0; d<distance_permutation.size()-1; d++) {
@@ -1138,16 +1341,42 @@ void concretize_osm()
         //         for (size_t k=1; k<=assignment.size()-1; k++) {
         //             assignment[k] = n & (1<<(k-1));
         //         }
-        //         if ((distance_ex[distance_permutation[d]].evaluate(assignment) == Value(1)) && (distance_ex_osm[d].evaluate(assignment) != Value(1))) {
+        //         if (distance_ex[distance_permutation[d]].evaluate(assignment) != Value(1)) {continue;}
+        //         bool before = 0;
+        //         for (size_t i=0; i<d; i++) {
+        //             if (distance_ex_osm[i].evaluate(assignment) == Value(1)) {
+        //                 before = 1;
+        //                 break;
+        //             }
+        //         }
+        //         if ((distance_ex[distance_permutation[d]].evaluate(assignment) == Value(1)) && ((distance_ex_osm[d].evaluate(assignment) != Value(1)) || before)) {
         //             std::cout << "Error! Evaluation for concretization\n";
-        //             delete forest1;
-        //             delete forest2;
         //             exit(1);
         //         }
         //     }
         // }
     } else {
         // for non multi-root
+        distance_one_root_osm = concretizeFunc_osm(distance_one_root);
+        nodes_dis_ex_osm = forest1->getNodeManUsed(distance_one_root_osm);
+        if (hasConstantPosInf(distance_one_root_osm.getEdge())) {
+            std::cout << "concretize_osm: result has PosInf\n";
+            exit(1);
+        }
+        std::cout << "done osm\n";
+        // test
+        std::vector<bool> assignment(forest1->getSetting().getNumVars()+1, 0);
+        for (unsigned long n=0; n<(0x01UL<<forest1->getSetting().getNumVars()); n++) {
+            for (size_t k=1; k<=assignment.size()-1; k++) {
+                assignment[k] = n & (1<<(k-1));
+            }
+            if (distance_one_root.evaluate(assignment) == Value(SpecialValue::POS_INF)) {continue;}
+            if ((distance_one_root.evaluate(assignment) != Value(SpecialValue::POS_INF))
+                && (distance_one_root.evaluate(assignment) != distance_one_root_osm.evaluate(assignment))) {
+                std::cout << "Error! Evaluation for concretization\n";
+                exit(1);
+            }
+        }
     }
 }
 // ===============================================================================================================================================================
@@ -1169,7 +1398,7 @@ bool has_common_tsm(const Edge& e1, const Edge& e2, const Edge& dc1, const Edge&
     if (dc2.getNodeLevel() > highest) {highest = dc2.getNodeLevel();}
 
     // recursively check
-    bool ans, cmp0, cmp1;
+    bool cmp0, cmp1;
     cmp0 = has_common_tsm(forest1->cofact(highest, e1, 0),
                             forest1->cofact(highest, e2, 0),
                             forest1->cofact(highest, dc1, 0),
@@ -1178,10 +1407,28 @@ bool has_common_tsm(const Edge& e1, const Edge& e2, const Edge& dc1, const Edge&
                             forest1->cofact(highest, e2, 1),
                             forest1->cofact(highest, dc1, 1),
                             forest1->cofact(highest, dc2, 1));
-    ans = (cmp0 && cmp1);
-    return ans;
+    return (cmp0 && cmp1);
 }
+bool has_common_tsm(const Edge& e1, const Edge& e2)
+{
+    // terminal cases
+    if (e1.isConstantPosInf()) {return true;}
+    if (e2.isConstantPosInf()) {return true;}
+    if (e1 == e2) {return true;}
+    if ((e1.getNodeLevel() == e2.getNodeLevel()) && (e1.getNodeLevel() == 0)) {return false;}   // both different terminal value and not dc
 
+    // the highest level
+    uint16_t highest = e1.getNodeLevel();
+    if (e2.getNodeLevel() > highest) {highest = e2.getNodeLevel();}
+
+    // recursively check
+    bool cmp0, cmp1;
+    cmp0 = has_common_tsm(forest1->cofact(highest, e1, 0),
+                            forest1->cofact(highest, e2, 0));
+    cmp1 = has_common_tsm(forest1->cofact(highest, e1, 1),
+                            forest1->cofact(highest, e2, 1));
+    return (cmp0 && cmp1);
+}
 Edge common_tsm(const uint16_t level, const Edge& e1, const Edge& e2, const Edge& dc1, const Edge& dc2)
 {
     // terminal cases
@@ -1213,7 +1460,31 @@ Edge common_tsm(const uint16_t level, const Edge& e1, const Edge& e2, const Edge
     result = forest1->reduceEdge(level, root, highest, child);
     return result;
 }
+Edge common_tsm(const uint16_t level, const Edge& e1, const Edge& e2)
+{
+    // terminal cases
+    if (e1.isConstantPosInf()) {return e2;}
+    if (e2.isConstantPosInf()) {return e1;}
+    if (e1 == e2) {return e1;}
 
+    // the highest level
+    uint16_t highest = e1.getNodeLevel();
+    if (e2.getNodeLevel() > highest) {highest = e2.getNodeLevel();}
+
+    std::vector<Edge> child(2);
+    child[0] = common_tsm(highest - 1,
+                        forest1->cofact(highest, e1, 0),
+                        forest1->cofact(highest, e2, 0));
+    child[1] = common_tsm(highest - 1,
+                        forest1->cofact(highest, e1, 1),
+                        forest1->cofact(highest, e2, 1));
+    // reduce edge
+    Edge result;
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = forest1->reduceEdge(level, root, highest, child);
+    return result;
+}
 Edge concretize_tsm(const uint16_t level, const Edge& initial, const Edge& dc)
 {
     // terminal case
@@ -1226,18 +1497,16 @@ Edge concretize_tsm(const uint16_t level, const Edge& initial, const Edge& dc)
     Edge lc_dc = forest1->cofact(lvl, dc, 0);
     Edge hc_dc = forest1->cofact(lvl, dc, 1);
     if (lc_dc.isConstantOne()) {
-        return concretize_tsm(lvl-1, hc, hc_dc);
+        return concretize_tsm(level, hc, hc_dc);
     } else if (hc_dc.isConstantOne()) {
-        return concretize_tsm(lvl-1, lc, lc_dc);
+        return concretize_tsm(level, lc, lc_dc);
     }
     // check child edges
     if (has_common_tsm(lc, hc, lc_dc, hc_dc)) {
         Edge child_common = common_tsm(lvl - 1, lc, hc, lc_dc, hc_dc);
         if ((lvl > initial.getNodeLevel())) {
             // new dc is lc_dc & hc_dc !!!
-            Func flcdc(forest1), fhcdc(forest1);
-            flcdc.setEdge(lc_dc);
-            fhcdc.setEdge(hc_dc);
+            Func flcdc(forest1, lc_dc), fhcdc(forest1, hc_dc);
             flcdc &= fhcdc;
             return concretize_tsm(lvl-1, child_common, flcdc.getEdge());
         }
@@ -1254,11 +1523,50 @@ Edge concretize_tsm(const uint16_t level, const Edge& initial, const Edge& dc)
     result = forest1->reduceEdge(level, root, lvl, child);
     return result;
 }
-
+Edge concretize_tsm(const uint16_t level, const Edge& initial)
+{
+    // terminal case
+    if (initial.getNodeLevel() == 0) {
+        return initial;
+    }
+    uint16_t lvl = initial.getNodeLevel();
+    Edge lc = forest1->cofact(lvl, initial, 0);
+    Edge hc = forest1->cofact(lvl, initial, 1);
+    // if (lc.isConstantPosInf() && hc.isConstantPosInf()) {
+    //     std::cout << "concretize_tsm: both child posinf\n";
+    //     exit(1);
+    // }
+    if (lc.isConstantPosInf()) {
+        return concretize_tsm(level, hc);
+    } else if (hc.isConstantPosInf()) {
+        return concretize_tsm(level, lc);
+    }
+    // check child edges
+    if (has_common_tsm(lc, hc)) {
+        Edge child_common = common_tsm(lvl - 1, lc, hc);
+        return concretize_tsm(level, child_common);
+    }
+    // new node
+    std::vector<Edge> child(2);
+    child[0] = concretize_tsm(lvl-1, lc);
+    child[1] = concretize_tsm(lvl-1, hc);
+    // reduce edge
+    Edge result;
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = forest1->reduceEdge(level, root, lvl, child);
+    return result;
+}
 Func concretizeFunc_tsm(const Func& initial, const Func& dc)
 {
     Func result(forest1);
     result.setEdge(concretize_tsm(forest1->getSetting().getNumVars(), initial.getEdge(), dc.getEdge()));
+    return result;
+}
+Func concretizeFunc_tsm(const Func& initial)
+{
+    Func result(forest1);
+    result.setEdge(concretize_tsm(forest1->getSetting().getNumVars(), initial.getEdge()));
     return result;
 }
 
@@ -1316,6 +1624,7 @@ void concretize_tsm()
         }
         nodes_dis_ex_tsm = forest1->getNodeManUsed(distance_ex_tsm);
         distance_permutation_ex_opt = distance_permutation;
+        std::cout << "done tsm\n";
 
         // test 
         // for (size_t d = 0; d<distance_permutation.size()-1; d++) {
@@ -1324,6 +1633,7 @@ void concretize_tsm()
         //         for (size_t k=1; k<=assignment.size()-1; k++) {
         //             assignment[k] = n & (1<<(k-1));
         //         }
+        //         if (distance_ex[distance_permutation[d]].evaluate(assignment) != Value(1)) {continue;}
         //         bool before = 0;
         //         for (size_t i=0; i<d; i++) {
         //             if (distance_ex_tsm[i].evaluate(assignment) == Value(1)) {
@@ -1341,6 +1651,34 @@ void concretize_tsm()
         // }
     } else {
         // for non multi-root
+        distance_one_root_tsm = concretizeFunc_tsm(distance_one_root);
+        nodes_dis_ex_tsm = forest1->getNodeManUsed(distance_one_root_tsm);
+        if (hasConstantPosInf(distance_one_root_tsm.getEdge())) {
+            std::cout << "concretize_tsm: result has PosInf\n";
+            exit(1);
+        }
+        if (hasBothChildPosInf(distance_one_root_tsm.getEdge())) {
+            std::cout << "concretize_tsm: result has both child PosInf\n";
+            exit(1);
+        }
+        if (hasConstantPosInfValue(distance_one_root_tsm.getEdge())) {
+            std::cout << "concretize_tsm: result has PosInf with value !0\n";
+            exit(1);
+        }
+        std::cout << "done tsm\n";
+        // test
+        std::vector<bool> assignment(forest1->getSetting().getNumVars()+1, 0);
+        for (unsigned long n=0; n<(0x01UL<<forest1->getSetting().getNumVars()); n++) {
+            for (size_t k=1; k<=assignment.size()-1; k++) {
+                assignment[k] = n & (1<<(k-1));
+            }
+            if (distance_one_root.evaluate(assignment) == Value(SpecialValue::POS_INF)) {continue;}
+            if ((distance_one_root.evaluate(assignment) != Value(SpecialValue::POS_INF))
+                && (distance_one_root.evaluate(assignment) != distance_one_root_tsm.evaluate(assignment))) {
+                std::cout << "Error! Evaluation for concretization\n";
+                exit(1);
+            }
+        }
     }
 }
 // ===============================================================================================================================================================
@@ -1401,6 +1739,10 @@ bool processArgs(int argc, const char** argv)
                 isEmptyBot = 1;
                 continue;
             }
+            if (strcmp("-cz", argv[i])==0) {
+                isConcretize = 1;
+                continue;
+            }
         }
         if (!setN) {
             N = atoi(argv[i]);
@@ -1452,21 +1794,23 @@ void report(std::ostream& out)
             }
         }
         out << "----------------------------------------------------------" << std::endl;
-        out << std::left << std::setw(align/2) << "BFS_distance" << std::setw(align/3) << "(up-to):" << nodes_dis_BFS << std::endl;
-        out << std::left << std::setw(align/2) << "*Restrict" << std::setw(align/3) << "(up-to):" << nodes_dis_rst << std::endl;
-        out << std::left << std::setw(align/2) << "*One-sided-match" << std::setw(align/3) << "(up-to):" << nodes_dis_osm << std::endl;
-        out << std::left << std::setw(align/2) << "*Two-sided-match" << std::setw(align/3) << "(up-to):" << nodes_dis_tsm << std::endl;
-
+        out << std::left << std::setw(align/1.2) << "BFS_distance (final)" << std::setw(align/3) << "(up-to):" << nodes_dis_BFS << std::endl;
+        out << std::left << std::setw(align/1.2) << "BFS_distance (peak)" << std::setw(align/3) << "(up-to):" << nodes_dis_BFS_peak << std::endl;
+        out << std::left << std::setw(align/1.2) << "*Restrict" << std::setw(align/3) << "(up-to):" << nodes_dis_rst << std::endl;
+        out << std::left << std::setw(align/1.2) << "*One-sided-match" << std::setw(align/3) << "(up-to):" << nodes_dis_osm << std::endl;
+        out << std::left << std::setw(align/1.2) << "*Two-sided-match" << std::setw(align/3) << "(up-to):" << nodes_dis_tsm << std::endl;
         out << "----------------------------------------------------------" << std::endl;
-
-        out << std::left << std::setw(align/2) << "BFS_distance" << std::setw(align/3) << "(exact):" << nodes_dis_ex_BFS << std::endl;
-        out << std::left << std::setw(align/2) << "*Restrict" << std::setw(align/3) << "(exact):" << nodes_dis_ex_rst << std::endl;
-        out << std::left << std::setw(align/2) << "*One-sided-match" << std::setw(align/3) << "(exact):" << nodes_dis_ex_osm << std::endl;
-        out << std::left << std::setw(align/2) << "*Two-sided-match" << std::setw(align/3) << "(exact):" << nodes_dis_ex_tsm << std::endl;
-        for (size_t i=0; i<distance_permutation_ex_opt.size()-1; i++) {
-            out << distance_permutation_ex_opt[i] << " ";
+        out << std::left << std::setw(align/1.2) << "BFS_distance (final)" << std::setw(align/3) << "(exact):" << nodes_dis_ex_BFS << std::endl;
+        out << std::left << std::setw(align/1.2) << "BFS_distance (peak)" << std::setw(align/3) << "(exact):" << nodes_dis_ex_BFS_peak << std::endl;
+        out << std::left << std::setw(align/1.2) << "*Restrict" << std::setw(align/3) << "(exact):" << nodes_dis_ex_rst << std::endl;
+        out << std::left << std::setw(align/1.2) << "*One-sided-match" << std::setw(align/3) << "(exact):" << nodes_dis_ex_osm << std::endl;
+        out << std::left << std::setw(align/1.2) << "*Two-sided-match" << std::setw(align/3) << "(exact):" << nodes_dis_ex_tsm << std::endl;
+        if (isConcretize) {
+            for (size_t i=0; i<distance_permutation_ex_opt.size()-1; i++) {
+                out << distance_permutation_ex_opt[i] << " ";
+            }
+            out << std::endl;
         }
-        out << std::endl;
 
         out << "====================| Distribution |======================" << std::endl;
         out << std::left << std::setw(15) << "Up-to" << std::left << std::setw(15) << "#state" << std::left << std::setw(15) << "#node" << std::endl;
@@ -1532,6 +1876,10 @@ void report(std::ostream& out)
         out << std::left << std::setw(align) << "BFS (peak):" << nodes_BFS_Peak << std::endl;
         // out << std::left << std::setw(align) << "BFS (w/o image):" << nodes_correct << std::endl;
         out << std::left << std::setw(align) << "Relations:" << nodes_rel << std::endl;
+        out << "----------------------------------------------------------" << std::endl;
+        out << std::left << std::setw(align/2) << "*Restrict" << std::setw(align/3) << "(exact):" << nodes_dis_ex_rst << std::endl;
+        out << std::left << std::setw(align/2) << "*One-sided-match" << std::setw(align/3) << "(exact):" << nodes_dis_ex_osm << std::endl;
+        out << std::left << std::setw(align/2) << "*Two-sided-match" << std::setw(align/3) << "(exact):" << nodes_dis_ex_tsm << std::endl;
     }
 
     /* the end */
@@ -1547,6 +1895,20 @@ void compute_saturation(const Func& target, const std::vector<Func>& relations)
     apply(SATURATE, target, relations, states_Sat);
     watchSat.note_time();
     getRes_Sat = 1;
+    // save for concretization
+    if (hasBothChildPosInf(states_Sat.getEdge())) {
+        std::cout << "compute_saturation: states_Sat has both child PosInf\n";
+        delete forest1;
+        delete forest2;
+        exit(1);
+    }
+    if (hasConstantPosInfValue(states_Sat.getEdge())) {
+        std::cout << "compute_saturation: states_Sat has PosInf edge with >0 value\n";
+        delete forest1;
+        delete forest2;
+        exit(1);
+    }
+    distance_one_root = states_Sat;
     // report cache
     UOPs.reportCacheStat(std::cout);
     BOPs.reportCacheStat(std::cout);
@@ -1578,10 +1940,12 @@ void compute_saturation(const Func& target, const std::vector<Func>& relations)
         dot2.runDot("pdf");
     }
     // reset the forest
-    forest1->deregisterFunc();
-    forest1->registerFunc(target);
-    forest1->markAllFuncs();
-    forest1->markSweep();
+    if (!isComputeDistance) {
+        forest1->deregisterFunc();
+        forest1->registerFunc(target);
+        forest1->markAllFuncs();
+        forest1->markSweep();
+    }
 
     // STOP here if distance
     // if (isComputeDistance) {
@@ -1679,6 +2043,7 @@ void compute_BFS(const Func& target, const std::vector<Func>& relations)
     if (isComputeDistanceBFS) {
         // get number of final nodes
         nodes_dis_BFS = forest1->getNodeManUsed(distance);
+        nodes_dis_BFS_peak = nodes_BFS_Peak;
         long num_state = 0;
         // compute distance at step k
         distance_ex.push_back(distance[0]);
@@ -1692,6 +2057,7 @@ void compute_BFS(const Func& target, const std::vector<Func>& relations)
         time_BFS_ex = watchBFS_ex.get_last_seconds();
 
         nodes_dis_ex_BFS = forest1->getNodeManUsed(distance_ex);
+        nodes_dis_ex_BFS_peak = forest1->getNodeManPeak();
 
         // compute distribution
         for (size_t i=0; i<distance.size(); i++) {
@@ -1896,9 +2262,11 @@ int main(int argc, const char** argv)
     /* ========================================================================================================
         Concretization
        =======================================================================================================*/
-    concretize_rst();
-    concretize_osm();
-    concretize_tsm();
+    if (isConcretize) {
+        concretize_rst();
+        concretize_osm();
+        concretize_tsm();
+    }
 
     /* ========================================================================================================
         Report result
