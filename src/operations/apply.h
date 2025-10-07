@@ -36,10 +36,15 @@ namespace BRAVE_DD {
         uop->compute(arg, res);
     }
     // for concretizing with don't care value
-    inline void apply(UnaryBuiltin1 ub, const Func& arg, Func& res, Value val)
+    inline void apply(UnaryBuiltin1 ub, const Func& arg0, const Func& arg1, Func& res)
+    {
+        UnaryOperation* uop = ub(arg0.getForest(), res.getForest());
+        uop->compute(arg0, arg1, res);
+    }
+    inline void apply(UnaryBuiltin1 ub, const Func& arg, Value val, Func& res)
     {
         UnaryOperation* uop = ub(arg.getForest(), res.getForest());
-        uop->compute(arg, res, val);
+        uop->compute(arg, val, res);
     }
     // ******************************************************************
     // *                         Binary  apply                          *

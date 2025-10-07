@@ -40,6 +40,11 @@ UnaryOperation::UnaryOperation(UnaryOperationType type, Forest* source, Forest* 
     targetForest = target;
     targetType = OpndType::FOREST;
     caches.resize(1);
+    if (opType == UnaryOperationType::UOP_CONCRETIZE_OSM) {
+        caches.resize(2);
+    } else if (opType == UnaryOperationType::UOP_CONCRETIZE_TSM) {
+        caches.resize(3);
+    }
 }
 UnaryOperation::UnaryOperation(UnaryOperationType type, Forest* source, OpndType target)
 :opType(type)
@@ -118,7 +123,7 @@ void UnaryOperation::compute(const Func& source, double& target)
     // TBD
 }
 
-void UnaryOperation::compute(const Func& source, Func& target, const Value val)
+void UnaryOperation::compute(const Func& source, const Func& dc, Func& target)
 {
     if (!checkForestCompatibility()) {
         throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
@@ -128,7 +133,26 @@ void UnaryOperation::compute(const Func& source, Func& target, const Value val)
     // copy to target forest
     ans = computeCOPY(numVars, source.getEdge());
     if (opType == UnaryOperationType::UOP_CONCRETIZE_RST) {
-        ans = computeRESTRICT(numVars, ans, val);
+        ans = computeRST(numVars, ans, dc.getEdge());
+    } else if (opType == UnaryOperationType::UOP_CONCRETIZE_OSM) {
+        ans = computeOSM(numVars, ans, dc.getEdge());
+    } else if (opType == UnaryOperationType::UOP_CONCRETIZE_TSM) {
+        ans = computeTSM(numVars, ans, dc.getEdge());
+    } 
+    target.setEdge(ans);
+}
+
+void UnaryOperation::compute(const Func& source, const Value& val, Func& target)
+{
+    if (!checkForestCompatibility()) {
+        throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    uint16_t numVars = sourceForest->getSetting().getNumVars();
+    Edge ans;
+    // copy to target forest
+    ans = computeCOPY(numVars, source.getEdge());
+    if (opType == UnaryOperationType::UOP_CONCRETIZE_RST) {
+        ans = computeRST(numVars, ans, val);
     } else if (opType == UnaryOperationType::UOP_CONCRETIZE_OSM) {
         ans = computeOSM(numVars, ans, val);
     } else if (opType == UnaryOperationType::UOP_CONCRETIZE_TSM) {
@@ -299,51 +323,516 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
     return multiplier * num + adder;
 }
 
-Edge UnaryOperation::computeRESTRICT(const uint16_t lvl, const Edge& source, const Value val)
+Edge UnaryOperation::computeRST(const uint16_t lvl, const Edge& source, const Edge& dc)
 {
     // terminal case
-    if (isTerminal(source.getEdgeHandle())) {
-        if (val.getType() == VOID) {
-            //
-        }
-        if (getTerminalValue(source.getEdgeHandle()) != val)
-        return source;
+    if (source.getNodeLevel() == 0) return source;
+    // check cache
+    Edge result;
+    if (caches[0].check(lvl, source, dc, result)) return result;
+    // check child edge
+    uint16_t level = MAX(source.getNodeLevel(), dc.getNodeLevel());
+    Edge lc = targetForest->cofact(level, source, 0);
+    Edge hc = targetForest->cofact(level, source, 1);
+    Edge lc_dc = targetForest->cofact(level, dc, 0);
+    Edge hc_dc = targetForest->cofact(level, dc, 1);
+    if (lc_dc.isConstantOne()) {
+        return computeRST(level-1, hc, hc_dc);
+    } else if (hc_dc.isConstantOne()) {
+        return computeRST(level-1, lc, lc_dc);
     }
-    Edge ans;
+    // recursively compute
+    std::vector<Edge> child(2);
+    child[0] = computeRST(level-1, lc, lc_dc);
+    child[1] = computeRST(level-1, hc, hc_dc);
+    // reduce edge
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = targetForest->reduceEdge(lvl, root, level, child);
+    // add to cache
+    cacheAdd(0, lvl, source, result);
+    return result;
+}
 
+Edge UnaryOperation::computeRST(const uint16_t lvl, const Edge& source, const Value& val)
+{
+    // terminal case
+    if (isTerminal(source.getEdgeHandle())) return source;
+    // check cache
+    Edge result;
+    if (caches[0].check(lvl, source, result)) return result;
+    // check child edge
+    uint16_t level = source.getNodeLevel();
+    Edge lc = targetForest->cofact(level, source, 0);
+    Edge hc = targetForest->cofact(level, source, 1);
+    if (isTerminal(lc.getEdgeHandle())) {
+        Value lv = getTerminalValue(lc.getEdgeHandle());
+        if (val.getType() == VOID) {
+            if (lv == val) return computeRST(level-1, hc, val);
+        } else {
+            if (val == ((targetForest->getSetting().getEncodeMechanism() == TERMINAL) ? lv : lc.getValue())) return computeRST(level-1, hc, val);
+        }
+    }
+    if (isTerminal(hc.getEdgeHandle())) {
+        Value hv = getTerminalValue(hc.getEdgeHandle());
+        if (val.getType() == VOID) {
+            if (val == hv) return computeRST(level-1, lc, val);
+        } else {
+            if (val == ((targetForest->getSetting().getEncodeMechanism() == TERMINAL) ? hv : hc.getValue())) return computeRST(level-1, lc, val);
+        }
+    }
+    // recursively compute
+    std::vector<Edge> child(2);
+    child[0] = computeRST(level-1, lc, val);
+    child[1] = computeRST(level-1, hc, val);
+    // reduce edge
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = targetForest->reduceEdge(lvl, root, level, child);
+    // add to cache
+    cacheAdd(0, lvl, source, result);
+    return result;
+}
+
+Edge UnaryOperation::computeOSM(const uint16_t lvl, const Edge& source, const Edge& dc)
+{
+    // terminal case
+    if (source.getNodeLevel() == 0) return source;
+    // check cache
+    Edge result;
+    if (caches[0].check(lvl, source, dc, result)) return result;
+    // check child edge
+    uint16_t level = MAX(source.getNodeLevel(), dc.getNodeLevel());
+    Edge lc = targetForest->cofact(level, source, 0);
+    Edge hc = targetForest->cofact(level, source, 1);
+    Edge lc_dc = targetForest->cofact(level, dc, 0);
+    Edge hc_dc = targetForest->cofact(level, dc, 1);
+    if (lc_dc.isConstantOne()) {
+        return computeOSM(level-1, hc, hc_dc);
+    } else if (hc_dc.isConstantOne()) {
+        return computeOSM(level-1, lc, lc_dc);
+    }
+    // compare child edges
+    unsigned comp = compareOSM(lc, hc, lc_dc, hc_dc);
+    if (comp == '<') {
+        return computeOSM(level-1, lc, lc_dc);
+    }
+    if (comp == '>') {
+        return computeOSM(level-1, hc, hc_dc);
+    }
+    // new node
+    std::vector<Edge> child(2);
+    child[0] = computeOSM(level-1, lc, lc_dc);
+    child[1] = computeOSM(level-1, hc, hc_dc);
+    // reduce edge
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = targetForest->reduceEdge(level, root, lvl, child);
+    // add cache
+    cacheAdd(0, lvl, source, dc, result);
+    return result;
+}
+
+Edge UnaryOperation::computeOSM(const uint16_t lvl, const Edge& source, const Value& val)
+{
+    // terminal case
+    if ((source.getNodeLevel() == 0)) return source;
+    // check cache
+    Edge result;
+    if (caches[0].check(lvl, source, result)) return result;
+    // check child edge
+    uint16_t level = source.getNodeLevel();
+    Edge lc = targetForest->cofact(level, source, 0);
+    Edge hc = targetForest->cofact(level, source, 1);
+    // compare child edges
+    unsigned comp = compareOSM(lc, hc, val);
+    if (comp == '<') {
+        return computeOSM(level-1, lc, val);
+    }
+    if (comp == '>') {
+        return computeOSM(level-1, hc, val);
+    }
+    // new node
+    std::vector<Edge> child(2);
+    child[0] = computeOSM(level-1, lc, val);
+    child[1] = computeOSM(level-1, hc, val);
+    // reduce edge
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = targetForest->reduceEdge(lvl, root, level, child);
+    // add cache
+    cacheAdd(0, lvl, source, result);
+    return result;
+}
+
+Edge UnaryOperation::computeTSM(const uint16_t lvl, const Edge& source, const Edge& dc)
+{
+    // terminal case
+    if (source.getNodeLevel() == 0) return source;
+    // check cache
+    Edge result;
+    if (caches[0].check(lvl, source, result)) return result;
+    // check child edge
+    uint16_t level = MAX(source.getNodeLevel(), dc.getNodeLevel());
+    Edge lc = targetForest->cofact(level, source, 0);
+    Edge hc = targetForest->cofact(level, source, 1);
+    Edge lc_dc = targetForest->cofact(level, dc, 0);
+    Edge hc_dc = targetForest->cofact(level, dc, 1);
+    if (lc_dc.isConstantOne()) {
+        return computeTSM(lvl, hc, hc_dc);
+    } else if (hc_dc.isConstantOne()) {
+        return computeTSM(lvl, lc, lc_dc);
+    }
+    // check child edges
+    if (hasCommonTSM(lc, hc, lc_dc, hc_dc)) {
+        Edge child_common = commonTSM(level-1, lc, hc, lc_dc, hc_dc);
+        if (level > source.getNodeLevel()) {
+            // new dc is lc_dc & hc_dc !!!
+            BinaryOperationType type = BinaryOperationType::BOP_INTERSECTION;
+            BinaryOperation* bo = BOPs.find(type, targetForest, targetForest, targetForest);
+            if (!bo) {
+                bo = BOPs.add(new BinaryOperation(type, targetForest, targetForest, targetForest));
+            }
+            return computeTSM(level-1, child_common, bo->computeElmtWise(level-1, lc_dc, hc_dc));
+        }
+        return computeTSM(lvl, child_common, dc);
+    }
+    // new node
+    std::vector<Edge> child(2);
+    child[0] = computeTSM(level-1, lc, lc_dc);
+    child[1] = computeTSM(level-1, hc, hc_dc);
+    // reduce edge
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = targetForest->reduceEdge(lvl, root, level, child);
+    // add cache
+    cacheAdd(0, lvl, source, dc, result);
+    return result;
+}
+
+Edge UnaryOperation::computeTSM(const uint16_t lvl, const Edge& source, const Value& val)
+{
+    // terminal case
+    if (source.getNodeLevel() == 0) return source;
+    // check cache
+    Edge result;
+    if (caches[0].check(lvl, source, result)) return result;
+    // check child edge
+    uint16_t level = source.getNodeLevel();
+    Edge lc = targetForest->cofact(level, source, 0);
+    Edge hc = targetForest->cofact(level, source, 1);
+    if (isTerminal(lc.getEdgeHandle())) {
+        Value lv = getTerminalValue(lc.getEdgeHandle());
+        if (val.getType() == VOID) {
+            if (lv == val) return computeTSM(level-1, hc, val);
+        } else {
+            if (val == ((targetForest->getSetting().getEncodeMechanism() == TERMINAL) ? lv : lc.getValue())) return computeTSM(level-1, hc, val);
+        }
+    }
+    if (isTerminal(hc.getEdgeHandle())) {
+        Value hv = getTerminalValue(hc.getEdgeHandle());
+        if (val.getType() == VOID) {
+            if (val == hv) return computeTSM(level-1, lc, val);
+        } else {
+            if (val == ((targetForest->getSetting().getEncodeMechanism() == TERMINAL) ? hv : hc.getValue())) return computeTSM(level-1, lc, val);
+        }
+    }
+    if (hasCommonTSM(lc, hc, val)) {
+        Edge child_common = commonTSM(level-1, lc, hc, val);
+        return computeTSM(lvl, child_common, val);
+    }
+    // new node
+    std::vector<Edge> child(2);
+    child[0] = computeTSM(level-1, lc, val);
+    child[1] = computeTSM(level-1, hc, val);
+    // reduce edge
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = targetForest->reduceEdge(lvl, root, level, child);
+    // add cache
+    cacheAdd(0, lvl, source, result);
+    return result;
+}
+
+char UnaryOperation::compareOSM(const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2)
+{
+    // terminal cases
+    if (d1.isConstantOne()) {return '>';}
+    if (d2.isConstantOne()) {return '<';}
+    if ((source1 == source2) && (d1.isConstantZero() && d2.isConstantZero())) {return '=';}
+    if ((source1.getNodeLevel() == source2.getNodeLevel()) && (source1.getNodeLevel() == 0) && (d1.isConstantZero() && d2.isConstantZero())) {return '!';}   // both different terminal value and not dc
+    // copy for swap if needed
+    Edge e1 = source1;
+    Edge e2 = source2;
+    Edge dc1 = d1;
+    Edge dc2 = d2;
+    // the highest level
+    uint16_t highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
+    // check cache
+    bool isSwap = 0;
+    if (e1.getEdgeHandle() > e2.getEdgeHandle()) {
+        SWAP(e1, e2);
+        SWAP(dc1, dc2);
+        isSwap = 1;
+    }
+    char ans;
+    if (caches[1].check(highest, e1, e2, dc1, dc2, ans)) return ans;
+    // recursively compare
+    char comp0, comp1;
+    comp0 = compareOSM(targetForest->cofact(highest, e1, 0),
+                        targetForest->cofact(highest, e2, 0),
+                        targetForest->cofact(highest, dc1, 0),
+                        targetForest->cofact(highest, dc2, 0));
+    comp1 = compareOSM(targetForest->cofact(highest, e1, 1),
+                        targetForest->cofact(highest, e2, 1),
+                        targetForest->cofact(highest, dc1, 1),
+                        targetForest->cofact(highest, dc2, 1));
+    if ((comp0 == '=') || (comp0 == comp1)) {
+        ans = comp1;
+    } else if (comp1 == '=') {
+        ans = comp0;
+    } else {
+        ans = '!';
+    }
+    if (isSwap) {
+        if (ans == '<') ans = '>';
+        if (ans == '>') ans = '<';
+    }
+    // add cache
+    cacheAdd(1, highest, e1, e2, dc1, dc2, ans);
     return ans;
 }
 
-Edge UnaryOperation::computeOSM(const uint16_t lvl, const Edge& source, const Value val)
+char UnaryOperation::compareOSM(const Edge& source1, const Edge& source2, const Value& val)
 {
-    // terminal case
-    if (isTerminal(source.getEdgeHandle())) {
+    // terminal cases
+    if (isTerminal(source1.getEdgeHandle())) {
+        Value v = getTerminalValue(source1.getEdgeHandle());
         if (val.getType() == VOID) {
-            //
+            if (val == v) return '>';
+        } else {
+            if (val == ((targetForest->getSetting().getEncodeMechanism() == TERMINAL) ? v : source1.getValue())) return '>';
         }
-        if (getTerminalValue(source.getEdgeHandle()) != val)
-        return source;
     }
-    Edge ans;
-
+    if (isTerminal(source2.getEdgeHandle())) {
+        Value v = getTerminalValue(source2.getEdgeHandle());
+        if (val.getType() == VOID) {
+            if (val == v) return '<';
+        } else {
+            if (val == ((targetForest->getSetting().getEncodeMechanism() == TERMINAL) ? v : source2.getValue())) return '<';
+        }
+    }
+    if (source1 == source2) {return '=';}
+    if ((source1.getNodeLevel() == source2.getNodeLevel()) && (source1.getNodeLevel() == 0)) {return '!';}   // both different terminal value and not dc
+    // copy for swap if needed
+    Edge e1 = source1;
+    Edge e2 = source2;
+    // the highest level
+    uint16_t highest = MAX(e1.getNodeLevel(), e2.getNodeLevel());
+    //check cache
+    bool isSwap = 0;
+    if (e1.getEdgeHandle() > e2.getEdgeHandle()) {
+        SWAP(e1, e2);
+        isSwap = 1;
+    }
+    char ans;
+    if (caches[1].check(highest, e1, e2, ans)) return ans;
+    // recursively compare
+    char comp0, comp1;
+    comp0 = compareOSM(targetForest->cofact(highest, e1, 0),
+                        targetForest->cofact(highest, e2, 0),
+                        val);
+    comp1 = compareOSM(targetForest->cofact(highest, e1, 1),
+                        targetForest->cofact(highest, e2, 1),
+                        val);
+    
+    if ((comp0 == '=') || (comp0 == comp1)) {
+        ans = comp1;
+    } else if (comp1 == '=') {
+        ans = comp0;
+    } else {
+        ans = '!';
+    }
+    if (isSwap) {
+        if (ans == '<') ans = '>';
+        if (ans == '>') ans = '<';
+    }
+    // add cache
+    cacheAdd(1, highest, e1, e2, ans);
     return ans;
 }
 
-Edge UnaryOperation::computeTSM(const uint16_t lvl, const Edge& source, const Value val)
+bool UnaryOperation::hasCommonTSM(const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2)
 {
-    // terminal case
-    if (isTerminal(source.getEdgeHandle())) {
-        if (val.getType() == VOID) {
-            //
-        }
-        if (getTerminalValue(source.getEdgeHandle()) != val)
-        return source;
+    // terminal cases
+    if (d1.isConstantOne()) {return true;}
+    if (d2.isConstantOne()) {return true;}
+    if (source1 == source2) {return true;}
+    if ((source1.getNodeLevel() == source2.getNodeLevel()) && (source1.getNodeLevel() == 0)) {return false;}   // both different terminal value and not dc
+    // copy for swap if needed
+    Edge e1 = source1;
+    Edge e2 = source2;
+    Edge dc1 = d1;
+    Edge dc2 = d2;
+    // the highest level
+    uint16_t highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
+    // check cache
+    if (e1.getEdgeHandle() > e2.getEdgeHandle()) {
+        SWAP(e1, e2);
+        SWAP(dc1, dc2);
     }
-    Edge ans;
-
+    bool ans = 0;
+    if (caches[1].check(highest, e1, e2, dc1, dc2, ans)) return ans;
+    // recursively check
+    bool cmp0, cmp1;
+    cmp0 = hasCommonTSM(targetForest->cofact(highest, e1, 0),
+                        targetForest->cofact(highest, e2, 0),
+                        targetForest->cofact(highest, dc1, 0),
+                        targetForest->cofact(highest, dc2, 0));
+    cmp1 = hasCommonTSM(targetForest->cofact(highest, e1, 1),
+                        targetForest->cofact(highest, e2, 1),
+                        targetForest->cofact(highest, dc1, 1),
+                        targetForest->cofact(highest, dc2, 1));
+    ans = (cmp0 && cmp1);
+    // add cache
+    cacheAdd(1, highest, e1, e2, dc1, dc2, ans);
     return ans;
 }
 
+bool UnaryOperation::hasCommonTSM(const Edge& source1, const Edge& source2, const Value& val)
+{
+    // terminal cases
+    if (isTerminal(source1.getEdgeHandle())) {
+        Value v = getTerminalValue(source1.getEdgeHandle());
+        if (val.getType() == VOID) {
+            if (val == v) return true;
+        } else {
+            if (val == ((targetForest->getSetting().getEncodeMechanism() == TERMINAL) ? v : source1.getValue())) return true;
+        }
+    }
+    if (isTerminal(source2.getEdgeHandle())) {
+        Value v = getTerminalValue(source2.getEdgeHandle());
+        if (val.getType() == VOID) {
+            if (val == v) return true;
+        } else {
+            if (val == ((targetForest->getSetting().getEncodeMechanism() == TERMINAL) ? v : source2.getValue())) return true;
+        }
+    }
+    if (source1 == source2) {return true;}
+    if ((source1.getNodeLevel() == source2.getNodeLevel()) && (source1.getNodeLevel() == 0)) {return false;}   // both different terminal value and not dc
+    // copy for swap if needed
+    Edge e1 = source1;
+    Edge e2 = source2;
+    // the highest level
+    uint16_t highest = MAX(source1.getNodeLevel(), source2.getNodeLevel());
+    // check cache
+    if (e1.getEdgeHandle() > e2.getEdgeHandle()) SWAP(e1, e2);
+    bool ans = 0;
+    if (caches[1].check(highest, e1, e2, ans)) return ans;
+    // recursively check
+    bool cmp0, cmp1;
+    cmp0 = hasCommonTSM(targetForest->cofact(highest, e1, 0),
+                        targetForest->cofact(highest, e2, 0),
+                        val);
+    cmp1 = hasCommonTSM(targetForest->cofact(highest, e1, 1),
+                        targetForest->cofact(highest, e2, 1),
+                        val);
+    ans = (cmp0 && cmp1);
+    // add cache
+    cacheAdd(1, highest, e1, e2, ans);
+    return ans;
+}
+
+Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2)
+{
+    // terminal cases
+    if (d1.isConstantOne()) {return source2;}
+    if (d2.isConstantOne()) {return source1;}
+    if (source1 == source2) {return source1;}
+    // copy for swap if needed
+    Edge e1 = source1;
+    Edge e2 = source2;
+    Edge dc1 = d1;
+    Edge dc2 = d2;
+    // the highest level
+    uint16_t highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
+    // check cache
+    if (e1.getEdgeHandle() > e2.getEdgeHandle()) {
+        SWAP(e1, e2);
+        SWAP(dc1, dc2);
+    }
+    Edge result;
+    if (caches[2].check(highest, e1, e2, dc1, dc2, result)) return result;
+    // recursively computing
+    std::vector<Edge> child(2);
+    child[0] = commonTSM(highest - 1,
+                        targetForest->cofact(highest, e1, 0),
+                        targetForest->cofact(highest, e2, 0),
+                        targetForest->cofact(highest, dc1, 0),
+                        targetForest->cofact(highest, dc2, 0));
+    child[1] = commonTSM(highest - 1,
+                        targetForest->cofact(highest, e1, 1),
+                        targetForest->cofact(highest, e2, 1),
+                        targetForest->cofact(highest, dc1, 1),
+                        targetForest->cofact(highest, dc2, 1));
+    // reduce edge
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = targetForest->reduceEdge(lvl, root, highest, child);
+    // add cache
+    cacheAdd(2, highest, e1, e2, dc1, dc2, result);
+    return result;
+}
+
+Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Edge& source2, const Value& val)
+{
+    // terminal cases
+    if (isTerminal(source1.getEdgeHandle())) {
+        Value v = getTerminalValue(source1.getEdgeHandle());
+        if (val.getType() == VOID) {
+            if (val == v) return source2;
+        } else {
+            if (val == ((targetForest->getSetting().getEncodeMechanism() == TERMINAL) ? v : source1.getValue())) return source2;
+        }
+    }
+    if (isTerminal(source2.getEdgeHandle())) {
+        Value v = getTerminalValue(source2.getEdgeHandle());
+        if (val.getType() == VOID) {
+            if (val == v) return source1;
+        } else {
+            if (val == ((targetForest->getSetting().getEncodeMechanism() == TERMINAL) ? v : source2.getValue())) return source1;
+        }
+    }
+    if (source1 == source2) {return source1;}
+    // copy for swap if needed
+    Edge e1 = source1;
+    Edge e2 = source2;
+    // the highest level
+    uint16_t highest = MAX(source1.getNodeLevel(), source2.getNodeLevel());
+    //check cache
+    if (e1.getEdgeHandle() > e2.getEdgeHandle()) {
+        SWAP(e1, e2);
+    }
+    Edge result;
+    if (caches[2].check(highest, e1, e2, result)) return result;
+    // recursively computing
+    std::vector<Edge> child(2);
+    child[0] = commonTSM(highest - 1,
+                        targetForest->cofact(highest, e1, 0),
+                        targetForest->cofact(highest, e2, 0),
+                        val);
+    child[1] = commonTSM(highest - 1,
+                        targetForest->cofact(highest, e1, 1),
+                        targetForest->cofact(highest, e2, 1),
+                        val);
+    // reduce edge
+    EdgeLabel root = 0;
+    packRule(root, RULE_X);
+    result = targetForest->reduceEdge(lvl, root, highest, child);
+    // add cache
+    cacheAdd(2, highest, e1, e2, result);
+    return result;
+}
 
 // ******************************************************************
 // *                                                                *

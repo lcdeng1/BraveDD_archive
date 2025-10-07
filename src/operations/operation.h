@@ -158,6 +158,7 @@ class BRAVE_DD::Operation {
     /*-------------------------------------------------------------*/
     virtual ~Operation();
 
+    // add element to cache, this part may need to be rewriten later?
     void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const long& ans) {
         // check if sweep and enlarg, and do it
         sweepAndEnlarge(cacheID);
@@ -175,6 +176,36 @@ class BRAVE_DD::Operation {
         sweepAndEnlarge(cacheID);
         // add to cache
         caches[cacheID].add(lvl, a, b, ans);
+    }
+    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const char& ans) {
+        // check if sweep and enlarg, and do it
+        sweepAndEnlarge(cacheID);
+        // add to cache
+        caches[cacheID].add(lvl, a, b, ans);
+    }
+    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const bool& ans) {
+        // check if sweep and enlarg, and do it
+        sweepAndEnlarge(cacheID);
+        // add to cache
+        caches[cacheID].add(lvl, a, b, ans);
+    }
+    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const Edge& ans) {
+        // check if sweep and enlarg, and do it
+        sweepAndEnlarge(cacheID);
+        // add to cache
+        caches[cacheID].add(lvl, a, b, c, d, ans);
+    }
+    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const char& ans) {
+        // check if sweep and enlarg, and do it
+        sweepAndEnlarge(cacheID);
+        // add to cache
+        caches[cacheID].add(lvl, a, b, c, d, ans);
+    }
+    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const bool& ans) {
+        // check if sweep and enlarg, and do it
+        sweepAndEnlarge(cacheID);
+        // add to cache
+        caches[cacheID].add(lvl, a, b, c, d, ans);
     }
     virtual void sweepAndEnlarge(const size_t cacheID) {}
     // computing tables
@@ -204,7 +235,9 @@ class BRAVE_DD::UnaryOperation : public Operation {
     void compute(const Func& source, long& target);
     void compute(const Func& source, unsigned long& target);    // for large numbers? TBD
     void compute(const Func& source, double& target);
-    void compute(const Func& source, Func& target, const Value val);
+    // for concretizing
+    void compute(const Func& source, const Func& dc, Func& target);
+    void compute(const Func& source, const Value& val, Func& target);
     /*-------------------------------------------------------------*/
     protected:
     /*-------------------------------------------------------------*/
@@ -221,13 +254,19 @@ class BRAVE_DD::UnaryOperation : public Operation {
     long computeCARD(const uint16_t lvl, const Edge& source);
     unsigned long computeCARD64(const uint16_t lvl, const Edge& source);
     // concretizing
-    Edge computeRESTRICT(const uint16_t lvl, const Edge& source, const Value val);
-    Edge computeOSM(const uint16_t lvl, const Edge& source, const Value val);
-    Edge computeTSM(const uint16_t lvl, const Edge& source, const Value val);
+    Edge computeRST(const uint16_t lvl, const Edge& source, const Edge& dc);
+    Edge computeRST(const uint16_t lvl, const Edge& source, const Value& val);
+    Edge computeOSM(const uint16_t lvl, const Edge& source, const Edge& dc);
+    Edge computeOSM(const uint16_t lvl, const Edge& source, const Value& val);
+    Edge computeTSM(const uint16_t lvl, const Edge& source, const Edge& dc);
+    Edge computeTSM(const uint16_t lvl, const Edge& source, const Value& val);
     // used for concretizing
-    unsigned char compareOSM(const Edge& e1, const Edge& e2);
-    bool hasCommonTSM(const Edge& e1, const Edge& e2);
-    Edge commonTSM(const uint16_t lvl, const Edge& e1, const Edge& e2);
+    char compareOSM(const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2);
+    char compareOSM(const Edge& source1, const Edge& source2, const Value& val);
+    bool hasCommonTSM(const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2);
+    bool hasCommonTSM(const Edge& source1, const Edge& source2, const Value& val);
+    Edge commonTSM(const uint16_t lvl, const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2);
+    Edge commonTSM(const uint16_t lvl, const Edge& source1, const Edge& source2, const Value& val);
     // list
     friend class UnaryList;
     UnaryOperation*     next;
@@ -337,6 +376,7 @@ class BRAVE_DD::BinaryOperation : public Operation {
     // list
     friend class BinaryList;
     BinaryOperation*    next;
+    friend class UnaryOperation;
     friend class SaturationOperation;
     // arguments
     Forest*             source1Forest;
