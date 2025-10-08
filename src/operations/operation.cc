@@ -3,6 +3,7 @@
 
 // #define BRAVE_DD_OPERATION_TRACE
 // #define BRAVE_DD_PRINT_RELATIONS
+// #define BRAVE_DD_CONCRETIZATION_HELP_CACHE  // better not turn it on
 #define BRAVE_DD_SAT_STRATEGY_1
 // #define BRAVE_DD_SAT_STRATEGY_2
 
@@ -40,11 +41,13 @@ UnaryOperation::UnaryOperation(UnaryOperationType type, Forest* source, Forest* 
     targetForest = target;
     targetType = OpndType::FOREST;
     caches.resize(1);
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     if (opType == UnaryOperationType::UOP_CONCRETIZE_OSM) {
         caches.resize(2);
     } else if (opType == UnaryOperationType::UOP_CONCRETIZE_TSM) {
         caches.resize(3);
     }
+#endif
 }
 UnaryOperation::UnaryOperation(UnaryOperationType type, Forest* source, OpndType target)
 :opType(type)
@@ -427,7 +430,7 @@ Edge UnaryOperation::computeOSM(const uint16_t lvl, const Edge& source, const Ed
     // reduce edge
     EdgeLabel root = 0;
     packRule(root, RULE_X);
-    result = targetForest->reduceEdge(level, root, lvl, child);
+    result = targetForest->reduceEdge(lvl, root, level, child);
     // add cache
     cacheAdd(0, lvl, source, dc, result);
     return result;
@@ -568,6 +571,8 @@ char UnaryOperation::compareOSM(const Edge& source1, const Edge& source2, const 
     Edge dc2 = d2;
     // the highest level
     uint16_t highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
+    char ans;
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // check cache
     bool isSwap = 0;
     if (e1.getEdgeHandle() > e2.getEdgeHandle()) {
@@ -575,8 +580,14 @@ char UnaryOperation::compareOSM(const Edge& source1, const Edge& source2, const 
         SWAP(dc1, dc2);
         isSwap = 1;
     }
-    char ans;
-    if (caches[1].check(highest, e1, e2, dc1, dc2, ans)) return ans;
+    if (caches[1].check(highest, e1, e2, dc1, dc2, ans)) {
+        if (isSwap) {
+            if (ans == '<') ans = '>';
+            if (ans == '>') ans = '<';
+        }
+        return ans;
+    }
+#endif
     // recursively compare
     char comp0, comp1;
     comp0 = compareOSM(targetForest->cofact(highest, e1, 0),
@@ -594,12 +605,15 @@ char UnaryOperation::compareOSM(const Edge& source1, const Edge& source2, const 
     } else {
         ans = '!';
     }
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
+    // for swap
     if (isSwap) {
         if (ans == '<') ans = '>';
-        if (ans == '>') ans = '<';
+        else if (ans == '>') ans = '<';
     }
     // add cache
     cacheAdd(1, highest, e1, e2, dc1, dc2, ans);
+#endif
     return ans;
 }
 
@@ -629,14 +643,22 @@ char UnaryOperation::compareOSM(const Edge& source1, const Edge& source2, const 
     Edge e2 = source2;
     // the highest level
     uint16_t highest = MAX(e1.getNodeLevel(), e2.getNodeLevel());
+    char ans;
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     //check cache
     bool isSwap = 0;
     if (e1.getEdgeHandle() > e2.getEdgeHandle()) {
         SWAP(e1, e2);
         isSwap = 1;
     }
-    char ans;
-    if (caches[1].check(highest, e1, e2, ans)) return ans;
+    if (caches[1].check(highest, e1, e2, ans)) {
+        if (isSwap) {
+            if (ans == '<') ans = '>';
+            if (ans == '>') ans = '<';
+        }
+        return ans;
+    }
+#endif
     // recursively compare
     char comp0, comp1;
     comp0 = compareOSM(targetForest->cofact(highest, e1, 0),
@@ -653,12 +675,14 @@ char UnaryOperation::compareOSM(const Edge& source1, const Edge& source2, const 
     } else {
         ans = '!';
     }
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     if (isSwap) {
         if (ans == '<') ans = '>';
-        if (ans == '>') ans = '<';
+        else if (ans == '>') ans = '<';
     }
     // add cache
     cacheAdd(1, highest, e1, e2, ans);
+#endif
     return ans;
 }
 
@@ -676,13 +700,15 @@ bool UnaryOperation::hasCommonTSM(const Edge& source1, const Edge& source2, cons
     Edge dc2 = d2;
     // the highest level
     uint16_t highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
+    bool ans = 0;
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // check cache
     if (e1.getEdgeHandle() > e2.getEdgeHandle()) {
         SWAP(e1, e2);
         SWAP(dc1, dc2);
     }
-    bool ans = 0;
     if (caches[1].check(highest, e1, e2, dc1, dc2, ans)) return ans;
+#endif
     // recursively check
     bool cmp0, cmp1;
     cmp0 = hasCommonTSM(targetForest->cofact(highest, e1, 0),
@@ -694,8 +720,10 @@ bool UnaryOperation::hasCommonTSM(const Edge& source1, const Edge& source2, cons
                         targetForest->cofact(highest, dc1, 1),
                         targetForest->cofact(highest, dc2, 1));
     ans = (cmp0 && cmp1);
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // add cache
     cacheAdd(1, highest, e1, e2, dc1, dc2, ans);
+#endif
     return ans;
 }
 
@@ -725,10 +753,12 @@ bool UnaryOperation::hasCommonTSM(const Edge& source1, const Edge& source2, cons
     Edge e2 = source2;
     // the highest level
     uint16_t highest = MAX(source1.getNodeLevel(), source2.getNodeLevel());
+    bool ans = 0;
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // check cache
     if (e1.getEdgeHandle() > e2.getEdgeHandle()) SWAP(e1, e2);
-    bool ans = 0;
     if (caches[1].check(highest, e1, e2, ans)) return ans;
+#endif
     // recursively check
     bool cmp0, cmp1;
     cmp0 = hasCommonTSM(targetForest->cofact(highest, e1, 0),
@@ -738,8 +768,10 @@ bool UnaryOperation::hasCommonTSM(const Edge& source1, const Edge& source2, cons
                         targetForest->cofact(highest, e2, 1),
                         val);
     ans = (cmp0 && cmp1);
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // add cache
     cacheAdd(1, highest, e1, e2, ans);
+#endif
     return ans;
 }
 
@@ -756,13 +788,15 @@ Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Ed
     Edge dc2 = d2;
     // the highest level
     uint16_t highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
+    Edge result;
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // check cache
     if (e1.getEdgeHandle() > e2.getEdgeHandle()) {
         SWAP(e1, e2);
         SWAP(dc1, dc2);
     }
-    Edge result;
     if (caches[2].check(highest, e1, e2, dc1, dc2, result)) return result;
+#endif
     // recursively computing
     std::vector<Edge> child(2);
     child[0] = commonTSM(highest - 1,
@@ -779,8 +813,10 @@ Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Ed
     EdgeLabel root = 0;
     packRule(root, RULE_X);
     result = targetForest->reduceEdge(lvl, root, highest, child);
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // add cache
     cacheAdd(2, highest, e1, e2, dc1, dc2, result);
+#endif
     return result;
 }
 
@@ -809,12 +845,14 @@ Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Ed
     Edge e2 = source2;
     // the highest level
     uint16_t highest = MAX(source1.getNodeLevel(), source2.getNodeLevel());
+    Edge result;
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     //check cache
     if (e1.getEdgeHandle() > e2.getEdgeHandle()) {
         SWAP(e1, e2);
     }
-    Edge result;
     if (caches[2].check(highest, e1, e2, result)) return result;
+#endif
     // recursively computing
     std::vector<Edge> child(2);
     child[0] = commonTSM(highest - 1,
@@ -829,8 +867,10 @@ Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Ed
     EdgeLabel root = 0;
     packRule(root, RULE_X);
     result = targetForest->reduceEdge(lvl, root, highest, child);
+#ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // add cache
     cacheAdd(2, highest, e1, e2, result);
+#endif
     return result;
 }
 
