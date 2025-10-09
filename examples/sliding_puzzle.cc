@@ -640,15 +640,15 @@ bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& targ
         } else {
             std::cout << "BFS image process: " << n << std::endl;
             // change for distance computing
-            if (isEmptyBot || isEmptyTop) {
-                apply(POST_IMAGE, curr, relations[0], nextStep);
-                FF |= nextStep;
-                apply(POST_IMAGE, curr, relations[1], nextStep);
-                FF |= nextStep;
-            } else {
-                apply(POST_IMAGE, curr, relations[0], FF);
-            }
-            // apply(POST_IMAGE, curr, relations[0], FF);
+            // if (isEmptyBot || isEmptyTop) {
+            //     apply(POST_IMAGE, curr, relations[0], nextStep);
+            //     FF |= nextStep;
+            //     apply(POST_IMAGE, curr, relations[1], nextStep);
+            //     FF |= nextStep;
+            // } else {
+            //     apply(POST_IMAGE, curr, relations[0], FF);
+            // }
+            apply(POST_IMAGE, curr, relations[0], FF);
         }
 
         distance_permutation.push_back(n);
@@ -2207,15 +2207,16 @@ int main(int argc, const char** argv)
             std::cout << std::endl;
             // try to union relations differently
             if (isRelationUnion) {
-                if (isEmptyBot || isEmptyTop) {
-                    if (direction == 1 || direction == 2) { // up and down
-                        relations[0] |= forward;
-                    } else {    // left and right
-                        relations[1] |=forward;
-                    }
-                } else {
-                    relations[0] |= forward;
-                }
+                // if (isEmptyBot || isEmptyTop) {
+                //     if (direction == 1 || direction == 2) { // up and down
+                //         relations[0] |= forward;
+                //     } else {    // left and right
+                //         relations[1] |=forward;
+                //     }
+                // } else {
+                //     relations[0] |= forward;
+                // }
+                relations[0] |= forward;
             }
         }
     }
@@ -2370,5 +2371,6 @@ int main(int argc, const char** argv)
     // clean
     delete forest1;
     delete forest2;
+    if (forest3) delete forest3;
     return 0;
 }
