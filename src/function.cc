@@ -814,23 +814,13 @@ Edge ExplictFunc::buildEdge(Forest* forest, uint16_t lvl, size_t start, size_t s
         Value val = (size == 0) ? defaultVal : outcomes[start];
         ValueType valTP = val.getType();
         if (em == TERMINAL) {
-            if (valTP == INT) {
-                ans.handle = makeTerminal(valTP, val.getIntValue());
-            } else if (valTP == LONG) {
-                ans.handle = makeTerminal(valTP, val.getLongValue());
-            } else if (valTP == FLOAT) {
-                ans.handle = makeTerminal(valTP, val.getFloatValue());
-            } else if (valTP == DOUBLE) {
-                ans.handle = makeTerminal(valTP, val.getDoubleValue());
-            } else if (valTP == VOID) {
-                ans.handle = makeTerminal(valTP, val.getSpecialValue());
-            }
+                ans.handle = makeTerminal(val);
         } else {
             ans.handle = makeTerminal(VOID, SpecialValue::OMEGA);
             if (valTP != VOID) {
                 ans.setValue(val);
             } else {
-                ans.handle = makeTerminal(valTP, val.getSpecialValue());
+                ans.handle = makeTerminal(val);
             }
         }
         packRule(ans.handle, RULE_X);
