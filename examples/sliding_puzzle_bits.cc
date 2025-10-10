@@ -68,8 +68,13 @@ std::unordered_map<State, uint8_t> distance;
 int numThreads = 1;
 
 // flags
+bool isSearch = 0;
 bool isOutputTable = 0;
+bool isPipe = 0;
 bool isBuildBDD = 0;
+bool isMultiRoot = 0;
+
+std::string bdd = "fbdd";
 
 
 /* 
@@ -77,24 +82,24 @@ Helper function to print the puzzle state (configure)
 */
 void printPuzzleState(const std::vector<std::vector<uint16_t> >& puzzle)
 {
-    std::cout << "\t";
+    std::cerr << "\t";
     for (int i=0; i<M-1; i++) {
-        std::cout << "--------";
+        std::cerr << "--------";
     }
-    std::cout << "-" << std::endl;
+    std::cerr << "-" << std::endl;
     for (const auto& row : puzzle) {
         for (uint16_t val : row) {
-            if (val == 0) std::cout << "\t  "; // empty space
-            else std::cout << "\t" << val;
+            if (val == 0) std::cerr << "\t  "; // empty space
+            else std::cerr << "\t" << val;
         }
-        std::cout << std::endl;
+        std::cerr << std::endl;
     }
-    std::cout << "\t";
+    std::cerr << "\t";
     for (int i=0; i<M-1; i++) {
-        std::cout << "--------";
+        std::cerr << "--------";
     }
-    std::cout << "-" << std::endl;
-    std::cout << std::endl;
+    std::cerr << "-" << std::endl;
+    std::cerr << std::endl;
 }
 /*
 Print a puzzle state in bits representation
@@ -103,14 +108,14 @@ void printBits(const State puzzle)
 {
     uint16_t count = 0;
     for (int i=63; i>=0; i--) {
-        std::cout << (bool)(puzzle & (0x01ULL<<i));
+        std::cerr << (bool)(puzzle & (0x01ULL<<i));
         count++;
         if (count == BITS) {
-            std::cout << "  ";
+            std::cerr << "  ";
             count = 0;
         }
     }
-    std::cout << std::endl;
+    std::cerr << std::endl;
 }
 /*
 Encode 64 bits as puzzle state
@@ -120,7 +125,7 @@ std::vector<std::vector<uint16_t> > encodeBits2Puzzle(State puzzle)
     //
     std::vector<std::vector<uint16_t> > conf(N, std::vector<uint16_t>(M, 0));
     uint16_t eptPos = puzzle & MASK;
-    std::cout << "empty postion: " << eptPos << std::endl;
+    std::cerr << "empty postion: " << eptPos << std::endl;
     uint16_t shift = MSB - BITS + 1;
     uint16_t row, col;
     for (uint16_t i=1; i<=N*M; i++) {
@@ -268,7 +273,7 @@ void BFS(State initial) {
     uint8_t depth = 0;
 
     while (!frontier.empty()) {
-        std::cout << "Depth " << (int)depth << ", frontier = " << frontier.size() << "\n";
+        std::cerr << "Depth " << (int)depth << ", frontier = " << frontier.size() << "\n";
         std::vector<State> local_new;
         for (auto &s : frontier) {
             for (auto &ns : getNeighbors(s)) {
@@ -290,7 +295,7 @@ void BFS(State initial) {
         frontier.swap(next);
         ++depth;
     }
-    std::cout << "Total states discovered: " << distance.size() << "\n";
+    std::cerr << "Total states discovered: " << distance.size() << "\n";
 }
 
 /*
@@ -304,7 +309,7 @@ void parallelBFS(State initial, size_t num_threads) {
     uint8_t depth = 0;
 
     while (!frontier.empty()) {
-        std::cout << "Depth " << (int)depth << ", frontier = " << frontier.size() << "\n";
+        std::cerr << "Depth " << (int)depth << ", frontier = " << frontier.size() << "\n";
         std::vector<std::thread> threads;
         std::mutex dist_mutex;
 
@@ -373,61 +378,37 @@ void parallelBFS(State initial, size_t num_threads) {
         ++depth;
     }
 
-    std::cout << "Total states discovered: " << distance.size() << "\n";
+    std::cerr << "Total states discovered: " << distance.size() << "\n";
 }
 
 /*
 Output distance table as pla format and compress as xz
 */
-void outputPla()
+void outputPla(std::ostream& out)
 {
-    std::string fileName = "puzzle";
-    fileName += "_";
-    fileName += std::to_string(N);
-    fileName += "_";
-    fileName += std::to_string(M);
-    fileName += ".pla";
-    std::ofstream file(fileName, std::ios::app);
-    if (!file) {
-        std::cerr << "Failed to open file " << fileName << std::endl;
-        return;
-    }
-    file << ".type f\n";
-    file << ".i " << N*M*BITS << "\n";
-    file << ".o " << 8 << "\n";     // 8 bits for distance is enough
-    file << ".p " << distance.size() << "\n";
+    out << ".type f\n";
+    out << ".i " << N*M*BITS << "\n";
+    out << ".o " << 8 << "\n";     // 8 bits for distance is enough
+    out << ".p " << distance.size() << "\n";
     for (auto& d : distance) {
-        // std::cout << "distance: " << d.second << std::endl;
+        // std::cerr << "distance: " << d.second << std::endl;
         // printPuzzleState(encodeBits2Puzzle(d.first));
         // state in bits
         for (int i=MSB; i>=0; i--) {
-            file << (bool)(d.first & (0x01ULL<<i));
+            out << (bool)(d.first & (0x01ULL<<i));
         }
-        file << " ";
+        out << " ";
         // distance in bits
         for (int i=7; i>=0; i--) {
             if (d.second & (0x01<<i)) {
-                file << "1";
+                out << "1";
             } else {
-                file << "~";
+                out << "~";
             }
         }
-        file << "\n";
+        out << "\n";
     }
-    file << ".end";
-    file.close();
-    std::string cmd = "xz ";
-    cmd += fileName;
-#ifdef _WIN32
-    int result = system(("cmd /C " + cmd).c_str());
-#else
-    int result = system(("sh -c \"" + cmd + "\"").c_str());
-#endif
-    if (result) {
-        std::cout << "[BRAVE_DD] Error!\t Failed to run xz and build file: "<< fileName<< ".xz" << std::endl;
-        return;
-    }
-    std::cout << "Done!" << std::endl;
+    out << ".end";
 }
 
 bool processArgs(int argc, const char** argv)
@@ -441,12 +422,29 @@ bool processArgs(int argc, const char** argv)
                 i++;
                 continue;
             }
+            if (strcmp("-s", argv[i])==0) {
+                isSearch = 1;
+                continue;
+            }
             if (strcmp("-ot", argv[i])==0) {
                 isOutputTable = 1;
                 continue;
             }
+            if (strcmp("-p", argv[i])==0) {
+                isPipe = 1;
+                continue;
+            }
             if (strcmp("-bb", argv[i])==0) {
                 isBuildBDD = 1;
+                continue;
+            }
+            if (strcmp("-mr", argv[i])==0) {
+                isMultiRoot = 1;
+                continue;
+            }
+            if (strcmp("-bdd", argv[i])==0) {
+                bdd = argv[i+1];
+                i++;
                 continue;
             }
         }
@@ -475,11 +473,14 @@ int usage(const char* who)
     for (const char* ptr=who; *ptr; ptr++) {
         if ('/' == *ptr) name = ptr+1;
     }
-    std::cout << "Usage: " << name << "[options] N M\n" << std::endl;
-    std::cout << "\t            N: the number of board rows" << std::endl;
-    std::cout << "\t            M: the number of board columns" << std::endl;
-    std::cout << "\t[option]  -nt: followed with a number of threads to BFS distance (default: 1)" << std::endl;
-    std::cout << "\t[option]  -bb: switch to turn ON the BDD building" << std::endl;
+    std::cerr << "Usage: " << name << "[options] N M\n" << std::endl;
+    std::cerr << "\t            N: the number of board rows" << std::endl;
+    std::cerr << "\t            M: the number of board columns" << std::endl;
+    std::cerr << "\t[option]  -nt: followed with a number of threads to BFS distance (default: 1)" << std::endl;
+    std::cerr << "\t[option]  -s: switch to turn ON parallel BFS" << std::endl;
+    std::cerr << "\t[option]  -ot: switch to turn ON the output of result distance table" << std::endl;
+    std::cerr << "\t[option]  -p: switch to turn ON pipeline to compress" << std::endl;
+    std::cerr << "\t[option]  -bb: switch to turn ON the BDD building" << std::endl;
     return 1;
 }
 
@@ -488,9 +489,9 @@ int main(int argc, const char** argv)
     
     /* Process arguments and initialize BDD forests*/
     if (!processArgs(argc, argv)) return usage(argv[0]);
-    std::cout << "Solving " << N << " x " << M << "-sliding puzzle." << std::endl;
-    std::cout << "Using " << getLibInfo(0) << std::endl;
-    std::cout << "Target configure: " << std::endl;
+    std::cerr << "Solving " << N << " x " << M << "-sliding puzzle." << std::endl;
+    std::cerr << "Using " << getLibInfo(0) << std::endl;
+    std::cerr << "Target configure: " << std::endl;
     /* The vector encoding a tiles configure: 
     * conf[i][j] = k means that tile k on the position of row i and column j, 
     * k=0 represents the empty position at row i and column j.
@@ -509,7 +510,7 @@ int main(int argc, const char** argv)
     printPuzzleState(conf);
     // initialize header info
     BITS = static_cast<uint16_t>(std::ceil(log2(N*M)));
-    std::cout << "bits: " << BITS << std::endl;
+    std::cerr << "bits: " << BITS << std::endl;
     MSB = N*M*BITS-1;
     MASK = ((0x01ULL<<BITS) - 1);
     ROW_MASK = ((0x01ULL<<(M*BITS)) - 1);
@@ -518,9 +519,39 @@ int main(int argc, const char** argv)
     // encode in bits
     State initial = encodePuzzle2Bits(conf);
     // search and output as a pla file
-    parallelBFS(initial, numThreads);
+    if (isSearch) parallelBFS(initial, numThreads);
     // BFS(initial);
-    if (isOutputTable) outputPla();
+    if (isOutputTable) {
+        if (isPipe) {
+            outputPla(std::cout);
+        } else {
+            std::string fileName = "puzzle";
+            fileName += "_";
+            fileName += std::to_string(N);
+            fileName += "_";
+            fileName += std::to_string(M);
+            fileName += ".pla";
+            std::ofstream file(fileName, std::ios::app);
+            if (!file) {
+                std::cerr << "Failed to open file " << fileName << std::endl;
+                return;
+            }
+            outputPla(file);
+            file.close();
+            std::string cmd = "xz ";
+            cmd += fileName;
+#ifdef _WIN32
+    int result = system(("cmd /C " + cmd).c_str());
+#else
+    int result = system(("sh -c \"" + cmd + "\"").c_str());
+#endif
+            if (result) {
+                std::cerr << "[BRAVE_DD] Error!\t Failed to run xz and build file: "<< fileName<< ".xz" << std::endl;
+                return;
+            }
+            std::cerr << "Done!" << std::endl;
+        }
+    }
 
     if (isBuildBDD) {
         /* Parser to read */
@@ -535,10 +566,10 @@ int main(int argc, const char** argv)
         parser.readHeader();
         long numFun = parser.getNum();
         /* Initial forest */
-        ForestSetting setting("fbdd", parser.getInBits());
+        ForestSetting setting(bdd, parser.getInBits());
         setting.setValType(INT);
-        setting.setPosInf(1);
-        setting.output(std::cout);
+        if (!isMultiRoot) setting.setPosInf(1);
+        setting.output(std::cerr);
         Forest* forest = new Forest(setting);
 
         /* ExplictFunc to store */
@@ -554,20 +585,20 @@ int main(int argc, const char** argv)
             outcome.setValue(oc, INT);
             EGT.addAssignment(assignment, outcome);
         }
-        std::cout << "Max outcome: " << maxOC << std::endl;
+        std::cerr << "Max outcome: " << maxOC << std::endl;
 
         /* Build BDD */
         EGT.setDefaultValue(Value(SpecialValue::POS_INF));  // set default value
         // EGT.setDefaultValue(Value(0));
-        std::cout<<"build function\n";
+        std::cerr<<"build function\n";
         Func ans = EGT.buildFunc(forest);
         uint64_t numNodes = forest->getNodeManUsed(ans);
-        std::cout << "number of nodes: " << numNodes << std::endl;
+        std::cerr << "number of nodes: " << numNodes << std::endl;
         long numStates = 0;
         apply(CARDINALITY, ans, numStates);
-        std::cout << "number of states: " << numStates << std::endl;
+        std::cerr << "number of states: " << numStates << std::endl;
         if (numStates != numFun) {
-            std::cout << "[BRAVE_DD] Error!\t Cardinality [" << numStates<<"] does not match number of assignments [" << numFun << "]!" << std::endl;
+            std::cerr << "[BRAVE_DD] Error!\t Cardinality [" << numStates<<"] does not match number of assignments [" << numFun << "]!" << std::endl;
         }
 
         if (N<=2 && M<=2){
@@ -575,6 +606,19 @@ int main(int argc, const char** argv)
             dot2.buildGraph(ans);
             dot2.runDot("pdf");
         }
+
+        Func ans_rst(forest);
+        apply(CONCRETIZE_RST, ans, Value(SpecialValue::POS_INF), ans_rst);
+        std::cerr << "RST: number of nodes: " << forest->getNodeManUsed(ans_rst) << std::endl;
+
+        Func ans_osm(forest);
+        apply(CONCRETIZE_OSM, ans, Value(SpecialValue::POS_INF), ans_osm);
+        std::cerr << "OSM: number of nodes: " << forest->getNodeManUsed(ans_osm) << std::endl;
+
+        Func ans_tsm(forest);
+        apply(CONCRETIZE_TSM, ans, Value(SpecialValue::POS_INF), ans_tsm);
+        std::cerr << "TSM: number of nodes: " << forest->getNodeManUsed(ans_tsm) << std::endl;
+
         delete forest;
     }
     
