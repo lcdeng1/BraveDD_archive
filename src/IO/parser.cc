@@ -177,7 +177,7 @@ bool ParserPla::readAssignment(std::vector<bool>& inputs, char& out)
         inputs[n] = static_cast<bool>(c-'0');
     }
     // read out
-    inputs[n] = 0;
+    // inputs[n] = 0;
     unsigned t = 0;
     while ((c = get()) != '\n' && c != EOF) {
         if (c == '1') t = (t << 1) | 1;
@@ -210,7 +210,7 @@ bool ParserPla::readAssignment(std::vector<bool>& inputs, int& out)
         inputs[n] = static_cast<bool>(c-'0');
     }
     // read out
-    inputs[n] = 0;
+    // inputs[n] = 0;
     int t = 0;
     while ((c = get()) != '\n' && c != EOF) {
         if (c == '1') t = (t << 1) | 1;
