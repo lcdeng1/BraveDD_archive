@@ -147,7 +147,7 @@ void ParserPla::readHeader()
             outbits = readUnsigned();
         }
         if (next == 'p') {
-            numf = readUnsigned();
+            numf = readSize();
         }
         skipUntil('\n');
     }
@@ -184,5 +184,38 @@ bool ParserPla::readAssignment(std::vector<bool>& inputs, char& out)
         else if (c == '~') t <<= 1;
     }
     out = '0' + t;
+    return true;
+}
+bool ParserPla::readAssignment(std::vector<bool>& inputs, int& out)
+{
+    int c;
+    while (true) {
+        c = get();
+        if (c == EOF) return false;
+        if (c == '.') {
+            skipUntil('\n');
+        } else {
+            break;
+        }
+    }
+    // read inputs
+    inputs[0] = static_cast<bool>(c-'0');
+    unsigned n;
+    for (n=1; n<inbits; n++) {
+        c = get();
+        if (c == EOF) {
+            std::cout << "[BRAVE_DD] ERROR!\t ParserPla::readAssignment(): Unexpected EOF.\n";
+            return false;
+        }
+        inputs[n] = static_cast<bool>(c-'0');
+    }
+    // read out
+    inputs[n] = 0;
+    int t = 0;
+    while ((c = get()) != '\n' && c != EOF) {
+        if (c == '1') t = (t << 1) | 1;
+        else if (c == '~') t <<= 1;
+    }
+    out = t;
     return true;
 }

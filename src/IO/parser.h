@@ -31,6 +31,10 @@ class BRAVE_DD::FileReader {
         fscanf(infile, "%u", &x);
         return x;
     }
+    inline size_t readSize() {
+        size_t x;
+        fscanf(infile, "%zu", &x);
+    }
     inline void unget(int c) { ungetc(c, infile); }
     inline char getFormat() { return format; }
 
@@ -69,6 +73,7 @@ class BRAVE_DD::Parser {
     inline int get() { return reader->get(); }
     inline void unget(int c) { reader->unget(c); }
     inline unsigned readUnsigned() { return reader->readUnsigned(); }
+    inline size_t readSize() { return reader->readSize(); }
     inline int skipUntil(char x) {
         for (;;) {
             int c = get();
@@ -98,6 +103,7 @@ class BRAVE_DD::ParserPla : public Parser {
     // main functions
     virtual void readHeader() override;
     bool readAssignment(std::vector<bool>& inputs, char& out);
+    bool readAssignment(std::vector<bool>& inputs, int& out);
     // get bits info
     inline unsigned getInBits() { return inbits; }
     inline unsigned getOutBits() { return outbits; }
@@ -108,7 +114,7 @@ class BRAVE_DD::ParserPla : public Parser {
     /*-------------------------------------------------------------*/
     unsigned            inbits;     // number of inbits of assignments
     unsigned            outbits;    // number of outbits of assignments
-    unsigned long       numf;       // number of assignments
+    size_t              numf;       // number of assignments
 };
 
 // more parsers for BIN, BDDX
