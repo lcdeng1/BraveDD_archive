@@ -534,7 +534,7 @@ int main(int argc, const char** argv)
             std::ofstream file(fileName, std::ios::app);
             if (!file) {
                 std::cerr << "Failed to open file " << fileName << std::endl;
-                return;
+                return 1;
             }
             outputPla(file);
             file.close();
@@ -547,7 +547,7 @@ int main(int argc, const char** argv)
 #endif
             if (result) {
                 std::cerr << "[BRAVE_DD] Error!\t Failed to run xz and build file: "<< fileName<< ".xz" << std::endl;
-                return;
+                return 1;
             }
             std::cerr << "Done!" << std::endl;
         }
