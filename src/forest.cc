@@ -139,6 +139,25 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
     * BDD for "Set" (Edge value encoding)
     * ================================================================================================*/
     } else if(!setting.isRelation() && em == EDGE_PLUS) {
+        // swap logic
+        if (setting.getSwapType() == ONE) {
+            // swap-one
+            if (child[0].getNodeLevel() != child[1].getNodeLevel()) {
+                swap = child[0].getNodeLevel() > child[1].getNodeLevel();
+            } else if (child[0].getNodeHandle() != child[1].getNodeHandle()) {
+                swap = child[0].getNodeHandle() > child[1].getNodeHandle();
+            } else if (child[0].getSwap(0) != child[1].getSwap(0)) {
+                swap = child[0].getSwap(0) > child[1].getSwap(0);
+            } else {
+                ReductionRule rule0 = child[0].getRule(), rule1 = child[1].getRule();
+                rule0 = (child[0].getComp())?compRule(rule0):rule0;
+                rule1 = (child[1].getComp())?compRule(rule1):rule1;
+                swap = rule0 > rule1;
+            }
+            if (swap) SWAP(child[0], child[1]);
+        } else if (setting.getSwapType() == ALL) {
+            // swap-all
+        }
         bool hasLvl = setting.getReductionSize() > 0;
         /* 
          * One is special terminal value, or both but different, check this first

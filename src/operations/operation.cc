@@ -210,7 +210,7 @@ Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
             childEdges = std::vector<Edge>(2);
         }
         for (size_t i=0; i<childEdges.size(); i++) {
-            childEdges[i] = targetForest->getChildEdge(source.getNodeLevel(), source.getNodeHandle(), i);
+            childEdges[i] = targetForest->cofact(source.getNodeLevel(), source, i);
             childEdges[i] = computeCOMPLEMENT(source.getNodeLevel()-1, childEdges[i]);
         }
         EdgeLabel label = 0;

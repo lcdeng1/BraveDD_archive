@@ -156,17 +156,17 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         reductions = Reductions(QUASI);
         name = "QBDD";
     } else if (bddLower == "cqbdd") {
-        // setting for QBDD
+        // setting for CQBDD
         reductions = Reductions(QUASI);
         flags.setCompType(COMP);
         name = "CQBDD";
     } else if (bddLower == "sqbdd") {
-        // setting for QBDD
+        // setting for SQBDD
         reductions = Reductions(QUASI);
         flags.setSwapType(ONE);
         name = "SQBDD";
     } else if (bddLower == "csqbdd") {
-        // setting for QBDD
+        // setting for CSQBDD
         reductions = Reductions(QUASI);
         flags.setSwapType(ONE);
         flags.setCompType(COMP);
@@ -176,17 +176,17 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         reductions = Reductions(FULLY);
         name = "FBDD";
     } else if (bddLower == "cfbdd") {
-        // setting for QBDD
+        // setting for CFBDD
         reductions = Reductions(FULLY);
         flags.setCompType(COMP);
         name = "CFBDD";
     } else if (bddLower == "sfbdd") {
-        // setting for QBDD
+        // setting for SFBDD
         reductions = Reductions(FULLY);
         flags.setSwapType(ONE);
         name = "SFBDD";
     } else if (bddLower == "csfbdd") {
-        // setting for QBDD
+        // setting for CSFBDD
         reductions = Reductions(FULLY);
         flags.setSwapType(ONE);
         flags.setCompType(COMP);
@@ -205,7 +205,7 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         mergeType = PUSH_UP;
         name = "ESRBDD";
     } else if (bddLower == "cesrbdd") {
-        // setting for ESRBDD
+        // setting for CESRBDD
         reductions = Reductions(USER_DEFINED);
         addReductionRule(RULE_X);
         addReductionRule(RULE_EL0);
@@ -236,6 +236,13 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         // setting for EV+FBDD
         reductions = Reductions(FULLY);
         name = "EVFBDD";
+        encodingType = EDGE_PLUS;
+        range = Range(RangeType::NNINTEGER,INT);
+    } else if (bddLower == "sevfbdd" || bddLower == "sev+fbdd") {
+        // setting for EV+FBDD
+        reductions = Reductions(FULLY);
+        flags.setSwapType(ONE);
+        name = "SEVFBDD";
         encodingType = EDGE_PLUS;
         range = Range(RangeType::NNINTEGER,INT);
     } else if (bddLower == "ev%fbdd" || bddLower == "evmodfbdd") {
