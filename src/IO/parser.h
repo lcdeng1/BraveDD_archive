@@ -34,6 +34,7 @@ class BRAVE_DD::FileReader {
     inline size_t readSize() {
         size_t x;
         fscanf(infile, "%zu", &x);
+        return x;
     }
     inline void unget(int c) { ungetc(c, infile); }
     inline char getFormat() { return format; }
@@ -107,7 +108,7 @@ class BRAVE_DD::ParserPla : public Parser {
     // get bits info
     inline unsigned getInBits() { return inbits; }
     inline unsigned getOutBits() { return outbits; }
-    inline unsigned long getNum() { return numf; }
+    inline size_t getNum() { return numf; }
 
     /*-------------------------------------------------------------*/
     private:
