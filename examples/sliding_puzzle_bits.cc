@@ -519,7 +519,7 @@ int main(int argc, const char** argv)
         FileReader FR(fileName.c_str());
         ParserPla parser(&FR);
         parser.readHeader();
-        int numFun = parser.getNum();
+        long numFun = parser.getNum();
         /* Initial forest */
         ForestSetting setting("fbdd", parser.getInBits());
         setting.setValType(INT);
