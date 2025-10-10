@@ -324,18 +324,29 @@ void parallelBFS(State initial, size_t num_threads) {
 
                 for (size_t i = start; i < end; ++i) {
                     State s = frontier[i];
-                    for (State ns : getNeighbors(s)) {
-                        // bool inserted = false;
-                        // {
-                            // std::lock_guard<std::mutex> lock(dist_mutex);
-                            if (distance.find(ns) == distance.end()) {
-                                local_distance[ns] = depth + 1;
-                                local_new.push_back(ns);
-                                // inserted = true;
-                            }
-                        // }
-                        // if (inserted) local_new.push_back(ns);
+                    State ns;
+                    for (int dirc=0; dirc<4; dirc++) {
+                        ns = getNeighbor(s, dirc);
+                        if ((ns != 0) && (distance.find(ns) == distance.end())) {
+                            // distance[ns] = depth + 1;
+                            local_distance[ns] = depth + 1;
+                            local_new.push_back(ns);
+                            // inserted = true;
+                        }
                     }
+                    // for (State ns : getNeighbors(s)) {
+                    //     // bool inserted = false;
+                    //     // {
+                    //         // std::lock_guard<std::mutex> lock(dist_mutex);
+                    //         if (distance.find(ns) == distance.end()) {
+                    //             // distance[ns] = depth + 1;
+                    //             local_distance[ns] = depth + 1;
+                    //             local_new.push_back(ns);
+                    //             // inserted = true;
+                    //         }
+                    //     // }
+                    //     // if (inserted) local_new.push_back(ns);
+                    // }
                 }
                 local_frontiers[t] = std::move(local_new);
                 local_distances[t] = std::move(local_distance);
