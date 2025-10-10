@@ -357,10 +357,13 @@ void parallelBFS(State initial, size_t num_threads) {
 
         // Merge local frontiers and distance into global next frontier and distance
         std::vector<State> next;
+        std::unordered_set<State> seen;
         for (auto& lf : local_frontiers) {
-            next.insert(next.end(),
-                        std::make_move_iterator(lf.begin()),
-                        std::make_move_iterator(lf.end()));
+            for (auto& s : lf) {
+                if (seen.insert(s).second) {
+                    next.push_back(std::move(s));
+                }
+            }
         }
         for (auto &ld : local_distances) {
             distance.insert(ld.begin(), ld.end());
