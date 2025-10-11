@@ -324,7 +324,8 @@ void parallelFrontier(State initial, size_t num_threads) {
         std::vector<std::thread> threads;
         // std::mutex dist_mutex;
 
-        std::vector<std::vector<std::pair<State, Bound>>> local_frontiers(num_threads);
+        // std::vector<std::vector<std::pair<State, Bound>>> local_frontiers(num_threads);
+        std::vector<std::unordered_map<State, Bound>> local_frontiers(num_threads);
         size_t chunk = (frontier.size() + num_threads - 1) / num_threads;
 
         for (size_t t = 0; t < num_threads; ++t) {
@@ -333,7 +334,8 @@ void parallelFrontier(State initial, size_t num_threads) {
             size_t end = std::min(start + chunk, frontier.size());
 
             threads.emplace_back([&, start, end, t]() {
-                std::vector<std::pair<State, Bound>> local_new;
+                // std::vector<std::pair<State, Bound>> local_new;
+                std::unordered_map<State, Bound> local_new;
 
                 for (size_t i = start; i < end; ++i) {
                     auto& s = frontier[i];
@@ -344,7 +346,8 @@ void parallelFrontier(State initial, size_t num_threads) {
                         nb = 0;
                         if (ns != 0) {
                             nb |= RIGHT_EXP;
-                            local_new.emplace_back(ns, nb);
+                            // local_new.emplace_back(ns, nb);
+                            local_new[ns] |= nb;
                         }
                     }
                     if (!(s.second & RIGHT_EXP)) {  // Right direction not explored
@@ -352,7 +355,8 @@ void parallelFrontier(State initial, size_t num_threads) {
                         nb = 0;
                         if (ns != 0) {
                             nb |= LEFT_EXP;
-                            local_new.emplace_back(ns, nb);
+                            // local_new.emplace_back(ns, nb);
+                            local_new[ns] |= nb;
                         }
                     }
                     if (!(s.second & DOWN_EXP)) {   // Down direction not explored
@@ -360,7 +364,8 @@ void parallelFrontier(State initial, size_t num_threads) {
                         nb = 0;
                         if (ns != 0) {
                             nb |= UP_EXP;
-                            local_new.emplace_back(ns, nb);
+                            // local_new.emplace_back(ns, nb);
+                            local_new[ns] |= nb;
                         }
                     }
                     if (!(s.second & UP_EXP)) {     // Up direction not explored
@@ -368,7 +373,8 @@ void parallelFrontier(State initial, size_t num_threads) {
                         nb = 0;
                         if (ns != 0) {
                             nb |= DOWN_EXP;
-                            local_new.emplace_back(ns, nb);
+                            // local_new.emplace_back(ns, nb);
+                            local_new[ns] |= nb;
                         }
                     }
                 }
