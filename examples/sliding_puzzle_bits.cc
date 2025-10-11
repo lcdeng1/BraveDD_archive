@@ -50,6 +50,7 @@ using namespace BRAVE_DD;
 
 using PuzzleState = std::vector<std::vector<uint16_t> >; // 2D representation of the puzzles
 using State = uint64_t;
+using Bound = uint8_t;
 
 // The size of the puzzle
 uint16_t N;         // row
@@ -61,11 +62,21 @@ uint64_t MASK;      // mask for bits
 uint64_t ROW_MASK;  // mask for M adjacent elements
 uint64_t UC_MASK;   // mask for M-1 adjacent elements
 
-// Map to store the states in bits and distance
-std::unordered_map<State, uint8_t> distance;
+// Mask for bounds
+uint8_t LEFT_EXP = 0x01 << 3;
+uint8_t RIGHT_EXP = 0x01 << 2;
+uint8_t DOWN_EXP = 0x01 << 1;
+uint8_t UP_EXP = 0x01;
+
+// counter for total explored
+size_t total = 0;
 
 // number of threads
 int numThreads = 1;
+
+// for file output
+std::string fileName;
+std::ofstream outFile;
 
 // flags
 bool isSearch = 0;
@@ -102,7 +113,7 @@ void printPuzzleState(const std::vector<std::vector<uint16_t> >& puzzle)
     std::cerr << std::endl;
 }
 /*
-Print a puzzle state in bits representation
+Print a puzzle state in bits representation, for debug
 */
 void printBits(const State puzzle)
 {
@@ -143,7 +154,7 @@ std::vector<std::vector<uint16_t> > encodeBits2Puzzle(State puzzle)
 /*
 Encode the puzzle state as a 64 bits
 */
-uint64_t encodePuzzle2Bits(const std::vector<std::vector<uint16_t> >& puzzle)
+uint64_t encodePuzzle2Bits(const PuzzleState& puzzle)
 {
     uint64_t ans = 0;
     uint16_t row, col;
@@ -177,11 +188,11 @@ State getNeighbor(const State initial, const int direction)
     uint16_t eptPos = initial & MASK;
     // left
     if ((direction == 0) && (eptPos%M != 0) && (M != 1)) {
-        neighbor = (initial-1);
+        return (initial-1);
     }
     // right
     if ((direction == 1) && (eptPos%M != (M-1)) && (M != 1)) {
-        neighbor = (initial+1);
+        return (initial+1);
     }
     // down
     if ((direction == 2) && (eptPos < (N-1)*M)) {
@@ -192,7 +203,7 @@ State getNeighbor(const State initial, const int direction)
         start |= (unchange >> BITS);
         start |= (change << ((M-1)*BITS));
         start += M;
-        neighbor = start;
+        return start;
     }
     // up
     if ((direction == 3) && (eptPos >= M)) {
@@ -203,7 +214,7 @@ State getNeighbor(const State initial, const int direction)
         start |= (unchange << BITS);
         start |= (change >> ((M-1)*BITS));
         start -= M;
-        neighbor = start;
+        return start;
     }
     return neighbor;
 }
@@ -264,57 +275,56 @@ uint64_t expectedSize(unsigned n) {
     }
     return result;
 }
-
-void BFS(State initial) {
-    distance.reserve(SIZE);
-    distance[initial] = 0;
-
-    std::vector<State> frontier = {initial};
-    uint8_t depth = 0;
-
-    while (!frontier.empty()) {
-        std::cerr << "Depth " << (int)depth << ", frontier = " << frontier.size() << "\n";
-        std::vector<State> local_new;
-        for (auto &s : frontier) {
-            for (auto &ns : getNeighbors(s)) {
-                bool inserted = false;
-                if (distance.find(ns) == distance.end()) {
-                    distance[ns] = depth + 1;
-                    inserted = true;
-                }
-                if (inserted) local_new.push_back(ns);
-            }
-        }
-
-        // Merge local frontiers into global next frontier
-        std::vector<State> next;
-        next.insert(next.end(),
-                    std::make_move_iterator(local_new.begin()),
-                    std::make_move_iterator(local_new.end()));
-
-        frontier.swap(next);
-        ++depth;
+/*
+Output distance table as pla format and compress as xz
+*/
+void outputPlaHeader(std::ostream& out)
+{
+    out << ".type f\n";
+    out << ".i " << N*M*BITS << "\n";
+    out << ".o " << 8 << "\n";     // 8 bits for distance is enough
+    out << ".p " << SIZE << "\n";
+}
+/*
+Output one state as pla format
+*/
+void outputPlaState(std::ostream& out, State& s, uint8_t& d)
+{
+    for (int i=MSB; i>=0; i--) {
+        out << (bool)(s & (0x01ULL<<i));
     }
-    std::cerr << "Total states discovered: " << distance.size() << "\n";
+    out << " ";
+    // distance in bits
+    for (int i=7; i>=0; i--) {
+        if (d & (0x01<<i)) {
+            out << "1";
+        } else {
+            out << "~";
+        }
+    }
+    out << "\n";
 }
 
 /*
-Thread-safe parallel BFS
+Thread-safe parallel frontier search
 */
-void parallelBFS(State initial, size_t num_threads) {
-    distance.reserve(SIZE);
-    distance[initial] = 0;
-
-    std::vector<State> frontier = {initial};
+void parallelFrontier(State initial, size_t num_threads) {
+    std::vector<std::pair<State, Bound>> frontier = {{initial, 0}};
     uint8_t depth = 0;
 
     while (!frontier.empty()) {
         std::cerr << "Depth " << (int)depth << ", frontier = " << frontier.size() << "\n";
+        total += frontier.size();
+        // output the frontier if pipeline allowed
+        if (isOutputTable) {
+            for (auto& d : frontier) {
+                outputPlaState((isPipe) ? std::cout : outFile, d.first, depth);
+            }
+        }
         std::vector<std::thread> threads;
-        std::mutex dist_mutex;
+        // std::mutex dist_mutex;
 
-        std::vector<std::unordered_map<State, uint8_t>> local_distances(num_threads);
-        std::vector<std::vector<State>> local_frontiers(num_threads);
+        std::vector<std::vector<std::pair<State, Bound>>> local_frontiers(num_threads);
         size_t chunk = (frontier.size() + num_threads - 1) / num_threads;
 
         for (size_t t = 0; t < num_threads; ++t) {
@@ -323,92 +333,89 @@ void parallelBFS(State initial, size_t num_threads) {
             size_t end = std::min(start + chunk, frontier.size());
 
             threads.emplace_back([&, start, end, t]() {
-                std::vector<State> local_new;
-                // local_new.reserve(chunk * 4);  // each node → 4 children
-                std::unordered_map<State, uint8_t> local_distance;
+                std::vector<std::pair<State, Bound>> local_new;
 
                 for (size_t i = start; i < end; ++i) {
-                    State s = frontier[i];
+                    auto& s = frontier[i];
                     State ns;
-                    for (int dirc=0; dirc<4; dirc++) {
-                        ns = getNeighbor(s, dirc);
-                        if ((ns != 0) && (distance.find(ns) == distance.end())) {
-                            // distance[ns] = depth + 1;
-                            local_distance[ns] = depth + 1;
-                            local_new.push_back(ns);
-                            // inserted = true;
+                    Bound nb;
+                    if (!(s.second & LEFT_EXP)) {   // Left direction not explored
+                        ns = getNeighbor(s.first, 0);
+                        nb = 0;
+                        if (ns != 0) {
+                            nb |= RIGHT_EXP;
+                            local_new.emplace_back(ns, nb);
                         }
                     }
-                    // for (State ns : getNeighbors(s)) {
-                    //     // bool inserted = false;
-                    //     // {
-                    //         // std::lock_guard<std::mutex> lock(dist_mutex);
-                    //         if (distance.find(ns) == distance.end()) {
-                    //             // distance[ns] = depth + 1;
-                    //             local_distance[ns] = depth + 1;
-                    //             local_new.push_back(ns);
-                    //             // inserted = true;
-                    //         }
-                    //     // }
-                    //     // if (inserted) local_new.push_back(ns);
-                    // }
+                    if (!(s.second & RIGHT_EXP)) {  // Right direction not explored
+                        ns = getNeighbor(s.first, 1);
+                        nb = 0;
+                        if (ns != 0) {
+                            nb |= LEFT_EXP;
+                            local_new.emplace_back(ns, nb);
+                        }
+                    }
+                    if (!(s.second & DOWN_EXP)) {   // Down direction not explored
+                        ns = getNeighbor(s.first, 2);
+                        nb = 0;
+                        if (ns != 0) {
+                            nb |= UP_EXP;
+                            local_new.emplace_back(ns, nb);
+                        }
+                    }
+                    if (!(s.second & UP_EXP)) {     // Up direction not explored
+                        ns = getNeighbor(s.first, 3);
+                        nb = 0;
+                        if (ns != 0) {
+                            nb |= DOWN_EXP;
+                            local_new.emplace_back(ns, nb);
+                        }
+                    }
                 }
                 local_frontiers[t] = std::move(local_new);
-                local_distances[t] = std::move(local_distance);
             });
         }
 
         for (auto& th : threads) th.join();
 
-        // Merge local frontiers and distance into global next frontier and distance
-        std::vector<State> next;
-        std::unordered_set<State> seen;
+        // Merge local frontiers and de-duplicate
+        std::unordered_map<State, Bound> collect;
         for (auto& lf : local_frontiers) {
             for (auto& s : lf) {
-                if (seen.insert(s).second) {
-                    next.push_back(std::move(s));
-                }
+                collect[s.first] |= s.second;
             }
         }
-        for (auto &ld : local_distances) {
-            distance.insert(ld.begin(), ld.end());
+        // update frontier
+        std::vector<std::pair<uint64_t, Bound>> next;
+        for (auto& s : collect) {
+            next.emplace_back(s.first , s.second);
         }
-
         frontier.swap(next);
         ++depth;
-    }
+    } // end while
 
-    std::cerr << "Total states discovered: " << distance.size() << "\n";
-}
-
-/*
-Output distance table as pla format and compress as xz
-*/
-void outputPla(std::ostream& out)
-{
-    out << ".type f\n";
-    out << ".i " << N*M*BITS << "\n";
-    out << ".o " << 8 << "\n";     // 8 bits for distance is enough
-    out << ".p " << distance.size() << "\n";
-    for (auto& d : distance) {
-        // std::cerr << "distance: " << d.second << std::endl;
-        // printPuzzleState(encodeBits2Puzzle(d.first));
-        // state in bits
-        for (int i=MSB; i>=0; i--) {
-            out << (bool)(d.first & (0x01ULL<<i));
-        }
-        out << " ";
-        // distance in bits
-        for (int i=7; i>=0; i--) {
-            if (d.second & (0x01<<i)) {
-                out << "1";
-            } else {
-                out << "~";
+    /* wrap up the output */
+    if (isOutputTable) {
+        if (isPipe) {
+            std::cout << ".end";
+        } else {
+            outFile << ".end";
+            outFile.close();
+            std::string cmd = "xz ";
+            cmd += fileName;
+#ifdef _WIN32
+            int result = system(("cmd /C " + cmd).c_str());
+#else
+            int result = system(("sh -c \"" + cmd + "\"").c_str());
+#endif
+            if (result) {
+                std::cerr << "[BRAVE_DD] Error!\t Failed to run xz and build file: "<< fileName<< ".xz" << std::endl;
+                return;
             }
         }
-        out << "\n";
+        std::cerr << "Done!" << std::endl;
     }
-    out << ".end";
+    std::cerr << "Total states discovered: " << total << "\n";
 }
 
 bool processArgs(int argc, const char** argv)
@@ -516,52 +523,42 @@ int main(int argc, const char** argv)
     ROW_MASK = ((0x01ULL<<(M*BITS)) - 1);
     UC_MASK = (0x01ULL<<((M-1)*BITS)) - 1;
     SIZE = expectedSize(N*M);
-    // encode in bits
-    State initial = encodePuzzle2Bits(conf);
-    // search and output as a pla file
-    if (isSearch) parallelBFS(initial, numThreads);
-    // BFS(initial);
+    // output headers
     if (isOutputTable) {
         if (isPipe) {
-            outputPla(std::cout);
+            outputPlaHeader(std::cout);
         } else {
-            std::string fileName = "puzzle";
+            // set the output file
+            fileName = "puzzle";
             fileName += "_";
             fileName += std::to_string(N);
             fileName += "_";
             fileName += std::to_string(M);
             fileName += ".pla";
-            std::ofstream file(fileName, std::ios::app);
-            if (!file) {
+            outFile = std::ofstream(fileName, std::ios::app);
+            if (!outFile) {
                 std::cerr << "Failed to open file " << fileName << std::endl;
                 return 1;
             }
-            outputPla(file);
-            file.close();
-            std::string cmd = "xz ";
-            cmd += fileName;
-#ifdef _WIN32
-    int result = system(("cmd /C " + cmd).c_str());
-#else
-    int result = system(("sh -c \"" + cmd + "\"").c_str());
-#endif
-            if (result) {
-                std::cerr << "[BRAVE_DD] Error!\t Failed to run xz and build file: "<< fileName<< ".xz" << std::endl;
-                return 1;
-            }
-            std::cerr << "Done!" << std::endl;
+            outputPlaHeader(outFile);
         }
     }
+    // encode the initial state in bits
+    State initial = encodePuzzle2Bits(conf);
+    // search and output as a pla file
+    // if (isSearch) parallelBFS_Rex(initial, numThreads);
+    if (isSearch) parallelFrontier(initial, numThreads);
+    // BFS(initial);
 
     if (isBuildBDD) {
         /* Parser to read */
-        std::string fileName = "puzzle";
-        fileName += "_";
-        fileName += std::to_string(N);
-        fileName += "_";
-        fileName += std::to_string(M);
-        fileName += ".pla.xz";
-        FileReader FR(fileName.c_str());
+        std::string tableName = "puzzle";
+        tableName += "_";
+        tableName += std::to_string(N);
+        tableName += "_";
+        tableName += std::to_string(M);
+        tableName += ".pla.xz";
+        FileReader FR(tableName.c_str());
         ParserPla parser(&FR);
         parser.readHeader();
         long numFun = parser.getNum();
