@@ -322,23 +322,27 @@ void parallelFrontier(State initial, size_t num_threads) {
             }
         }
         std::vector<std::thread> threads;
-        // std::mutex dist_mutex;
 
-        // std::vector<std::vector<std::pair<State, Bound>>> local_frontiers(num_threads);
-        std::vector<std::unordered_map<State, Bound>> local_frontiers(num_threads);
+        std::vector<std::vector<std::pair<State, Bound>>> local_frontiers(num_threads);
         size_t chunk = (frontier.size() + num_threads - 1) / num_threads;
-
+        // divide frontier into chunks;
+        std::vector<std::vector<std::pair<State, Bound>>> chunks(num_threads);
         for (size_t t = 0; t < num_threads; ++t) {
             size_t start = t * chunk;
             if (start >= frontier.size()) break;
             size_t end = std::min(start + chunk, frontier.size());
+            for (size_t i=start; i<end; i++) {
+                chunks[t].push_back(frontier[i]);
+            }
+        }
+        // release the memory of frontier
+        frontier = std::vector<std::pair<State, Bound>>();
 
-            threads.emplace_back([&, start, end, t]() {
+        for (size_t t = 0; t < num_threads; ++t) {
+            threads.emplace_back([&, t]() {
                 // std::vector<std::pair<State, Bound>> local_new;
                 std::unordered_map<State, Bound> local_new;
-
-                for (size_t i = start; i < end; ++i) {
-                    auto& s = frontier[i];
+                for (auto& s : chunks[t]) {
                     State ns;
                     Bound nb;
                     if (!(s.second & LEFT_EXP)) {   // Left direction not explored
@@ -378,10 +382,15 @@ void parallelFrontier(State initial, size_t num_threads) {
                         }
                     }
                 }
-                local_frontiers[t] = std::move(local_new);
+                // release this chunk
+                chunks[t] = std::vector<std::pair<State, Bound>>();
+                // move local new explored state to global
+                for (auto& s : local_new) {
+                    local_frontiers[t].emplace_back(s.first, s.second);
+                }
             });
         }
-
+        // launch threads
         for (auto& th : threads) th.join();
 
         // Merge local frontiers and de-duplicate
@@ -390,13 +399,12 @@ void parallelFrontier(State initial, size_t num_threads) {
             for (auto& s : lf) {
                 collect[s.first] |= s.second;
             }
+            lf = std::vector<std::pair<State, Bound>>();
         }
         // update frontier
-        std::vector<std::pair<uint64_t, Bound>> next;
         for (auto& s : collect) {
-            next.emplace_back(s.first , s.second);
+            frontier.emplace_back(s.first , s.second);
         }
-        frontier.swap(next);
         ++depth;
     } // end while
 
@@ -490,7 +498,7 @@ int usage(const char* who)
     std::cerr << "\t            N: the number of board rows" << std::endl;
     std::cerr << "\t            M: the number of board columns" << std::endl;
     std::cerr << "\t[option]  -nt: followed with a number of threads to BFS distance (default: 1)" << std::endl;
-    std::cerr << "\t[option]  -s: switch to turn ON parallel BFS" << std::endl;
+    std::cerr << "\t[option]  -s: switch to turn ON parallel Frontier search" << std::endl;
     std::cerr << "\t[option]  -ot: switch to turn ON the output of result distance table" << std::endl;
     std::cerr << "\t[option]  -p: switch to turn ON pipeline to compress" << std::endl;
     std::cerr << "\t[option]  -bb: switch to turn ON the BDD building" << std::endl;
@@ -591,7 +599,7 @@ int main(int argc, const char** argv)
         std::cerr << "Max outcome: " << maxOC << std::endl;
 
         /* Build BDD */
-        EGT.setDefaultValue(Value(SpecialValue::POS_INF));  // set default value
+        EGT.setDefaultValue((isMultiRoot) ? Value(0) : Value(SpecialValue::POS_INF));  // set default value
         // EGT.setDefaultValue(Value(0));
         std::cerr<<"build function\n";
         Func ans = EGT.buildFunc(forest);
