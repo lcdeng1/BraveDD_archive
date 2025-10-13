@@ -977,6 +977,15 @@ void UnaryList::searchSweepCache(Forest* forest)
                 }
             } else if (curr->opType == UnaryOperationType::UOP_CARDINALITY) {
                 curr->caches[0].sweep(forest, 1);
+            } else if (curr->opType == UnaryOperationType::UOP_CONCRETIZE_RST) {
+                curr->caches[0].sweep(forest, 0);
+                curr->caches[0].sweep(forest, 1);
+            } else if (curr->opType == UnaryOperationType::UOP_CONCRETIZE_OSM) {
+                curr->caches[0].sweep(forest, 0);
+                curr->caches[0].sweep(forest, 1);
+            } else if (curr->opType == UnaryOperationType::UOP_CONCRETIZE_TSM) {
+                curr->caches[0].sweep(forest, 0);
+                curr->caches[0].sweep(forest, 1);
             } else {
                 // other operations, TBD
                 std::cout << "other operation not implemented" << std::endl;
