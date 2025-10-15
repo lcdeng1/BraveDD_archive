@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 
+
 enum VarType
 {
     v_AlphBelongsToq_i,
@@ -93,7 +94,7 @@ int maxLvl = 4;
 int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
 {
     // this counter increaments everytime a clause is added to our boolean function
-    int numClauses = numverticis;
+    int numClauses = 0;
     numStatesG = numStates;
     int boolVariableToIntParms1[4];
     int boolVariableToIntParms2[4];
@@ -112,6 +113,8 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     curLevelVerticies.push_back(uniqueVertexName);
     seen.insert(uniqueVertexName);
 
+
+    //Rename verticies
     std::vector<uint64_t> allVerticies;
     allVerticies.push_back(uniqueVertexName);
     int verticiesOnLvl = curLevelVerticies.size();
@@ -149,8 +152,13 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     // build sat problem
     // root(v_a) belongs to q0
     function += "1 0\n";
-    curVertex++;
     numClauses++;
+    for (int i = 1; i < numStates; i++){
+        function += "-" + std::to_string(i+1) + " 0\n";
+        numClauses++;
+    }
+    printf ("%d\n",numClauses);
+    curVertex++;
     // each of the remaning vertecies can be in at least 1 of each state
     for (curVertex; curVertex < numverticis; curVertex++)
     {
@@ -162,6 +170,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
             function += std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1)) + " ";
         }
         function += "0\n" + tempFunction;
+        numClauses++;
     }
     std::cout << function << std::endl;
 
@@ -210,6 +219,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
                     boolVariableToIntParms1[0] = m;
                     function += "-" + std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1)) + " ";
                     function += "0\n";
+                    numClauses++;
                 }
             }
         }
@@ -230,11 +240,13 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
                 function += std::to_string(boolVariableToInt(deltaq_iXIsq_j, boolVariableToIntParms1)) + " ";
             }
             function += "0\n";
+            numClauses++;
         }
 
         std::cout << function << std::endl;
     }
 
+    //each delta must be at most 1 
     for (int x = 0; x < numAssignments; x++)
     {
         boolVariableToIntParms1[2] = x;
@@ -249,6 +261,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
                     boolVariableToIntParms1[0] = jSub;
                     function += "-" + std::to_string(boolVariableToInt(deltaq_iXIsq_j, boolVariableToIntParms1)) + " ";
                     function += "0\n";
+                    numClauses++;
                 }
             }
             std::cout << function << std::endl;
@@ -260,6 +273,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
         std::cout << "Vertex " << name << " -> ID " << id << "\n";
         std::cout << "TestID Retrival " << name << " -> ID " << renamed.at(name) << "\n";
     }*/
+
 
     //make sure the DFA agrees with BDD
     //set up base
@@ -308,6 +322,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
                         boolVariableToIntParms1[0] = renamed.at(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x));
                         boolVariableToIntParms1[1] = j;
                         function += std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1)) + " 0\n";
+                        numClauses++;
                     }
                     std::cout << function << std::endl; 
                 }
@@ -315,7 +330,10 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
         }
         verticiesOnLvl = curLevelVerticies.size();
     }
-    std::cout << function;
+    std::cout << function << std::endl;
+    printf ("%d\n",numClauses);
+    function = "p cnf " + std::to_string(numverticis*numStates+numStates*numStates*numAssignments) + " " + std::to_string(numClauses) + "\n" + function;
+   
     // add p cnf <num variables> <num clauses> to tope of file
     std::ofstream outFile("satFunctionForQRBDDtoDFA.txt");
     if (!outFile)
@@ -323,6 +341,8 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
         std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFA.txt" << std::endl; // O(1)
         return;
     }
+
+    
 
     outFile << function; // O(n) — writes each character of the string
     outFile.close();     // O(1) — flushes and closes the file
@@ -336,6 +356,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
 
     std::string line;
     // Loop over each line — O(m), where m is the number of lines
+    std::getline(inFile, line);
     while (std::getline(inFile, line))
     {
         std::istringstream lineStream(line); // O(1)
@@ -356,6 +377,55 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     }
 
     inFile.close(); // O(1)
+
+
+    std::string command = "/home/dara/Git/kissat/build/kissat ";
+    std::string outputFile = "kissat_output.txt";
+    command += "/home/dara/Git/brave_dd/build/examples/satFunctionForQRBDDtoDFA.txt > " + outputFile;
+    std::cout << "Executing: " << command << std::endl;
+
+    int result = std::system(command.c_str());
+
+    std::ifstream fileKissat("/home/dara/Git/brave_dd/build/examples/kissat_output.txt");
+
+    // Check if the file was successfully opened
+    if (!fileKissat.is_open()) {
+        std::cerr << "Error: Could not open file '/home/dara/Git/brave_dd/build/examples/kissat_output.txt'\n";
+        return;
+    }
+
+    bool foundSatisfiable = false;
+    bool stop = false;
+
+    // Read the file line by line
+    while (std::getline(fileKissat, line)) {
+        if (stop) break;
+        if (!foundSatisfiable) {
+            // Look for the line containing "SATISFIABLE"
+            if (!line.empty() && line[0] == 's') {
+                foundSatisfiable = true;
+            }
+        } else {
+            // Process lines after "SATISFIABLE"
+            std::istringstream iss(line);
+            std::string num;
+            while (iss >> num) {
+                if(num == "v"){
+                }
+                else if (std::stoi(num) == 0) {
+                    stop = true;
+                    break;
+                }
+                else if (std::stoi(num) > 0) {
+                    std::cout << num << std::endl;
+                }
+            }
+        }
+    }
+
+    std::cout << std::endl;
+
+    fileKissat.close();
 
     return 0;
 }
@@ -404,23 +474,8 @@ int boolVariableToInt(int varType, int *parms)
                1;
     }
     // format of ((v_alpha belongs to q_i) & (delta (q_j,x) = q_i), {alpha, i, x, j})
-    else if (varType == belongsAndDelta)
-    {
-        // for each numberOfSymbols in the alphabet increments of x, increment j
-        return numInAlphabet * numverticis * numStatesG * parms[3] +
-               // there will be, the number of verticies befor incrementing x, so for each numberOfVerticie increments in i, incrment x.
-               numverticis * numStatesG * parms[2] +
-               // there are numStatesG options for i to change befor alpha changes. so for each increment of alpha, increase by numStatesG
-               numStatesG * parms[0] +
-               // i will change every time
-               parms[1] +
-               // move to the location of the last variable index before belongsAndDelta
-               numberOfv_AlphBelongsToq_i + numberOfv_AlphBelongsToq_i +
-               // ofset up one so that we don't double dip an index since we are 1 indexing not 0 indexing
-               1;
-    }
 
-    return -1;
+    return -2;
 }
 
 // from number to variable
@@ -448,23 +503,6 @@ std::string intToBoolVariable(int varIndex)
         i = std::to_string(varIndex % numStatesG - 1);
         return isNeg + "\\v_" + alpha + "\\relSym\\q_" + i;
     }
-    // delta (state i, assingment x) = state j
-    // each of the |Q| states has x edges, each edge can go to |Q| states, so number of variables are |Q|(number of states edges from)*x*|Q|(number of states edges too)
-    // goes from (n * |Q| + 1) -> (n * |Q| + |Q|*x*|Q|)
-    // format of (delta (q_i,x) = q_j) is (deltaq_iXIsq_j, {i, x, j})
-    /*else if(varIndex == deltaq_iXIsq_j){
-        // for each number of symbols in the alphavet times of incrementing x, increment j
-        return numInAlphabet * numverticis * parms[1] +
-        // for each number of vertex times of incrementing i, increment x
-        numverticis * parms[1] +
-        // increment i each time
-        parms[0] +
-        // move to the location of the last variable index before deltaq_iXIsq_j
-        numberOfv_AlphBelongsToq_i +
-        // ofset up one so that we don't double dip an index since we are 1 indexing not 0 indexing
-        1;
-    }*/
-    // format of ((v_alpha belongs to q_i) & (delta (q_j,x) = q_i), {alpha, i, x, j})
     else
     {
         // for each numberOfSymbols in the alphabet increments of x, increment j
@@ -486,6 +524,9 @@ std::string intToBoolVariable(int varIndex)
 
     return "NI"; // not implemented
 }
+
+
+
 void printCurLevelVerticies(std::vector<uint64_t> curLevelVerticies)
 {
     std::vector<uint64_t> temp = curLevelVerticies;
