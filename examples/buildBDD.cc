@@ -29,6 +29,7 @@ std::string boolVariableToInt(int varIndex);
 void printCurLevelVerticies(std::vector<uint64_t> curLevelVerticies);
 std::string intToAlphaString(int number);
 std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t> &vertexNames);
+std::string variableName(int varType, int *parms);
 
 using namespace BRAVE_DD;
 
@@ -104,6 +105,11 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     std::string tempFunction = "";
     std::string childFunction;
 
+    std::string tempS;
+    std::vector<std::string> registry;
+    std::unordered_set<std::string> seenVariable;
+    int numVaraiables = 0;
+
     std::vector<uint64_t> curLevelVerticies; // has all of the verticies on current level
     std::unordered_set<uint64_t> seen;       // says weither a vertex has been seen yet (I want controlled order so I can't just have it here)
     BRAVE_DD::NodeHandle parentVertexHandle = qrbdd.getEdge().getNodeHandle();
@@ -153,9 +159,25 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     // root(v_a) belongs to q0
     function += "1 0\n";
     numClauses++;
+
+    boolVariableToIntParms1[0] = 0;
+    boolVariableToIntParms1[1] = 0;
+    tempS = variableName(v_AlphBelongsToq_i, boolVariableToIntParms1);
+    registry.push_back(tempS);
+    numVaraiables ++;
+    seenVariable.insert(tempS);   
+
+
+
     for (int i = 1; i < numStates; i++){
         function += "-" + std::to_string(i+1) + " 0\n";
         numClauses++;
+        boolVariableToIntParms1[1] = i;
+        tempS = variableName(v_AlphBelongsToq_i, boolVariableToIntParms1);
+        registry.push_back(tempS);
+        numVaraiables ++;
+        seenVariable.insert(tempS);   
+        std::cout << function << std::endl;
     }
     printf ("%d\n",numClauses);
     curVertex++;
@@ -168,6 +190,11 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
         {
             boolVariableToIntParms1[1] = i;
             function += std::to_string(boolVariableToInt(v_AlphBelongsToq_i, boolVariableToIntParms1)) + " ";
+            tempS = variableName(v_AlphBelongsToq_i, boolVariableToIntParms1);
+            registry.push_back(tempS);
+            numVaraiables ++;
+            seenVariable.insert(tempS);  
+
         }
         function += "0\n" + tempFunction;
         numClauses++;
@@ -238,6 +265,10 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
             {
                 boolVariableToIntParms1[0] = i;
                 function += std::to_string(boolVariableToInt(deltaq_iXIsq_j, boolVariableToIntParms1)) + " ";
+                tempS = variableName(deltaq_iXIsq_j, boolVariableToIntParms1);
+                registry.push_back(tempS);
+                numVaraiables ++;
+                seenVariable.insert(tempS); 
             }
             function += "0\n";
             numClauses++;
@@ -418,6 +449,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
                 }
                 else if (std::stoi(num) > 0) {
                     std::cout << num << std::endl;
+                    std::cout << registry.at(std::stoi(num)) << std::endl;
                 }
             }
         }
@@ -585,6 +617,17 @@ std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t> &ve
     }
 
     return nameToId;
+}
+
+std::string variableName(int varType, int *parms){
+    switch (varType){
+        case v_AlphBelongsToq_i:
+                return "v_"+ intToAlphaString(parms[0])+ " \\relSym\\q_" + std::to_string(parms[1]);
+            break;
+        case deltaq_iXIsq_j:
+                return "\\delta (q_" + std::to_string(parms[0]) + " ," + std::to_string(parms[2]) + ") = q_" + std::to_string(parms[1]);
+            break;
+    }
 }
 
 /*int main() {
