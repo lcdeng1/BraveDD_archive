@@ -3,11 +3,20 @@
 
 using namespace BRAVE_DD;
 
-int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments);
-std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t> &vertexNames);
-
-
 #include <iostream>
+
+enum VarType
+{
+    v_AlphBelongsToq_i,
+    deltaq_iXIsq_j,
+    belongsAndDelta // and of the previous two
+};
+
+enum alphabet
+{
+    bot,
+    top
+};
 
 /**
  * @brief Represents a variable with an index and a boolean flag.
@@ -15,7 +24,8 @@ std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t> &ve
  * This class maintains a static maximum index shared across all instances,
  * and each instance has its own index and boolean flag.
  */
-class variable {
+class variable
+{
 private:
     /**
      * @brief Static member to track the maximum index assigned.
@@ -34,36 +44,82 @@ private:
      */
     bool isTrue;
 
-    static std::vector<variable*> registry;
+    static std::vector<variable *> registry;
+
+
 
 public:
     /**
      * @brief Default constructor for the Variable class.
      *
      */
-    variable() {
+        variable()
+    {
         myIndex = 0;
     }
-    void activate(){
-        if (myIndex > 0) return;
+    /**
+     * @brief flag associated with the variable type.
+     * v_AlphBelongsToq_i = 0
+     * deltaq_iXIsq_j = 1
+     */
+    int varTypeG;
+
+    int alpha;
+
+    int i;
+
+    int j;
+
+    int x;
+
+
+    variable(int varType, int alphaT, int iT)
+    {
+        varTypeG = varType;
+        alpha = alphaT;
+        i = iT;
+        myIndex = 0;
+    }
+
+    variable(int varType, int iT, int jT, int xT)
+    {
+        varTypeG = varType;
+        i = iT;
+        j = jT;
+        x = xT;
+        myIndex = 0;
+    }
+    void activate()
+    {
+        if (myIndex > 0)
+            return;
         myIndex = maxIndex++;
         registry.push_back(this);
     }
-    static void init(){
+    static void init()
+    {
         maxIndex = 1;
         registry.push_back(nullptr);
     }
-    inline static variable* getvariableIndex(int i){
+    inline static variable *getvariableIndex(int i)
+    {
         return registry.at(i);
     }
-    int getMyIndex(){
+    int getMyIndex()
+    {
         return myIndex;
     }
-
+    int getVarType(){
+        return varTypeG;
+    }
 };
 
+int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments);
+std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t> &vertexNames);
+std::string variableName(variable var);
+
 int variable::maxIndex;
-std::vector<variable*> variable::registry;
+std::vector<variable *> variable::registry;
 
 int main()
 {
@@ -112,7 +168,6 @@ int main()
     return 0;
 }
 
-
 int numverticis = 12;
 int numInAlphabet = 2;
 int numStatesG;
@@ -129,13 +184,13 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
 {
     numStatesG = numStates;
 
-    std::unordered_set<uint64_t> seen;       // says weither a vertex has been seen yet (I want controlled order so I can't just have it here)
+    std::unordered_set<uint64_t> seen; // says weither a vertex has been seen yet (I want controlled order so I can't just have it here)
     BRAVE_DD::NodeHandle parentVertexHandle = qrbdd.getEdge().getNodeHandle();
     uint64_t uniqueVertexName = (static_cast<uint64_t>(0x4) << 48) | parentVertexHandle;
     std::vector<uint64_t> curLevelVerticies; // has all of the verticies on current level
     BRAVE_DD::NodeHandle curVertexHandle;
 
-    //Rename verticies
+    // Rename verticies
     std::vector<uint64_t> allVerticies;
     allVerticies.push_back(uniqueVertexName);
     int verticiesOnLvl = curLevelVerticies.size();
@@ -168,36 +223,42 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
 
     auto renamed = renameVertices(allVerticies);
 
-    //initialize variable
+    // initialize variable
     variable::init();
-    //instanitiate all possible variables
-    //start with belongs to
+    // instanitiate all possible variables
+    // start with belongs to
     variable belongsTo[numverticis][numStates];
-    for (int alpha = 0; alpha < numverticis; alpha ++){
-        for (int i = 0; i < numStates; i++){
-            belongsTo[alpha][i] = variable();
+    for (int alpha = 0; alpha < numverticis; alpha++)
+    {
+        for (int i = 0; i < numStates; i++)
+        {
+            belongsTo[alpha][i] = variable(v_AlphBelongsToq_i,alpha,i);
+            // belongsTo[alpha][i].activate();
         }
     }
-    //then do delta function
-    variable delta[numAssignments][numStates][numStates];
-    for(int x = 0; x < numAssignments; x++){
-        for (int i = 0; i < numStates; i ++){
-            for (int j = 0; j < numStates; j ++){
-                delta[x][i][j] = variable();
+    // then do delta function
+    variable deltaFun[numStates][numStates][numAssignments];
+    for (int x = 0; x < numAssignments; x++)
+    {
+        for (int i = 0; i < numStates; i++)
+        {
+            for (int j = 0; j < numStates; j++)
+            {
+                deltaFun[i][j][x] = variable(deltaq_iXIsq_j,i,j,x);
+                std::cout << variableName(deltaFun[i][j][x]) << std::endl;
+                // delta[i][j][x].activate();
             }
         }
     }
-
 
     std::string function;
     int curVertex = 0;
     int numClauses = 0;
 
-
     // build sat problem
     // root(v_a) belongs to q0
     belongsTo[0][0].activate();
-    std::cout << belongsTo[0][0].getMyIndex() << std::endl;
+    // std::cout << belongsTo[0][0].getMyIndex() << std::endl;
     function += std::to_string(belongsTo[0][0].getMyIndex()) + " 0\n";
     numClauses++;
     curVertex++;
@@ -208,21 +269,132 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
         for (int i = 0; i < numStates; i++)
         {
             belongsTo[curVertex][i].activate();
-            std::cout << belongsTo[curVertex][i].getMyIndex() << std::endl;
+            // std::cout << belongsTo[curVertex][i].getMyIndex() << std::endl;
             function += std::to_string(belongsTo[curVertex][i].getMyIndex()) + " ";
         }
         function += "0\n";
         numClauses++;
     }
-    std::cout << function << std::endl;
+    // std::cout << function << std::endl;
 
+    // no two states on the same levl can belong to the same state
 
-    
+    parentVertexHandle = qrbdd.getEdge().getNodeHandle();
+    seen.clear();
+    curLevelVerticies.clear();
+    uniqueVertexName = (static_cast<uint64_t>(0x4) << 48) | parentVertexHandle;
+    std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
+    curLevelVerticies.push_back(uniqueVertexName);
+    seen.insert(uniqueVertexName);
+    verticiesOnLvl = curLevelVerticies.size();
+    for (int lvl = maxLvl - 1; lvl >= 0; lvl--)
+    {
+        for (verticiesOnLvl; verticiesOnLvl > 0; verticiesOnLvl--)
+        {
+            parentVertexHandle = curLevelVerticies.front();
+            for (int x = 0; x < numAssignments; x++)
+            {
+                // get handle of the vertecy
+                curVertexHandle = qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x);
+                // create a unique name from handle and level
+                uniqueVertexName = static_cast<uint64_t>(lvl) << 48 | curVertexHandle;
+                if (seen.insert(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x)).second)
+                {
+                    // add to the stack
+                    curLevelVerticies.push_back(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x));
+                }
+            }
+            curLevelVerticies.erase(curLevelVerticies.begin());
+        }
+        verticiesOnLvl = curLevelVerticies.size();
+        for (int i = 0; i < numStates; i++)
+        {
+            // start the start of the line
+            for (int alpha = 0 + seen.size() - verticiesOnLvl; alpha < seen.size(); alpha++)
+            {
+                for (int beta = alpha + 1; beta < seen.size(); beta++)
+                {
+                    belongsTo[alpha][i].activate();
+                    function += "-" + std::to_string(belongsTo[alpha][i].getMyIndex()) + " ";
+                    belongsTo[beta][i].activate();
+                    function += "-" + std::to_string(belongsTo[beta][i].getMyIndex()) + " ";
+                    function += "0\n";
+                    numClauses++;
+                }
+            }
+        }
+        // std::cout << function << std::endl;
+    }
+
+    // each delta must map to at least 1.
+    // ourter is based on variable assignments
+    for (int x = 0; x < numAssignments; x++)
+    {
+        for (int j = 0; j < numStates; j++)
+        {
+            for (int i = 0; i < numStates; i++)
+            {
+
+                deltaFun[j][i][x].activate();
+                std::cout << variableName(deltaFun[j][i][x]) << std::endl;
+                // printf("%d\n",delta[x][i][j].getMyIndex());
+                function += std::to_string(deltaFun[j][i][x].getMyIndex()) + " ";
+            }
+            function += "0\n";
+            numClauses++;
+        }
+        std::cout << function << std::endl;
+    }
+
+    // each delta must be at most 1
+    for (int x = 0; x < numAssignments; x++)
+    {
+        for (int i = 0; i < numStates; i++)
+        {
+            for (int jPrime = 0; jPrime < numStates; jPrime++)
+            {
+                for (int jSub = jPrime + 1; jSub < numStates; jSub++)
+                {
+                    deltaFun[i][jPrime][x].activate();
+                    std::cout << variableName(deltaFun[x][jPrime][i]) << std::endl;
+                    function += "-" + std::to_string(deltaFun[x][jPrime][i].getMyIndex()) + " ";
+                    deltaFun[i][jSub][x].activate();
+                    std::cout << variableName(deltaFun[i][jSub][x]) << std::endl;
+                    function += "-" + std::to_string(deltaFun[x][jSub][i].getMyIndex()) + " ";
+                    function += "0\n";
+                    std::cout << function << std::endl;
+                    numClauses++;
+                }
+            }
+            std::cout << function << std::endl;
+        }
+    }
+
+    // each delta must be at most 1
+    /*for (int x = 0; x < numAssignments; x++)
+    {
+        boolVariableToIntParms1[2] = x;
+        for (int i = 0; i < numStates; i++)
+        {
+            boolVariableToIntParms1[1] = i;
+            for (int jPrime = 0; jPrime < numStates; jPrime++)
+            {
+                for (int jSub = jPrime + 1; jSub < numStates; jSub++)
+                {
+                    boolVariableToIntParms1[0] = jPrime;
+                    function += "-" + std::to_string(boolVariableToInt(deltaq_iXIsq_j, boolVariableToIntParms1)) + " ";
+                    boolVariableToIntParms1[0] = jSub;
+                    function += "-" + std::to_string(boolVariableToInt(deltaq_iXIsq_j, boolVariableToIntParms1)) + " ";
+                    function += "0\n";
+                    numClauses++;
+                }
+            }
+            std::cout << function << std::endl;
+        }
+    }*/
 
     return 0;
 }
-
-
 
 /**
  * @brief Renames each vertex in a DAG to a unique integer ID from 0 to N-1.
@@ -246,4 +418,37 @@ std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t> &ve
     }
 
     return nameToId;
+}
+
+/**
+ * @brief Converts an integer to a custom alphabetic string (like Excel columns but 0-indexed).
+ *        a = 0, b = 1, ..., z = 25, aa = 26, ab = 27, ...
+ * @param number The integer to convert (must be >= 0).
+ * @return A string representing the encoded value.
+ * @note Time Complexity: O(log₍₂₆₎n) — each division reduces the number by a factor of 26.
+ */
+std::string intToAlphaString(int number)
+{
+    std::string result;
+
+    // Loop runs O(log₍₂₆₎n) times
+    while (number >= 0)
+    {
+        int remainder = number % 26;                          // O(1)
+        result = static_cast<char>('a' + remainder) + result; // O(1)
+        number = number / 26 - 1;                             // O(1)
+    }
+
+    return result;
+}
+
+std::string variableName(variable var){
+    switch (var.getVarType()){
+        case v_AlphBelongsToq_i:
+                return "v_"+ intToAlphaString(var.alpha)+ " \\relSym\\q_" + std::to_string(var.i);
+            break;
+        case deltaq_iXIsq_j:
+                return "\\delta (q_" + std::to_string(var.i) + " ," + std::to_string(var.x) + ") = q_" + std::to_string(var.j);
+            break;
+    }
 }
