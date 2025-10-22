@@ -127,6 +127,7 @@ int maxLvl = 4;
  **/
 int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
 {
+    numStatesG = numStates;
 
     std::unordered_set<uint64_t> seen;       // says weither a vertex has been seen yet (I want controlled order so I can't just have it here)
     BRAVE_DD::NodeHandle parentVertexHandle = qrbdd.getEdge().getNodeHandle();
@@ -196,6 +197,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     // build sat problem
     // root(v_a) belongs to q0
     belongsTo[0][0].activate();
+    std::cout << belongsTo[0][0].getMyIndex() << std::endl;
     function += std::to_string(belongsTo[0][0].getMyIndex()) + " 0\n";
     numClauses++;
     curVertex++;
@@ -203,9 +205,10 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     for (curVertex; curVertex < numverticis; curVertex++)
     {
         // incrementing the state
-        for (int i = 0; i < numStatesG; i++)
+        for (int i = 0; i < numStates; i++)
         {
             belongsTo[curVertex][i].activate();
+            std::cout << belongsTo[curVertex][i].getMyIndex() << std::endl;
             function += std::to_string(belongsTo[curVertex][i].getMyIndex()) + " ";
         }
         function += "0\n";
@@ -213,8 +216,13 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     }
     std::cout << function << std::endl;
 
+
+    
+
     return 0;
 }
+
+
 
 /**
  * @brief Renames each vertex in a DAG to a unique integer ID from 0 to N-1.
