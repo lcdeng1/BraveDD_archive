@@ -443,7 +443,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     }
 
     
-function = "p cnf " + std::to_string(deltaFun[0][0][0].getMaxIndex()) + " " + std::to_string(numClauses) + "\n" + function;
+function = "p cnf " + std::to_string(deltaFun[0][0][0].getMaxIndex()-1) + " " + std::to_string(numClauses) + "\n" + function;
    
     // add p cnf <num variables> <num clauses> to tope of file
     std::ofstream outFile("satFunctionForQRBDDtoDFA.txt");
