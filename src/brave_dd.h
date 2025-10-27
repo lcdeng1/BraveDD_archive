@@ -1,18 +1,27 @@
 /*
-    BRAVE_DD: Binary, Reduction and Value on Edge, Decision Diagram Library
-    Copyright (C) 2024, .
+    BRAVE_DD: Binary Reduction and Value on Edge Decision Diagram Library
+
+    Copyright 2025, Lichuan Deng, Andrew S. Miner, Gianfranco Ciardo
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
+
 #ifndef BRAVE_DD_H
 #define BRAVE_DD_H
 
 #include "info.h"
-#include "defines.h"
 #include "setting.h"
-#include "node.h"
-#include "edge.h"
 #include "function.h"
-#include "node_manager.h"
-#include "unique_table.h"
 #include "forest.h"
 #include "operators.h"
 #include "operations/apply.h"
@@ -69,14 +78,13 @@ namespace BRAVE_DD {
     }
     inline void printInfo()
     {
-        std::cout << "****************************[" << PROJECT_NAME << "]****************************" << std::endl;
+        std::cout << "**************************************[" << PROJECT_NAME << "]**************************************" << std::endl;
         std::cout << "Version: \t" << PROJECT_VERSION << std::endl;
         std::cout << "Homepage: \t" << PROJECT_URL << std::endl;
         std::cout << "Copyright: \t" << PROJECT_COPYRIGHT << std::endl;
         std::cout << "License: \t" << PROJECT_LICENSE << std::endl;
         std::cout << "Last Update: \t" << PROJECT_DATE << std::endl;
-        std::cout << "*****************************************************************" << std::endl;
-        std::cout << "Under development...^_^" << std::endl;
+        std::cout << "*************************************************************************************" << std::endl;
     }
 }
 
