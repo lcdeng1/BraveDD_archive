@@ -85,7 +85,10 @@ void UnaryOperation::compute(const Func& source, Func& target)
     Edge ans;
     // copy to target forest
     ans = computeCOPY(numVars, source.getEdge());
-    if (opType == UnaryOperationType::UOP_COMPLEMENT) {
+    if (opType == UnaryOperationType::UOP_COPY) {
+        target.setEdge(ans);
+        return;
+    } else if (opType == UnaryOperationType::UOP_COMPLEMENT) {
         // target forest allows complement flag
         if ((targetForest->getSetting().getCompType() != NO_COMP)
             && (targetForest->getSetting().getEncodeMechanism() == TERMINAL)) {
@@ -178,11 +181,59 @@ Edge UnaryOperation::computeCOPY(const Level lvl, const Edge& source)
         return source;
     }
     // Terminal case
-
-    // check compute table
-
+    if (source.getNodeLevel() == 0) {
+        // same encoding mechanism or special value
+        if ((sourceForest->getSetting().getEncodeMechanism() == targetForest->getSetting().getEncodeMechanism())
+            || isTerminalSpecial(source.getEdgeHandle())) {
+            return targetForest->normalizeEdge(lvl, source);
+        } else if ((targetForest->getSetting().getEncodeMechanism() == EDGE_PLUS)
+                    || (targetForest->getSetting().getEncodeMechanism() == EDGE_PLUSMOD)    // be carefull, TBD
+                    || (targetForest->getSetting().getEncodeMechanism() == EDGE_MULT)) {
+            // terminal-encoding to edge-valued encoding
+            Edge ans;
+            EdgeHandle constant = makeTerminal(SpecialValue::OMEGA);
+            packRule(constant, source.getRule());
+            ans.setEdgeHandle(constant);
+            ans.setValue(getTerminalValue(source.getEdgeHandle()));
+            return targetForest->normalizeEdge(lvl, ans);
+        } else {
+            // edge-valued encoding to terminal-encoding
+            Edge ans;
+            EdgeHandle constant = 0;
+            if (source.isConstantOmega()) {
+                constant = makeTerminal(source.getValue());
+                packRule(constant, source.getRule());
+                ans.setEdgeHandle(constant);
+                return targetForest->normalizeEdge(lvl, ans);
+            } else {
+                constant = source.getEdgeHandle();
+                ans.setEdgeHandle(constant);
+                return ans;
+            }
+        }
+    }
+    // the answer
     Edge ans;
-    //TBD
+    // check compute table
+    Edge cacheEdge = source;
+    if (caches[0].check(lvl, source, ans)) return ans;
+    std::vector<Edge> childEdges;
+    if (targetForest->getSetting().isRelation()) {
+        childEdges = std::vector<Edge>(4);
+    } else {
+        childEdges = std::vector<Edge>(2);
+    }
+    for (size_t i=0; i<childEdges.size(); i++) {
+        childEdges[i] = sourceForest->cofact(lvl, source, i);
+        childEdges[i] = computeCOPY(lvl-1, childEdges[i]);
+    }
+    // reduce
+    EdgeLabel label = 0;
+    packRule(label, RULE_X);
+    ans = targetForest->reduceEdge(lvl, label, lvl, childEdges);
+    // cache
+    cacheAdd(0, lvl, source, ans);
+
     return ans;
 }
 
