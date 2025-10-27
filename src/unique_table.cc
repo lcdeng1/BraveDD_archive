@@ -9,7 +9,7 @@ using namespace BRAVE_DD;
 // *                                                                *
 // *                                                                *
 // ******************************************************************
-UniqueTable::SubTable::SubTable(uint16_t lvl, Forest* f):parent(f),level(lvl)
+UniqueTable::SubTable::SubTable(Level lvl, Forest* f):parent(f),level(lvl)
 {
     sizeIndex = 0;
     table = std::vector<NodeHandle>(PRIMES[sizeIndex], 0);
@@ -143,9 +143,9 @@ void UniqueTable::SubTable::expand()
 
 UniqueTable::UniqueTable(Forest* f):parent(f)
 {
-    uint16_t lvls = f->getSetting().getNumVars();
+    Level lvls = f->getSetting().getNumVars();
     tables = std::vector<SubTable>(lvls, SubTable(1, f));
-    for (uint16_t i=0; i<lvls; i++) {
+    for (Level i=0; i<lvls; i++) {
         tables[i].level = i+1;
     }
 }

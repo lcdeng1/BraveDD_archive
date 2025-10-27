@@ -7,45 +7,36 @@
 #include "operations/apply.h"
 
 namespace BRAVE_DD {
-    /* Operators for Edges */
-
-    Edge operator+(const Edge &e1, const Edge &e2);
-    Edge operator-(const Edge &e1, const Edge &e2);
-    Edge operator*(const Edge &e1, const Edge &e2);
-    Edge operator/(const Edge &e1, const Edge &e2);
-
-    Edge operator&(const Edge &e1, const Edge &e2);
-    Edge operator|(const Edge &e1, const Edge &e2);
-    Edge operator^(const Edge &e1, const Edge &e2);
-    Edge operator!(const Edge &e);
-
-    Edge operator+=(Edge &e1, const Edge &e2);
-    Edge operator-=(Edge &e1, const Edge &e2);
-    Edge operator*=(Edge &e1, const Edge &e2);
-    Edge operator/=(Edge &e1, const Edge &e2);
-
-    Edge operator&=(Edge &e1, const Edge &e2);
-    Edge operator|=(Edge &e1, const Edge &e2);
-
     /* Operators for Funcs */
     
-    Func operator+(const Func &e1, const Func &e2);
-    Func operator-(const Func &e1, const Func &e2);
-    Func operator*(const Func &e1, const Func &e2);
-    Func operator/(const Func &e1, const Func &e2);
+    Func operator+(const Func &f1, const Func &f2);
+    Func operator-(const Func &f1, const Func &f2);
+    Func operator*(const Func &f1, const Func &f2);
+    Func operator/(const Func &f1, const Func &f2);
 
-    Func operator&(const Func &e1, const Func &e2);
-    Func operator|(const Func &e1, const Func &e2);
-    Func operator^(const Func &e1, const Func &e2);
+    Func operator&(const Func &f1, const Func &f2);
+    Func operator|(const Func &f1, const Func &f2);
+    Func operator^(const Func &f1, const Func &f2);
     Func operator!(const Func &e);
 
-    Func operator+=(Func &e1, const Func &e2);
-    Func operator-=(Func &e1, const Func &e2);
-    Func operator*=(Func &e1, const Func &e2);
-    Func operator/=(Func &e1, const Func &e2);
+    Func operator+=(Func &f1, const Func &f2);
+    Func operator-=(Func &f1, const Func &f2);
+    Func operator*=(Func &f1, const Func &f2);
+    Func operator/=(Func &f1, const Func &f2);
 
-    Func operator&=(Func &e1, const Func &e2);
-    Func operator|=(Func &e1, const Func &e2);
+    Func operator&=(Func &f1, const Func &f2);
+    Func operator|=(Func &f1, const Func &f2);
+    Func operator^=(Func &f1, const Func &f2);
+
+    Func operator<(Func &f1, const Func &f2);
+    Func operator>(Func &f1, const Func &f2);
+    Func operator<=(Func &f1, const Func &f2);
+    Func operator>=(Func &f1, const Func &f2);
+
+    // Func operator!=(Func &f1, const Func &f2);
+    // Func operator==(Func &f1, const Func &f2);
+
+
 
     /* These will let us do C++ style output, with our output class */
     

@@ -49,14 +49,14 @@ class BRAVE_DD::UniqueTable {
          * @param node              The given node to be inserted
          * @return NodeHandle 
          */
-        inline NodeHandle insert(uint16_t lvl, const Node& node) {
+        inline NodeHandle insert(Level lvl, const Node& node) {
             return tables[lvl-1].insert(node);
         };
 
         /** If the table of the given variable level contains key node, return the item 
          * and move it to the front of the list. Otherwise, return 0 and do nothing.
          */
-        // inline NodeHandle find(uint16_t level, Node &node) const {return tables[level].find(node);}
+        // inline NodeHandle find(Level level, Node &node) const {return tables[level].find(node);}
 
         /** Add the NodeHandle item to the front of the list of the corresponding variable.
          *  Used when we KNOW that the item is not in the unique table already.
@@ -78,9 +78,9 @@ class BRAVE_DD::UniqueTable {
         // }
 
         /// Remove all unmarked nodes from the unique table
-        inline void sweep(uint16_t level) {tables[level-1].sweep();}
+        inline void sweep(Level level) {tables[level-1].sweep();}
         inline void sweep() {
-            for (uint16_t k=0; k<tables.size(); k++) {
+            for (Level k=0; k<tables.size(); k++) {
                 tables[k].sweep();
             }
         }
@@ -94,7 +94,7 @@ class BRAVE_DD::UniqueTable {
     /*-------------------------------------------------------------*/
         class SubTable {
             public:
-                SubTable(uint16_t lvl, Forest* f);
+                SubTable(Level lvl, Forest* f);
                 ~SubTable();
 
                 inline uint32_t getSize() const {
@@ -160,7 +160,7 @@ class BRAVE_DD::UniqueTable {
                 friend class UniqueTable;
                 Forest*                     parent;
                 std::vector<NodeHandle>     table;
-                uint16_t                    level;              // The level of stored nodes
+                Level                       level;              // The level of stored nodes
                 int                         sizeIndex;          // Table size at this level, index of PRIMES
                 uint64_t                    numEntries;         // The number of nodes at this level
         }; // class SubTable

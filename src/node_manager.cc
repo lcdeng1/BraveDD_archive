@@ -151,17 +151,17 @@ void NodeManager::SubManager::sweep()
 
 NodeManager::NodeManager(Forest *f):parent(f)
 {
-    uint16_t lvls = f->getSetting().getNumVars();
+    Level lvls = f->getSetting().getNumVars();
     // chunks = std::vector<SubManager>(lvls, SubManager(f));
     chunks.reserve(lvls);
-    for (uint16_t i = 0; i < lvls; i++) {
+    for (Level i = 0; i < lvls; i++) {
         chunks.emplace_back(f);  // Directly constructs SubManager
     }
     peak = 0;
 }
 NodeManager::~NodeManager()
 {
-    // for (uint16_t i=0; i<parent->getSetting().getNumVars(); i++) {
+    // for (Level i=0; i<parent->getSetting().getNumVars(); i++) {
     //     chunks[i].~SubManager();
     // }
     chunks.clear();
@@ -170,7 +170,7 @@ NodeManager::~NodeManager()
     peak = 0;
 }
 
-void NodeManager::sweep(uint16_t lvl)
+void NodeManager::sweep(Level lvl)
 {
     uint32_t beforeNum = numUsed(lvl);
     chunks[lvl-1].sweep();
@@ -179,12 +179,12 @@ void NodeManager::sweep(uint16_t lvl)
 
 void NodeManager::sweep()
 {
-    for (uint16_t k=1; k<=parent->getSetting().getNumVars(); k++) {
+    for (Level k=1; k<=parent->getSetting().getNumVars(); k++) {
         sweep(k);
     }
 }
 
-void NodeManager::unmark(uint16_t lvl)
+void NodeManager::unmark(Level lvl)
 {
 #ifdef BRAVE_DD_NM_TRACE
     std::cout << "unmark: unmark lvl = " << lvl << std::endl;
@@ -199,7 +199,7 @@ void NodeManager::unmark(uint16_t lvl)
 
 void NodeManager::unmark()
 {
-    for (uint16_t k=1; k<=parent->getSetting().getNumVars(); k++) {
+    for (Level k=1; k<=parent->getSetting().getNumVars(); k++) {
         unmark(k);
     }
 }

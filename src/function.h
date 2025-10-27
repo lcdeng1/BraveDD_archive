@@ -54,11 +54,11 @@ class BRAVE_DD::Func {
     void identity(std::list<int> identities);       // levels staying identity
     // Variable Func
     /* For dimention of 1 (Set) */
-    void variable(uint16_t lvl);
-    void variable(uint16_t lvl, Value low, Value high);
+    void variable(Level lvl);
+    void variable(Level lvl, Value low, Value high);
     /* For dimention of 2 (Relation) */
-    void variable(uint16_t lvl, bool isPrime);
-    void variable(uint16_t lvl, bool isPrime, Value low, Value high);
+    void variable(Level lvl, bool isPrime);
+    void variable(Level lvl, bool isPrime, Value low, Value high);
 
     // Convert EV+ to EVMOD
     Edge convert(Forest* evmodForest, Edge evEdge);
@@ -101,7 +101,7 @@ class BRAVE_DD::Func {
             (edge.handle == f.edge.handle) &&
             (edge.value.getType());
     }
-    Edge unionAssignmentRecursive(uint16_t num, Edge& root, ExplictFunc assignments);
+    Edge unionAssignmentRecursive(Level num, Edge& root, ExplictFunc assignments);
 
 
     // ========================================================
@@ -159,7 +159,7 @@ class BRAVE_DD::ExplictFunc {
     private:
     /*-------------------------------------------------------------*/
     // helper for recursively building edge, idx+1 is the variable level
-    Edge buildEdge(Forest* forest, uint16_t lvl, size_t start, size_t size);
+    Edge buildEdge(Forest* forest, Level lvl, size_t start, size_t size);
     
     std::vector<std::vector<bool>>     assignments;
     std::vector<Value>                 outcomes;

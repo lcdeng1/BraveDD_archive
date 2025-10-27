@@ -46,7 +46,6 @@ namespace BRAVE_DD {
      *  flags(3 bits): swap(_from) | swap_to | complement
      *  
      */
-    typedef uint8_t EdgeLabel;
     /* Masks */
     const uint8_t LABEL_RULE_MASK = (uint8_t)(0x0F) << 3;
     const uint8_t LABEL_COMP_MASK = (uint8_t)0x01;
@@ -117,7 +116,6 @@ namespace BRAVE_DD {
      *      Bits of "level" = |log(maxLevel)|;
      *      Bits of "nodeIdx" = the remain bits;
      */
-    typedef uint64_t EdgeHandle;
     /* Masks */
     const uint64_t FLOAT_VALUE_FLAG_MASK = ((uint64_t)0x01<<63);
     const uint64_t INT_VALUE_FLAG_MASK = ((uint64_t)0x01<<62);
@@ -139,9 +137,9 @@ namespace BRAVE_DD {
         return (ReductionRule)((handle & RULE_MASK) >> 51);
     }
     /* Get the level of the target node from the given EdgeHandle */
-    static inline uint16_t unpackLevel(const EdgeHandle& handle)
+    static inline Level unpackLevel(const EdgeHandle& handle)
     {
-        return (uint16_t)((handle & LEVEL_MASK) >> 32);
+        return (Level)((handle & LEVEL_MASK) >> 32);
     }
     /* Get the complement flag from the given EdgeHandle */
     static inline bool unpackComp(const EdgeHandle& handle)
@@ -172,7 +170,7 @@ namespace BRAVE_DD {
         handle &= ~RULE_MASK;
         handle |= ((uint64_t)rule << 51);
     }
-    static inline void packLevel(EdgeHandle& handle, uint16_t level)
+    static inline void packLevel(EdgeHandle& handle, Level level)
     {
         if (((handle & FLOAT_VALUE_FLAG_MASK)
             || (handle & INT_VALUE_FLAG_MASK)
@@ -513,7 +511,7 @@ class BRAVE_DD::Edge {
 
         /* Access to data */
 
-        inline uint16_t getNodeLevel() const {return unpackLevel(handle);}
+        inline Level getNodeLevel() const {return unpackLevel(handle);}
         inline NodeHandle getNodeHandle() const {return unpackTarget(handle);}
         inline EdgeHandle getEdgeHandle() const {return handle;}
         // get rule and flags TBD
@@ -534,7 +532,7 @@ class BRAVE_DD::Edge {
             }
         }
         inline void setValue(Value v) {value = v;}
-        inline void setLevel(uint16_t lvl) {packLevel(handle, lvl);}
+        inline void setLevel(Level lvl) {packLevel(handle, lvl);}
 
         // unpack the x/y part of a long edge, only be used for BDDs edge
         Edge part(bool xy) const;

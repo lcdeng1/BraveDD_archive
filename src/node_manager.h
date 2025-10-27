@@ -31,7 +31,7 @@ class BRAVE_DD::NodeManager {
      *  (which will be expanded if necessary).
      *  Then fill it with the given unpacked node.
      */
-    inline NodeHandle getFreeNodeHandle(const uint16_t lvl, const Node& node) {
+    inline NodeHandle getFreeNodeHandle(const Level lvl, const Node& node) {
         NodeHandle handle = chunks[lvl-1].getFreeNodeHandle(node);
         // for sure number of used nodes +1
         numNodes++;
@@ -43,7 +43,7 @@ class BRAVE_DD::NodeManager {
     /**
      *  Find the node corresponding to a node handle
      */
-    inline Node& getNodeFromHandle(const uint16_t lvl, const NodeHandle h) {
+    inline Node& getNodeFromHandle(const Level lvl, const NodeHandle h) {
         return chunks[lvl-1].getNodeFromHandle(h);
     }
 
@@ -53,7 +53,7 @@ class BRAVE_DD::NodeManager {
      *  reused when returned by a call to
      *  getFreeNodeHandle().
      */
-    void recycleNodeHandle(uint16_t lvl, NodeHandle h);
+    void recycleNodeHandle(Level lvl, NodeHandle h);
 
     /**
      *  Sweep a manager.
@@ -61,16 +61,16 @@ class BRAVE_DD::NodeManager {
      *  If marked, the mark bit(s) is cleared.
      *  If unmarked, the node is recycled.
      */
-    void sweep(uint16_t lvl);
+    void sweep(Level lvl);
     void sweep();
 
-    void unmark(uint16_t lvl);
+    void unmark(Level lvl);
     void unmark();
 
-    inline uint32_t numUsed(uint16_t lvl) const { return PRIMES[chunks[lvl-1].sizeIndex] - chunks[lvl-1].numFrees; }
-    inline uint32_t numAlloc(uint16_t lvl) const { return chunks[lvl-1].firstUnalloc; }
-    inline uint32_t numMarked(uint16_t lvl) const { return chunks[lvl-1].getNumMarked(); }
-    inline uint32_t numPeakAlloc(uint16_t lvl) const { return chunks[lvl-1].firstUnalloc - 1; }
+    inline uint32_t numUsed(Level lvl) const { return PRIMES[chunks[lvl-1].sizeIndex] - chunks[lvl-1].numFrees; }
+    inline uint32_t numAlloc(Level lvl) const { return chunks[lvl-1].firstUnalloc; }
+    inline uint32_t numMarked(Level lvl) const { return chunks[lvl-1].getNumMarked(); }
+    inline uint32_t numPeakAlloc(Level lvl) const { return chunks[lvl-1].firstUnalloc - 1; }
     inline uint64_t numRealPeak() const { return peak; }
     inline void resetPeak() { peak = 0; }
 

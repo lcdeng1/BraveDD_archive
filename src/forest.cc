@@ -47,7 +47,7 @@ void Forest::importForest(std::istream& in)
     //
 }
 /************************* Reduction ****************************/
-Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
+Edge Forest::normalizeNode(const Level nodeLevel, const std::vector<Edge>& down)
 {
     // assuming all child edges are reduced and legal
     /* copy the child info */
@@ -315,7 +315,7 @@ Edge Forest::normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& do
     return ans;
 }
 
-Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
+Edge Forest::normalizeEdge(const Level level, const Edge& edge)
 {
 #ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "normalize edge from level: " << level << "; ";
@@ -330,7 +330,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
     bool isCompAllowed = (setting.getCompType() != NO_COMP);
     ReductionRule rule = edge.getRule();
     bool comp = edge.getComp();
-    uint16_t targetLvl = edge.getNodeLevel();
+    Level targetLvl = edge.getNodeLevel();
     
     /* Case 0: short edge to nonterminal node */
     if ((level == targetLvl) && (targetLvl > 0)) {
@@ -478,7 +478,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
         Edge temp = normalized;
         if (rule == RULE_X) {
             // it should be built
-            for (uint16_t k=targetLvl+1; k<=level; k++) {
+            for (Level k=targetLvl+1; k<=level; k++) {
                 for (size_t i=0; i<childEdges.size(); i++) {
                     childEdges[i] = temp;
                 }
@@ -493,7 +493,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
             childEdges[child].setRule(RULE_X);
             childEdges[!child] = temp;
             childEdges[!child].setRule(RULE_X);
-            for (uint16_t k=targetLvl+1; k<=level; k++) {
+            for (Level k=targetLvl+1; k<=level; k++) {
                 childEdges[0] = normalizeEdge(k-1, childEdges[0]);
                 childEdges[1] = normalizeEdge(k-1, childEdges[1]);
                 temp = reduceNode(k, childEdges);
@@ -506,7 +506,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
             childEdges[1].setRule(RULE_X);
             childEdges[2].handle = makeTerminal(INT,(int)hasRuleTerminalOne(rule));
             childEdges[2].setRule(RULE_X);
-            for (uint16_t k=targetLvl+1; k<=level; k++) {
+            for (Level k=targetLvl+1; k<=level; k++) {
                 childEdges[0] = normalizeEdge(k-1, childEdges[0]);
                 childEdges[1] = normalizeEdge(k-1, childEdges[1]);
                 childEdges[2] = normalizeEdge(k-1, childEdges[2]);
@@ -522,7 +522,7 @@ Edge Forest::normalizeEdge(const uint16_t level, const Edge& edge)
     return normalized;
 }
 
-Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
+Edge Forest::reduceNode(const Level nodeLevel, const std::vector<Edge>& down)
 {
     /* copy the child info , then normalize them */
     std::vector<Edge> child = down;
@@ -915,7 +915,7 @@ Edge Forest::reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down)
     return reduced;
 }
 
-Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value)
+Edge Forest::mergeEdge(const Level beginLevel, const Level mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value)
 {
 #ifdef BRAVE_DD_FOREST_TRACE
     std::cout << "merge edge; beginLvl: "<< beginLevel << "; mergeLvl: " << mergeLevel << std::endl;
@@ -927,8 +927,8 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
     Edge merged;
     ReductionRule incomingRule = unpackRule(label);
     ReductionRule reducedRule = reduced.getRule();
-    uint16_t incomingSkip = beginLevel - mergeLevel;
-    uint16_t reducedSkip = mergeLevel - reduced.getNodeLevel();
+    Level incomingSkip = beginLevel - mergeLevel;
+    Level reducedSkip = mergeLevel - reduced.getNodeLevel();
     /* ---------------------------------------------------------------------------------------------
     * "Must" Compatible merge
     *
@@ -1078,7 +1078,7 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
             childEdges[child].setRule(RULE_X);
             EdgeLabel locLabel = 0;
             packRule(locLabel, RULE_X);
-            for (uint16_t k=mergeLevel+1; k<=beginLevel; k++) {
+            for (Level k=mergeLevel+1; k<=beginLevel; k++) {
                 childEdges[!child] = mergeEdge(k-1, mergeLevel, locLabel, reduced);
                 childEdges[!child] = normalizeEdge(k-1, childEdges[!child]);
                 childEdges[child] = normalizeEdge(k-1, childEdges[child]);
@@ -1120,7 +1120,7 @@ Edge Forest::mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, con
     return merged;
 }
 
-Edge Forest::reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const uint16_t nodeLevel, const std::vector<Edge>& down, const Value& value)
+Edge Forest::reduceEdge(const Level beginLevel, const EdgeLabel label, const Level nodeLevel, const std::vector<Edge>& down, const Value& value)
 {
     /* check level */
     if (beginLevel < nodeLevel) {
@@ -1209,7 +1209,7 @@ void Forest::markSweep()
 void Forest::reportNodesNum(std::ostream& out) const
 {
     uint64_t total = 0;
-    for (uint16_t k=1; k<=setting.getNumVars(); k++) {
+    for (Level k=1; k<=setting.getNumVars(); k++) {
         out << "Level " << k << ": " << getNodeManUsed(k) << "\n";
         total += getNodeManUsed(k);
     }
@@ -1236,7 +1236,7 @@ char Forest::isSwapAllUseless(Edge& e) {
     return 0;
 }
 
-Edge Forest::unreduceEdge(const uint16_t level, const Edge& edge)
+Edge Forest::unreduceEdge(const Level level, const Edge& edge)
 {
     Edge ans;
     // TBD
@@ -1244,7 +1244,7 @@ Edge Forest::unreduceEdge(const uint16_t level, const Edge& edge)
     return ans;
 }
 
-Edge Forest::buildHalf(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2, const bool isLow)
+Edge Forest::buildHalf(const Level beginLvl, const Level endLvl, const Edge& e1, const Edge& e2, const bool isLow)
 {
     Edge ans;
     EdgeLabel root = 0;
@@ -1311,7 +1311,7 @@ Edge Forest::buildHalf(const uint16_t beginLvl, const uint16_t endLvl, const Edg
     std::vector<Edge> child(2);
     packRule(root, RULE_X);
     ans = isLow?e2:e1; 
-    for (uint16_t i=endLvl; i<=beginLvl; i++) {
+    for (Level i=endLvl; i<=beginLvl; i++) {
         child[0] = isLow ? mergeEdge(i-1, endLvl-1, root, e1) : ans;
         child[1] = isLow ? ans : mergeEdge(i-1, endLvl-1, root, e2);
         ans = reduceEdge(i, root, i, child);
@@ -1319,7 +1319,7 @@ Edge Forest::buildHalf(const uint16_t beginLvl, const uint16_t endLvl, const Edg
     return ans;
 }
 
-Edge Forest::buildUmb(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2, const Edge& e3)
+Edge Forest::buildUmb(const Level beginLvl, const Level endLvl, const Edge& e1, const Edge& e2, const Edge& e3)
 {
     Edge ans;
     EdgeLabel root = 0;
@@ -1350,7 +1350,7 @@ void Forest::markNodes(const Edge& edge) const
 void Forest::markNodes(const EdgeHandle& edge) const
 {
     char numChild = (setting.isRelation()) ? 4 : 2;
-    uint16_t level = unpackLevel(edge);
+    Level level = unpackLevel(edge);
     if (level > 0) {
         NodeHandle target = unpackTarget(edge);
         if (!getNode(level, target).isMarked()) {

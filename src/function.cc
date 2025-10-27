@@ -141,8 +141,8 @@ void Func::constant(SpecialValue val)
 /* For dimention of 2 (Relation) */
 void Func::identity(std::vector<bool> dependance)
 {
-    uint16_t N = parent->getSetting().getNumVars();
-    uint16_t top = 0;
+    Level N = parent->getSetting().getNumVars();
+    Level top = 0;
     std::vector<Edge> child(4);
     Edge reduced;
     reduced.handle = makeTerminal(1);
@@ -152,7 +152,7 @@ void Func::identity(std::vector<bool> dependance)
     reduced.setRule(RULE_I0);
     EdgeLabel root  = 0;
     packRule(root, RULE_I0);
-    for (uint16_t k=1; k<=N; k++) {
+    for (Level k=1; k<=N; k++) {
         if (dependance[k] == 1) {
             reduced = parent->mergeEdge(k-1, top, root, reduced);
             for (size_t i=0; i<child.size(); i++) {
@@ -167,7 +167,7 @@ void Func::identity(std::vector<bool> dependance)
     edge = parent->mergeEdge(N, top, root, reduced);
 }
 /* For dimention of 1 (Set) */
-void Func::variable(uint16_t lvl)
+void Func::variable(Level lvl)
 {
     std::vector<Edge> child(2);
     if (parent->setting.getEncodeMechanism() == TERMINAL) {
@@ -191,7 +191,7 @@ void Func::variable(uint16_t lvl)
     packRule(root, RULE_X);
     edge = parent->reduceEdge(parent->getSetting().getNumVars(), root, lvl, child);
 }
-void Func::variable(uint16_t lvl, Value low, Value high)
+void Func::variable(Level lvl, Value low, Value high)
 {
     std::vector<Edge> child(2);
     if (parent->setting.getEncodeMechanism() == TERMINAL) {
@@ -223,7 +223,7 @@ void Func::variable(uint16_t lvl, Value low, Value high)
 }
 /* For dimention of 2 (Relation) */
 // Variable Func
-void Func::variable(uint16_t lvl, bool isPrime)
+void Func::variable(Level lvl, bool isPrime)
 {
     std::vector<Edge> child(4);
     child[0].handle = makeTerminal(INT, 0);
@@ -243,7 +243,7 @@ void Func::variable(uint16_t lvl, bool isPrime)
     packRule(root, RULE_X);
     edge = parent->reduceEdge(parent->getSetting().getNumVars(), root, lvl, child);
 }
-void Func::variable(uint16_t lvl, bool isPrime, Value low, Value high)
+void Func::variable(Level lvl, bool isPrime, Value low, Value high)
 {
     // TBD
 }
@@ -253,7 +253,7 @@ Edge Func::convert(Forest* evmodForest, Edge evEdge) {
     EdgeLabel label = 0;
     packRule(label, RULE_X);
     std::vector<Edge>evmodChild(2);
-    uint16_t lvl = evEdge.getNodeLevel();
+    Level lvl = evEdge.getNodeLevel();
     if (evEdge.getNodeLevel() == 0) {
         Edge evmodEdge;
         evmodEdge.setEdgeHandle(makeTerminal(VOID, SpecialValue::OMEGA));
@@ -301,13 +301,13 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
     Edge current = edge;
     /* get target node info */
     NodeHandle targetHandle = current.getNodeHandle();
-    uint16_t targetLvl = current.getNodeLevel();
+    Level targetLvl = current.getNodeLevel();
     /* info to determine next child edge */
     bool isComp = 0, isSwap = 0;
     /* flags for reduction rules */
     bool allOne = 1, existOne = 0;
     /* evaluation starting from the target node level */
-    uint16_t k = assignment.size()-1;
+    Level k = assignment.size()-1;
 
     /* initialized edge value for EVBDD*/
      if (encode == EDGE_PLUS || encode == EDGE_PLUSMOD) {
@@ -328,7 +328,7 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         /* if incoming edge skips levels */
         if ((targetLvl < k) && (incoming != RULE_X)) {
             // determine flags of all-ones and exist-ones
-            for (uint16_t i=k; i>targetLvl; i--) {
+            for (Level i=k; i>targetLvl; i--) {
                 allOne &= assignment[i];
                 existOne |= assignment[i];
             }
@@ -459,12 +459,12 @@ Value Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aT
     Edge current = edge;
     /* get target node info */
     NodeHandle targetHandle = current.getNodeHandle();
-    uint16_t targetLvl = current.getNodeLevel();
+    Level targetLvl = current.getNodeLevel();
     /* info to determine next child edge */
     bool isComp = 0, isSwapF = 0, isSwapT = 0;
     bool isIdent = 1;
     /* evaluation starting from the target node level */
-    uint16_t k = aFrom.size()-1;
+    Level k = aFrom.size()-1;
     while (true) {
 #ifdef BRAVE_DD_TRACE
         std::cout<<"evaluate k: " << k;
@@ -477,7 +477,7 @@ Value Func::evaluate(const std::vector<bool>& aFrom, const std::vector<bool>& aT
         /* if incoming edge skips levels */
         if ((targetLvl < k) && (incoming != RULE_X)) {
             // determine identity
-            for (uint16_t i=k; i>targetLvl; i--) {
+            for (Level i=k; i>targetLvl; i--) {
                 if (aFrom[i] != aTo[i]) isIdent = 0;
             }
             if (encode == TERMINAL) {
@@ -578,7 +578,7 @@ void Func::unionAssignments(const ExplictFunc& assignments) {
             
             // Create a path for this assignment
             // For simplicity, build each path level by level from the bottom up
-            uint16_t numVars = parent->getSetting().getNumVars();
+            Level numVars = parent->getSetting().getNumVars();
             
             // Start with a terminal 1 node
             Edge terminalOneEdge, terminalZeroEdge;
@@ -592,8 +592,8 @@ void Func::unionAssignments(const ExplictFunc& assignments) {
             // Build the path from the bottom up
             Edge currentEdge = terminalOneEdge;
             
-            for (uint16_t level = 1; level <= numVars; level++) {
-                uint16_t varIndex = numVars - level + 1;  // Variable index (1-based)
+            for (Level level = 1; level <= numVars; level++) {
+                Level varIndex = numVars - level + 1;  // Variable index (1-based)
                 
                 // Create a node at this level
                 std::vector<Edge> children(2);
@@ -653,7 +653,7 @@ void Func::unionAssignments(const ExplictFunc& assignments) {
 }
 
 /* Expert function for union assignments TBD */
-Edge Func::unionAssignmentRecursive(uint16_t n, Edge& root, ExplictFunc assignments)
+Edge Func::unionAssignmentRecursive(Level n, Edge& root, ExplictFunc assignments)
 {
     /* declare the final answer */
     Edge ans;
@@ -666,7 +666,7 @@ Edge Func::unionAssignmentRecursive(uint16_t n, Edge& root, ExplictFunc assignme
      * then we do it recursively!
      *      we need to expand root edge if it's a long edge
      */
-    uint16_t skipLvl;
+    Level skipLvl;
     skipLvl = n - unpackLevel(root.handle);
     /* determine the down edges */
     //
@@ -804,7 +804,7 @@ Func ExplictFunc::buildFunc(Forest* forest) const
     return ans;
 }
 
-Edge ExplictFunc::buildEdge(Forest* forest, uint16_t lvl, size_t start, size_t size)
+Edge ExplictFunc::buildEdge(Forest* forest, Level lvl, size_t start, size_t size)
 {
     // the edge to return
     Edge ans;

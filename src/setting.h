@@ -89,32 +89,32 @@ class BRAVE_DD::VarDomain {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-        VarDomain(const uint16_t size);
-        VarDomain(const std::vector<uint16_t>& order, uint16_t size);
+        VarDomain(const Level size);
+        VarDomain(const std::vector<Level>& order, Level size);
         ~VarDomain();
         /**
          * Getters
          */
         /// Get the max level (number of variables)
-        inline uint16_t getNumVars() const {return maxLevel;}
+        inline Level getNumVars() const {return maxLevel;}
         /// Get the variable index for a given level
-        inline uint16_t getVar(uint16_t lvl) const {return level2Var[lvl];}
+        inline Level getVar(Level lvl) const {return level2Var[lvl];}
         /// Get the level for a given variable index
-        inline uint16_t getLevel(uint16_t var) const {return var2Level[var];}
+        inline Level getLevel(Level var) const {return var2Level[var];}
         /**
          * Setters
          */
         /// Set the number of variables
-        inline void setNumVars(const uint16_t num) {maxLevel = num;}
+        inline void setNumVars(const Level num) {maxLevel = num;}
         // ordering TBD
 
 
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-        uint16_t                maxLevel;   // number of variables
-        std::vector<uint16_t>   level2Var;  // Variable order: indexed by levels
-        std::vector<uint16_t>   var2Level;  // Variable order: indexed by variables
+        Level                maxLevel;   // number of variables
+        std::vector<Level>   level2Var;  // Variable order: indexed by levels
+        std::vector<Level>   var2Level;  // Variable order: indexed by variables
 };
 
 // ******************************************************************
@@ -145,11 +145,11 @@ class BRAVE_DD::ForestSetting {
         //******************************************
         /* Domain =======================================================================*/
         /// Get the number of variables
-        inline uint16_t getNumVars() const {return domain.getNumVars();}
+        inline Level getNumVars() const {return domain.getNumVars();}
         /// Get the variable index for a given level
-        inline uint16_t getVar(uint16_t lvl) const {return domain.getVar(lvl);}
+        inline Level getVar(Level lvl) const {return domain.getVar(lvl);}
         /// Get the level for a given variable index
-        inline uint16_t getLevel(uint16_t var) const {return domain.getLevel(var);}
+        inline Level getLevel(Level var) const {return domain.getLevel(var);}
         /* Range ========================================================================*/
         /// Get the RangeType 
         inline RangeType getRangeType() const {return range.getRangeType();}
@@ -191,7 +191,7 @@ class BRAVE_DD::ForestSetting {
         //******************************************
         /* Domain */
         /// Set the number of variables
-        inline void setNumVars(const uint16_t num) {domain.setNumVars(num);}
+        inline void setNumVars(const Level num) {domain.setNumVars(num);}
         // ordering TBD
         /* Range */
         /// Set the range type

@@ -26,20 +26,20 @@ class BRAVE_DD::CacheEntry {
         key = std::vector<Edge>(2);
         isInUse = 0;
     }
-    CacheEntry(const uint16_t level, const Edge& a) {
+    CacheEntry(const Level level, const Edge& a) {
         lvl = level;
         key = std::vector<Edge>(1);
         key[0] = a;
         isInUse = 0;
     }
-    CacheEntry(const uint16_t level, const Edge& a, const Edge& b) {
+    CacheEntry(const Level level, const Edge& a, const Edge& b) {
         lvl = level;
         key = std::vector<Edge>(2);
         key[0] = a;
         key[1] = b;
         isInUse = 0;
     }
-    CacheEntry(const uint16_t level, const Edge& a, const Edge& b, const Edge& c, const Edge& d) {
+    CacheEntry(const Level level, const Edge& a, const Edge& b, const Edge& c, const Edge& d) {
         lvl = level;
         key = std::vector<Edge>(4);
         key[0] = a;
@@ -111,7 +111,7 @@ class BRAVE_DD::CacheEntry {
 
     std::vector<Edge>   key;
     Edge                res;
-    uint16_t            lvl;
+    Level               lvl;
     bool                isInUse;
 };
 
@@ -129,23 +129,23 @@ class BRAVE_DD::ComputeTable {
     ComputeTable();
     ~ComputeTable();
 
-    bool check(const uint16_t lvl, const Edge& a, long& ans);
-    bool check(const uint16_t lvl, const Edge& a, Edge& ans);
-    bool check(const uint16_t lvl, const Edge& a, const Edge& b, Edge& ans);
-    bool check(const uint16_t lvl, const Edge& a, const Edge& b, char& ans);
-    bool check(const uint16_t lvl, const Edge& a, const Edge& b, bool& ans);
-    bool check(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, Edge& ans);
-    bool check(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, char& ans);
-    bool check(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, bool& ans);
+    bool check(const Level lvl, const Edge& a, long& ans);
+    bool check(const Level lvl, const Edge& a, Edge& ans);
+    bool check(const Level lvl, const Edge& a, const Edge& b, Edge& ans);
+    bool check(const Level lvl, const Edge& a, const Edge& b, char& ans);
+    bool check(const Level lvl, const Edge& a, const Edge& b, bool& ans);
+    bool check(const Level lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, Edge& ans);
+    bool check(const Level lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, char& ans);
+    bool check(const Level lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, bool& ans);
 
-    void add(const uint16_t lvl, const Edge& a, const long& ans);
-    void add(const uint16_t lvl, const Edge& a, const Edge& ans);
-    void add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& ans);
-    void add(const uint16_t lvl, const Edge& a, const Edge& b, const char& ans);
-    void add(const uint16_t lvl, const Edge& a, const Edge& b, const bool& ans);
-    void add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const Edge& ans);
-    void add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const char& ans);
-    void add(const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const bool& ans);
+    void add(const Level lvl, const Edge& a, const long& ans);
+    void add(const Level lvl, const Edge& a, const Edge& ans);
+    void add(const Level lvl, const Edge& a, const Edge& b, const Edge& ans);
+    void add(const Level lvl, const Edge& a, const Edge& b, const char& ans);
+    void add(const Level lvl, const Edge& a, const Edge& b, const bool& ans);
+    void add(const Level lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const Edge& ans);
+    void add(const Level lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const char& ans);
+    void add(const Level lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const bool& ans);
 
     // role: 0 for ans; 1 for key0; 2 for key1
     void sweep(Forest* forest, int role);

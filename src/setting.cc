@@ -10,7 +10,7 @@ using namespace BRAVE_DD;
 // *                                                                *
 // ******************************************************************
 
-VarDomain::VarDomain(uint16_t size)
+VarDomain::VarDomain(Level size)
 {
     maxLevel = size;
     // ordering TBD

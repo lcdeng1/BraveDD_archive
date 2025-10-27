@@ -33,7 +33,7 @@ void DotMaker::buildGraph(const Func& func)
     std::cout << std::endl;
 #endif
     /* setting info */
-    uint16_t numVars = parent->getSetting().getNumVars();
+    Level numVars = parent->getSetting().getNumVars();
     int numRules = parent->getSetting().getReductionSize();
     CompSet cs = parent->getSetting().getCompType();
     SwapSet ss = parent->getSetting().getSwapType();
@@ -86,7 +86,7 @@ void DotMaker::buildGraph(const std::vector<Func>& func)
     std::cout << std::endl;
 #endif
     /* setting info */
-    uint16_t numVars = parent->getSetting().getNumVars();
+    Level numVars = parent->getSetting().getNumVars();
     int numRules = parent->getSetting().getReductionSize();
     CompSet cs = parent->getSetting().getCompType();
     SwapSet ss = parent->getSetting().getSwapType();
@@ -129,7 +129,7 @@ void DotMaker::buildGraph(const std::vector<Func>& func)
     outfile.close();    // close out file
 }
 
-void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle rootHandle, const char st)
+void DotMaker::buildEdge(const Level lvl, const Edge& edge, const NodeHandle rootHandle, const char st)
 {
 #ifdef BRAVE_DD_DOT_TRACE
     std::cout << "buildEdge: lvl = " << lvl << std::endl;
@@ -137,7 +137,7 @@ void DotMaker::buildEdge(const uint16_t lvl, const Edge& edge, const NodeHandle 
     std::cout << std::endl;
 #endif
     /* setting info */
-    uint16_t numVars = parent->getSetting().getNumVars();
+    Level numVars = parent->getSetting().getNumVars();
     int numRules = parent->getSetting().getReductionSize();
     CompSet cs = parent->getSetting().getCompType();
     SwapSet ss = parent->getSetting().getSwapType();

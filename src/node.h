@@ -200,20 +200,20 @@ class BRAVE_DD::Node {
      * Unpack and get the child node level
      * 
      * @param child the index of the child node: 0 ... 3
-     * @return uint16_t 
+     * @return Level 
      */
-    inline uint16_t childNodeLevel(char child, bool isMxd) const {
+    inline Level childNodeLevel(char child, bool isMxd) const {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);
             exit(ErrCode::INVALID_BOUND);
         }
         uint32_t NODE_LEVEL_MASK = ((0x01 << 16) - 1) << (16 * (1 - (child % 2)));
-        return (uint16_t)((((isMxd) ? info[6 + (child / 2)] : info[4]) 
+        return (Level)((((isMxd) ? info[6 + (child / 2)] : info[4]) 
                             & NODE_LEVEL_MASK) >> (16 * (1 - (child % 2))));
     }
 
-    inline void setChildNodeLevel(char child, uint16_t lvl, bool isMxd) {
+    inline void setChildNodeLevel(char child, Level lvl, bool isMxd) {
         if (((!isMxd) && child > 1) || child > 3) {
             // child index is out of the valid range, returns a value but throw error.
             throw error(ErrCode::INVALID_BOUND, __FILE__, __LINE__);

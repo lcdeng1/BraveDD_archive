@@ -81,7 +81,7 @@ void UnaryOperation::compute(const Func& source, Func& target)
     if (!checkForestCompatibility()) {
         throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
     }
-    uint16_t numVars = sourceForest->getSetting().getNumVars();
+    Level numVars = sourceForest->getSetting().getNumVars();
     Edge ans;
     // copy to target forest
     ans = computeCOPY(numVars, source.getEdge());
@@ -111,7 +111,7 @@ void UnaryOperation::compute(const Func& source, long& target)
     if (!checkForestCompatibility()) {
         throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
     }
-    uint16_t numVars = sourceForest->getSetting().getNumVars();
+    Level numVars = sourceForest->getSetting().getNumVars();
     if (opType == UnaryOperationType::UOP_CARDINALITY) {
         target = computeCARD(numVars, source.getEdge());
     }
@@ -131,7 +131,7 @@ void UnaryOperation::compute(const Func& source, const Func& dc, Func& target)
     if (!checkForestCompatibility()) {
         throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
     }
-    uint16_t numVars = sourceForest->getSetting().getNumVars();
+    Level numVars = sourceForest->getSetting().getNumVars();
     Edge ans;
     // copy to target forest
     ans = computeCOPY(numVars, source.getEdge());
@@ -150,7 +150,7 @@ void UnaryOperation::compute(const Func& source, const Value& val, Func& target)
     if (!checkForestCompatibility()) {
         throw error(ErrCode::INVALID_OPERATION, __FILE__, __LINE__);
     }
-    uint16_t numVars = sourceForest->getSetting().getNumVars();
+    Level numVars = sourceForest->getSetting().getNumVars();
     Edge ans;
     // copy to target forest
     ans = computeCOPY(numVars, source.getEdge());
@@ -171,7 +171,7 @@ bool UnaryOperation::checkForestCompatibility() const
     return ans;
 }
 
-Edge UnaryOperation::computeCOPY(const uint16_t lvl, const Edge& source)
+Edge UnaryOperation::computeCOPY(const Level lvl, const Edge& source)
 {
     // Direct return if the target forest is the source forest
     if (sourceForest == targetForest) {
@@ -186,7 +186,7 @@ Edge UnaryOperation::computeCOPY(const uint16_t lvl, const Edge& source)
     return ans;
 }
 
-Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
+Edge UnaryOperation::computeCOMPLEMENT(const Level lvl, const Edge& source)
 {
     /* Assuming this is within the same target forest
      Here is forest that does not allow complement bit */
@@ -222,7 +222,7 @@ Edge UnaryOperation::computeCOMPLEMENT(const uint16_t lvl, const Edge& source)
     return ans;
 }
 
-long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
+long UnaryOperation::computeCARD(const Level lvl, const Edge& source)
 {
     // base cases:
     if (lvl == 0) {
@@ -326,7 +326,7 @@ long UnaryOperation::computeCARD(const uint16_t lvl, const Edge& source)
     return multiplier * num + adder;
 }
 
-Edge UnaryOperation::computeRST(const uint16_t lvl, const Edge& source, const Edge& dc)
+Edge UnaryOperation::computeRST(const Level lvl, const Edge& source, const Edge& dc)
 {
     // terminal case
     if (source.getNodeLevel() == 0) return source;
@@ -334,7 +334,7 @@ Edge UnaryOperation::computeRST(const uint16_t lvl, const Edge& source, const Ed
     Edge result;
     if (caches[0].check(lvl, source, dc, result)) return result;
     // check child edge
-    uint16_t level = MAX(source.getNodeLevel(), dc.getNodeLevel());
+    Level level = MAX(source.getNodeLevel(), dc.getNodeLevel());
     Edge lc = targetForest->cofact(level, source, 0);
     Edge hc = targetForest->cofact(level, source, 1);
     Edge lc_dc = targetForest->cofact(level, dc, 0);
@@ -357,7 +357,7 @@ Edge UnaryOperation::computeRST(const uint16_t lvl, const Edge& source, const Ed
     return result;
 }
 
-Edge UnaryOperation::computeRST(const uint16_t lvl, const Edge& source, const Value& val)
+Edge UnaryOperation::computeRST(const Level lvl, const Edge& source, const Value& val)
 {
     // terminal case
     if (isTerminal(source.getEdgeHandle())) return source;
@@ -365,7 +365,7 @@ Edge UnaryOperation::computeRST(const uint16_t lvl, const Edge& source, const Va
     Edge result;
     if (caches[0].check(lvl, source, result)) return result;
     // check child edge
-    uint16_t level = source.getNodeLevel();
+    Level level = source.getNodeLevel();
     Edge lc = targetForest->cofact(level, source, 0);
     Edge hc = targetForest->cofact(level, source, 1);
     if (isTerminal(lc.getEdgeHandle())) {
@@ -397,7 +397,7 @@ Edge UnaryOperation::computeRST(const uint16_t lvl, const Edge& source, const Va
     return result;
 }
 
-Edge UnaryOperation::computeOSM(const uint16_t lvl, const Edge& source, const Edge& dc)
+Edge UnaryOperation::computeOSM(const Level lvl, const Edge& source, const Edge& dc)
 {
     // terminal case
     if (source.getNodeLevel() == 0) return source;
@@ -405,7 +405,7 @@ Edge UnaryOperation::computeOSM(const uint16_t lvl, const Edge& source, const Ed
     Edge result;
     if (caches[0].check(lvl, source, dc, result)) return result;
     // check child edge
-    uint16_t level = MAX(source.getNodeLevel(), dc.getNodeLevel());
+    Level level = MAX(source.getNodeLevel(), dc.getNodeLevel());
     Edge lc = targetForest->cofact(level, source, 0);
     Edge hc = targetForest->cofact(level, source, 1);
     Edge lc_dc = targetForest->cofact(level, dc, 0);
@@ -436,7 +436,7 @@ Edge UnaryOperation::computeOSM(const uint16_t lvl, const Edge& source, const Ed
     return result;
 }
 
-Edge UnaryOperation::computeOSM(const uint16_t lvl, const Edge& source, const Value& val)
+Edge UnaryOperation::computeOSM(const Level lvl, const Edge& source, const Value& val)
 {
     // terminal case
     if ((source.getNodeLevel() == 0)) return source;
@@ -444,7 +444,7 @@ Edge UnaryOperation::computeOSM(const uint16_t lvl, const Edge& source, const Va
     Edge result;
     if (caches[0].check(lvl, source, result)) return result;
     // check child edge
-    uint16_t level = source.getNodeLevel();
+    Level level = source.getNodeLevel();
     Edge lc = targetForest->cofact(level, source, 0);
     Edge hc = targetForest->cofact(level, source, 1);
     // compare child edges
@@ -468,7 +468,7 @@ Edge UnaryOperation::computeOSM(const uint16_t lvl, const Edge& source, const Va
     return result;
 }
 
-Edge UnaryOperation::computeTSM(const uint16_t lvl, const Edge& source, const Edge& dc)
+Edge UnaryOperation::computeTSM(const Level lvl, const Edge& source, const Edge& dc)
 {
     // terminal case
     if (source.getNodeLevel() == 0) return source;
@@ -476,7 +476,7 @@ Edge UnaryOperation::computeTSM(const uint16_t lvl, const Edge& source, const Ed
     Edge result;
     if (caches[0].check(lvl, source, result)) return result;
     // check child edge
-    uint16_t level = MAX(source.getNodeLevel(), dc.getNodeLevel());
+    Level level = MAX(source.getNodeLevel(), dc.getNodeLevel());
     Edge lc = targetForest->cofact(level, source, 0);
     Edge hc = targetForest->cofact(level, source, 1);
     Edge lc_dc = targetForest->cofact(level, dc, 0);
@@ -513,7 +513,7 @@ Edge UnaryOperation::computeTSM(const uint16_t lvl, const Edge& source, const Ed
     return result;
 }
 
-Edge UnaryOperation::computeTSM(const uint16_t lvl, const Edge& source, const Value& val)
+Edge UnaryOperation::computeTSM(const Level lvl, const Edge& source, const Value& val)
 {
     // terminal case
     if (source.getNodeLevel() == 0) return source;
@@ -521,7 +521,7 @@ Edge UnaryOperation::computeTSM(const uint16_t lvl, const Edge& source, const Va
     Edge result;
     if (caches[0].check(lvl, source, result)) return result;
     // check child edge
-    uint16_t level = source.getNodeLevel();
+    Level level = source.getNodeLevel();
     Edge lc = targetForest->cofact(level, source, 0);
     Edge hc = targetForest->cofact(level, source, 1);
     if (isTerminal(lc.getEdgeHandle())) {
@@ -570,7 +570,7 @@ char UnaryOperation::compareOSM(const Edge& source1, const Edge& source2, const 
     Edge dc1 = d1;
     Edge dc2 = d2;
     // the highest level
-    uint16_t highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
+    Level highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
     char ans;
 #ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // check cache
@@ -642,7 +642,7 @@ char UnaryOperation::compareOSM(const Edge& source1, const Edge& source2, const 
     Edge e1 = source1;
     Edge e2 = source2;
     // the highest level
-    uint16_t highest = MAX(e1.getNodeLevel(), e2.getNodeLevel());
+    Level highest = MAX(e1.getNodeLevel(), e2.getNodeLevel());
     char ans;
 #ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     //check cache
@@ -699,7 +699,7 @@ bool UnaryOperation::hasCommonTSM(const Edge& source1, const Edge& source2, cons
     Edge dc1 = d1;
     Edge dc2 = d2;
     // the highest level
-    uint16_t highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
+    Level highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
     bool ans = 0;
 #ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // check cache
@@ -752,7 +752,7 @@ bool UnaryOperation::hasCommonTSM(const Edge& source1, const Edge& source2, cons
     Edge e1 = source1;
     Edge e2 = source2;
     // the highest level
-    uint16_t highest = MAX(source1.getNodeLevel(), source2.getNodeLevel());
+    Level highest = MAX(source1.getNodeLevel(), source2.getNodeLevel());
     bool ans = 0;
 #ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // check cache
@@ -775,7 +775,7 @@ bool UnaryOperation::hasCommonTSM(const Edge& source1, const Edge& source2, cons
     return ans;
 }
 
-Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2)
+Edge UnaryOperation::commonTSM(const Level lvl, const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2)
 {
     // terminal cases
     if (d1.isConstantOne()) {return source2;}
@@ -787,7 +787,7 @@ Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Ed
     Edge dc1 = d1;
     Edge dc2 = d2;
     // the highest level
-    uint16_t highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
+    Level highest = MAX(MAX(e1.getNodeLevel(), e2.getNodeLevel()), MAX(dc1.getNodeLevel(), dc2.getNodeLevel()));
     Edge result;
 #ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     // check cache
@@ -820,7 +820,7 @@ Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Ed
     return result;
 }
 
-Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Edge& source2, const Value& val)
+Edge UnaryOperation::commonTSM(const Level lvl, const Edge& source1, const Edge& source2, const Value& val)
 {
     // terminal cases
     if (isTerminal(source1.getEdgeHandle())) {
@@ -844,7 +844,7 @@ Edge UnaryOperation::commonTSM(const uint16_t lvl, const Edge& source1, const Ed
     Edge e1 = source1;
     Edge e2 = source2;
     // the highest level
-    uint16_t highest = MAX(source1.getNodeLevel(), source2.getNodeLevel());
+    Level highest = MAX(source1.getNodeLevel(), source2.getNodeLevel());
     Edge result;
 #ifdef BRAVE_DD_CONCRETIZATION_HELP_CACHE
     //check cache
@@ -1090,7 +1090,7 @@ void BinaryOperation::compute(const Func& source1, const Func& source2, Func& re
     Edge ans;
     Func source1Equ;
     Func source2Equ;
-    uint16_t numVars = resForest->getSetting().getNumVars();
+    Level numVars = resForest->getSetting().getNumVars();
     // Unary operation to copy from source1 forest to target forest
     UnaryOperation* cp1 = UOPs.find(UnaryOperationType::UOP_COPY, source1.getForest(), res.getForest());
     if (!cp1) {
@@ -1148,7 +1148,7 @@ bool BinaryOperation::checkForestCompatibility() const
     return ans;
 }
 
-Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, const Edge& source2)
+Edge BinaryOperation::computeElmtWise(const Level lvl, const Edge& source1, const Edge& source2)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "compute elementwise(" << BOP2String(opType) << "): lvl: " << lvl << "; e1: ";
@@ -1369,7 +1369,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
     /* -------------------------------------------------------------------------------------------------
     * Reordering
     * ------------------------------------------------------------------------------------------------*/
-    uint16_t m1, m2;
+    Level m1, m2;
     m1 = e1.getNodeLevel();
     m2 = e2.getNodeLevel();
     if (m1<m2) {
@@ -1428,7 +1428,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
             }
             tmp[1].setRule(RULE_X);
             tmp[2].setRule(RULE_X);
-            for (uint16_t k=m1+1; k<=lvl; k++) {
+            for (Level k=m1+1; k<=lvl; k++) {
                 tmp[0] = ans;
                 tmp[3] = ans;
                 ans = resForest->reduceEdge(k, root, k, tmp);
@@ -1540,7 +1540,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
             }
             tmp[1].setRule(RULE_X);
             tmp[2].setRule(RULE_X);
-            for (uint16_t k=m1+1; k<=lvl; k++) {
+            for (Level k=m1+1; k<=lvl; k++) {
                 tmp[0] = ans;
                 tmp[3] = ans;
                 ans = resForest->reduceEdge(k, root, k, tmp);
@@ -1551,7 +1551,7 @@ Edge BinaryOperation::computeElmtWise(const uint16_t lvl, const Edge& source1, c
     }
 }
 
-Edge BinaryOperation::computeUnion(const uint16_t lvl, const Edge& source1, const Edge& source2)
+Edge BinaryOperation::computeUnion(const Level lvl, const Edge& source1, const Edge& source2)
 {
     Edge ans;
     Edge e1, e2;
@@ -1577,7 +1577,7 @@ Edge BinaryOperation::computeUnion(const uint16_t lvl, const Edge& source1, cons
     if (e1.isConstantZero()) return e2;
     if (e2.isConstantZero()) return e1;
 
-    uint16_t m1, m2;
+    Level m1, m2;
     m1 = e1.getNodeLevel();
     m2 = e2.getNodeLevel();
     // ordering
@@ -1636,7 +1636,7 @@ Edge BinaryOperation::computeUnion(const uint16_t lvl, const Edge& source1, cons
     return ans;
 }
 
-Edge BinaryOperation::computeIntersection(const uint16_t lvl, const Edge& source1, const Edge& source2)
+Edge BinaryOperation::computeIntersection(const Level lvl, const Edge& source1, const Edge& source2)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "compute INTERSECTION: lvl: " << lvl << "; e1: ";
@@ -1670,7 +1670,7 @@ Edge BinaryOperation::computeIntersection(const uint16_t lvl, const Edge& source
     if (e1.isConstantOne()) return e2;
     if (e2.isConstantOne()) return e1;
 
-    uint16_t m1, m2;
+    Level m1, m2;
     m1 = e1.getNodeLevel();
     m2 = e2.getNodeLevel();
     // ordering
@@ -1751,10 +1751,10 @@ Edge BinaryOperation::computeIntersection(const uint16_t lvl, const Edge& source
     return ans;
 }
 
-Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre)
+Edge BinaryOperation::computeImage(const Level lvl, const Edge& source1, const Edge& trans, bool isPre)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << ((isPre)?"Pre":"Post") << "IMAGE: lvl: " << (uint16_t)lvl << "; s: ";
+    std::cout << ((isPre)?"Pre":"Post") << "IMAGE: lvl: " << (Level)lvl << "; s: ";
     source1.print(std::cout);
     std::cout << "; r: ";
     trans.print(std::cout);
@@ -1825,7 +1825,7 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
         }
     }
 
-    uint16_t m = (s.getNodeLevel() > r.getNodeLevel()) ? s.getNodeLevel() : r.getNodeLevel();
+    Level m = (s.getNodeLevel() > r.getNodeLevel()) ? s.getNodeLevel() : r.getNodeLevel();
     // assertion: m>0
     Edge sCache = s;
     Edge rCache = r;
@@ -1933,7 +1933,7 @@ Edge BinaryOperation::computeImage(const uint16_t lvl, const Edge& source1, cons
     return ans;
 }
 
-Edge BinaryOperation::operateLL(const uint16_t lvl, const Edge& e1, const Edge& e2)
+Edge BinaryOperation::operateLL(const Level lvl, const Edge& e1, const Edge& e2)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "operateLL: lvl: " << lvl << "; e1: ";
@@ -1943,7 +1943,7 @@ Edge BinaryOperation::operateLL(const uint16_t lvl, const Edge& e1, const Edge& 
     std::cout << std::endl;
 #endif
 
-    uint16_t m1, m2;
+    Level m1, m2;
     m1 = e1.getNodeLevel();
     m2 = e2.getNodeLevel();
 
@@ -1970,7 +1970,7 @@ Edge BinaryOperation::operateLL(const uint16_t lvl, const Edge& e1, const Edge& 
     return ans;
 }
 
-Edge BinaryOperation::operateHH(const uint16_t lvl, const Edge& e1, const Edge& e2)
+Edge BinaryOperation::operateHH(const Level lvl, const Edge& e1, const Edge& e2)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "operateHH: lvl: " << lvl << "; e1: ";
@@ -1979,7 +1979,7 @@ Edge BinaryOperation::operateHH(const uint16_t lvl, const Edge& e1, const Edge& 
     e2.print(std::cout);
     std::cout << std::endl;
 #endif
-    uint16_t m1, m2;
+    Level m1, m2;
     m1 = e1.getNodeLevel();
     m2 = e2.getNodeLevel();
 
@@ -2007,7 +2007,7 @@ Edge BinaryOperation::operateHH(const uint16_t lvl, const Edge& e1, const Edge& 
 
 }
 
-Edge BinaryOperation::operateLH(const uint16_t lvl, const Edge& e1, const Edge& e2)
+Edge BinaryOperation::operateLH(const Level lvl, const Edge& e1, const Edge& e2)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "operateLH: lvl: " << lvl << "; e1: ";
@@ -2016,7 +2016,7 @@ Edge BinaryOperation::operateLH(const uint16_t lvl, const Edge& e1, const Edge& 
     e2.print(std::cout);
     std::cout << std::endl;
 #endif
-    uint16_t m1, m2, m;
+    Level m1, m2, m;
     m1 = e1.getNodeLevel();
     m2 = e2.getNodeLevel();
 
@@ -2295,7 +2295,7 @@ void SaturationOperation::compute(const Func& source1, Func& res)
         exit(ErrCode::INVALID_OPERATION);
     }
     Edge ans;
-    uint16_t numVars = resForest->getSetting().getNumVars();
+    Level numVars = resForest->getSetting().getNumVars();
 
 #ifdef BRAVE_DD_PRINT_RELATIONS
     // print for test
@@ -2343,7 +2343,7 @@ bool SaturationOperation::checkForestCompatibility() const
     return ans;
 }
 
-Edge SaturationOperation::computeSaturation(const uint16_t lvl, const Edge& source1, const size_t begin)
+Edge SaturationOperation::computeSaturation(const Level lvl, const Edge& source1, const size_t begin)
 {
     /* the result would go the same forest as source1 */
     // begin event's level should not be higher than lvl
@@ -2394,8 +2394,8 @@ Edge SaturationOperation::computeSaturation(const uint16_t lvl, const Edge& sour
     }
 
     // determine the max top level
-    uint16_t k = source1.getNodeLevel();
-    uint16_t m = (k < relations[begin].getEdge().getNodeLevel()) ? relations[begin].getEdge().getNodeLevel() : k;
+    Level k = source1.getNodeLevel();
+    Level m = (k < relations[begin].getEdge().getNodeLevel()) ? relations[begin].getEdge().getNodeLevel() : k;
 
     /* check in the cache */
 #ifdef BRAVE_DD_OPERATION_TRACE
@@ -2582,7 +2582,7 @@ Edge SaturationOperation::computeSaturation(const uint16_t lvl, const Edge& sour
     return ans;
 }
 
-Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Edge& source1, const size_t begin)
+Edge SaturationOperation::computeSaturationDistance(const Level lvl, const Edge& source1, const size_t begin)
 {
     /* the result would go the same forest as source1 */
     // begin event's level should not be higher than lvl
@@ -2611,8 +2611,8 @@ Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Ed
     }
 
     // determine the max top level
-    uint16_t k = source1.getNodeLevel();
-    uint16_t m = (k < relations[begin].getEdge().getNodeLevel()) ? relations[begin].getEdge().getNodeLevel() : k;
+    Level k = source1.getNodeLevel();
+    Level m = (k < relations[begin].getEdge().getNodeLevel()) ? relations[begin].getEdge().getNodeLevel() : k;
 
     /* check in the cache */
     Value originalVal;
@@ -2763,10 +2763,10 @@ Edge SaturationOperation::computeSaturationDistance(const uint16_t lvl, const Ed
     return ans;
 }
 
-Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source1, const Edge& trans, const size_t begin)
+Edge SaturationOperation::computeImageSat(const Level lvl, const Edge& source1, const Edge& trans, const size_t begin)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << ((isPre)?"Pre":"Post") << "ImageSat: lvl: " << (uint16_t)lvl << "; s: ";
+    std::cout << ((isPre)?"Pre":"Post") << "ImageSat: lvl: " << (Level)lvl << "; s: ";
     source1.print(std::cout);
     std::cout << "; r: ";
     trans.print(std::cout);
@@ -2846,7 +2846,7 @@ Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source
         }
     }
 
-    uint16_t m = (s.getNodeLevel() > r.getNodeLevel()) ? s.getNodeLevel() : r.getNodeLevel();
+    Level m = (s.getNodeLevel() > r.getNodeLevel()) ? s.getNodeLevel() : r.getNodeLevel();
 
     /* -------------------------------------------------------------------------------------------------
     * Check cache
@@ -2956,10 +2956,10 @@ Edge SaturationOperation::computeImageSat(const uint16_t lvl, const Edge& source
     return ans;
 }
 
-Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge& source1, const Edge& trans, const size_t begin)
+Edge SaturationOperation::computeImageSatDistance(const Level lvl, const Edge& source1, const Edge& trans, const size_t begin)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << ((isPre)?"Pre":"Post") << "ImageSatDistance: lvl: " << (uint16_t)lvl << "; s: ";
+    std::cout << ((isPre)?"Pre":"Post") << "ImageSatDistance: lvl: " << (Level)lvl << "; s: ";
     source1.print(std::cout);
     std::cout << "; r: ";
     trans.print(std::cout);
@@ -3025,7 +3025,7 @@ Edge SaturationOperation::computeImageSatDistance(const uint16_t lvl, const Edge
         }
     }
 
-    uint16_t m = (s.getNodeLevel() > r.getNodeLevel()) ? s.getNodeLevel() : r.getNodeLevel();
+    Level m = (s.getNodeLevel() > r.getNodeLevel()) ? s.getNodeLevel() : r.getNodeLevel();
 
     /* -------------------------------------------------------------------------------------------------
     * Check cache
@@ -3122,7 +3122,7 @@ void SaturationOperation::sortRelations()
     });
 }
 
-int SaturationOperation::indexOfTopLessThan(const uint16_t k)
+int SaturationOperation::indexOfTopLessThan(const Level k)
 {
     int ans = -1;
     auto it = std::find_if(relations.begin(), relations.end(), [k](Func& rel) {

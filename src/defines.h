@@ -13,7 +13,6 @@
 #ifndef BRAVE_DD_DEFINES_H
 #define BRAVE_DD_DEFINES_H
 
-
 // #ifdef HAVE_CONFIG_H
 // #include "config.h"
 // #endif
@@ -41,13 +40,12 @@
 #include "io.h"
 // #include "gmp.h"
 
-//
-// Typedefs and constants
-//
-#define LEVEL_LIMIT 32    // This limits the max number of possible levels: 2^32-1
-#define HANDLE_LENGTH 64
-
 namespace BRAVE_DD {
+    /* For Edge related */
+    using Level = uint16_t;
+    using EdgeLabel = uint8_t;
+    using EdgeHandle = uint64_t;
+
     /**
      *  Null-terminated sequence of primes to use as hash table sizes.
      *  About this list:

@@ -159,49 +159,49 @@ class BRAVE_DD::Operation {
     virtual ~Operation();
 
     // add element to cache, this part may need to be rewriten later?
-    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const long& ans) {
+    void cacheAdd(const size_t cacheID, const Level lvl, const Edge& a, const long& ans) {
         // check if sweep and enlarg, and do it
         sweepAndEnlarge(cacheID);
         // add to cache
         caches[cacheID].add(lvl, a, ans);
     }
-    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& ans) {
+    void cacheAdd(const size_t cacheID, const Level lvl, const Edge& a, const Edge& ans) {
         // check if sweep and enlarg, and do it
         sweepAndEnlarge(cacheID);
         // add to cache
         caches[cacheID].add(lvl, a, ans);
     }
-    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const Edge& ans) {
+    void cacheAdd(const size_t cacheID, const Level lvl, const Edge& a, const Edge& b, const Edge& ans) {
         // check if sweep and enlarg, and do it
         sweepAndEnlarge(cacheID);
         // add to cache
         caches[cacheID].add(lvl, a, b, ans);
     }
-    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const char& ans) {
+    void cacheAdd(const size_t cacheID, const Level lvl, const Edge& a, const Edge& b, const char& ans) {
         // check if sweep and enlarg, and do it
         sweepAndEnlarge(cacheID);
         // add to cache
         caches[cacheID].add(lvl, a, b, ans);
     }
-    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const bool& ans) {
+    void cacheAdd(const size_t cacheID, const Level lvl, const Edge& a, const Edge& b, const bool& ans) {
         // check if sweep and enlarg, and do it
         sweepAndEnlarge(cacheID);
         // add to cache
         caches[cacheID].add(lvl, a, b, ans);
     }
-    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const Edge& ans) {
+    void cacheAdd(const size_t cacheID, const Level lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const Edge& ans) {
         // check if sweep and enlarg, and do it
         sweepAndEnlarge(cacheID);
         // add to cache
         caches[cacheID].add(lvl, a, b, c, d, ans);
     }
-    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const char& ans) {
+    void cacheAdd(const size_t cacheID, const Level lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const char& ans) {
         // check if sweep and enlarg, and do it
         sweepAndEnlarge(cacheID);
         // add to cache
         caches[cacheID].add(lvl, a, b, c, d, ans);
     }
-    void cacheAdd(const size_t cacheID, const uint16_t lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const bool& ans) {
+    void cacheAdd(const size_t cacheID, const Level lvl, const Edge& a, const Edge& b, const Edge& c, const Edge& d, const bool& ans) {
         // check if sweep and enlarg, and do it
         sweepAndEnlarge(cacheID);
         // add to cache
@@ -249,24 +249,24 @@ class BRAVE_DD::UnaryOperation : public Operation {
     /*-------------------------------------------------------------*/
     /// Helper Methods ==============================================
     bool checkForestCompatibility() const;
-    Edge computeCOPY(const uint16_t lvl, const Edge& source);
-    Edge computeCOMPLEMENT(const uint16_t lvl, const Edge& source);
-    long computeCARD(const uint16_t lvl, const Edge& source);
-    unsigned long computeCARD64(const uint16_t lvl, const Edge& source);
+    Edge computeCOPY(const Level lvl, const Edge& source);
+    Edge computeCOMPLEMENT(const Level lvl, const Edge& source);
+    long computeCARD(const Level lvl, const Edge& source);
+    unsigned long computeCARD64(const Level lvl, const Edge& source);
     // concretizing
-    Edge computeRST(const uint16_t lvl, const Edge& source, const Edge& dc);
-    Edge computeRST(const uint16_t lvl, const Edge& source, const Value& val);
-    Edge computeOSM(const uint16_t lvl, const Edge& source, const Edge& dc);
-    Edge computeOSM(const uint16_t lvl, const Edge& source, const Value& val);
-    Edge computeTSM(const uint16_t lvl, const Edge& source, const Edge& dc);
-    Edge computeTSM(const uint16_t lvl, const Edge& source, const Value& val);
+    Edge computeRST(const Level lvl, const Edge& source, const Edge& dc);
+    Edge computeRST(const Level lvl, const Edge& source, const Value& val);
+    Edge computeOSM(const Level lvl, const Edge& source, const Edge& dc);
+    Edge computeOSM(const Level lvl, const Edge& source, const Value& val);
+    Edge computeTSM(const Level lvl, const Edge& source, const Edge& dc);
+    Edge computeTSM(const Level lvl, const Edge& source, const Value& val);
     // used for concretizing
     char compareOSM(const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2);
     char compareOSM(const Edge& source1, const Edge& source2, const Value& val);
     bool hasCommonTSM(const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2);
     bool hasCommonTSM(const Edge& source1, const Edge& source2, const Value& val);
-    Edge commonTSM(const uint16_t lvl, const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2);
-    Edge commonTSM(const uint16_t lvl, const Edge& source1, const Edge& source2, const Value& val);
+    Edge commonTSM(const Level lvl, const Edge& source1, const Edge& source2, const Edge& d1, const Edge& d2);
+    Edge commonTSM(const Level lvl, const Edge& source1, const Edge& source2, const Value& val);
     // list
     friend class UnaryList;
     UnaryOperation*     next;
@@ -364,15 +364,15 @@ class BRAVE_DD::BinaryOperation : public Operation {
     /*-------------------------------------------------------------*/
     /// Helper Methods ==============================================
     bool checkForestCompatibility() const;
-    Edge computeElmtWise(const uint16_t lvl, const Edge& source1, const Edge& source2);
-    Edge computeUnion(const uint16_t lvl, const Edge& source1, const Edge& source2);
-    Edge computeIntersection(const uint16_t lvl, const Edge& source1, const Edge& source2);
-    Edge computeImage(const uint16_t lvl, const Edge& source1, const Edge& trans, bool isPre = 0);
-    Edge computePlus(const uint16_t lvl, const Edge& source1, const Edge& source2);
+    Edge computeElmtWise(const Level lvl, const Edge& source1, const Edge& source2);
+    Edge computeUnion(const Level lvl, const Edge& source1, const Edge& source2);
+    Edge computeIntersection(const Level lvl, const Edge& source1, const Edge& source2);
+    Edge computeImage(const Level lvl, const Edge& source1, const Edge& trans, bool isPre = 0);
+    Edge computePlus(const Level lvl, const Edge& source1, const Edge& source2);
     // elementwise related
-    Edge operateLL(const uint16_t lvl, const Edge& e1, const Edge& e2);
-    Edge operateHH(const uint16_t lvl, const Edge& e1, const Edge& e2);
-    Edge operateLH(const uint16_t lvl, const Edge& e1, const Edge& e2);
+    Edge operateLL(const Level lvl, const Edge& e1, const Edge& e2);
+    Edge operateHH(const Level lvl, const Edge& e1, const Edge& e2);
+    Edge operateLH(const Level lvl, const Edge& e1, const Edge& e2);
     // list
     friend class BinaryList;
     BinaryOperation*    next;
@@ -498,14 +498,14 @@ class BRAVE_DD::SaturationOperation : public Operation {
     /*-------------------------------------------------------------*/
     /// Helper Methods ==============================================
     bool checkForestCompatibility() const;
-    Edge computeSaturation(const uint16_t lvl, const Edge& source1, const size_t begin);
-    Edge computeSaturationDistance(const uint16_t lvl, const Edge& source1, const size_t begin);
-    Edge computeImageSat(const uint16_t lvl, const Edge& source1, const Edge& trans, const size_t begin);
-    Edge computeImageSatDistance(const uint16_t lvl, const Edge& source1, const Edge& trans, const size_t begin);
+    Edge computeSaturation(const Level lvl, const Edge& source1, const size_t begin);
+    Edge computeSaturationDistance(const Level lvl, const Edge& source1, const size_t begin);
+    Edge computeImageSat(const Level lvl, const Edge& source1, const Edge& trans, const size_t begin);
+    Edge computeImageSatDistance(const Level lvl, const Edge& source1, const Edge& trans, const size_t begin);
     // sort relation functions
     void sortRelations();
     // locate the first event that its level lower than k, return -1 if not found
-    int indexOfTopLessThan(const uint16_t k);
+    int indexOfTopLessThan(const Level k);
     // list
     friend class SaturationList;
     SaturationOperation*    next;

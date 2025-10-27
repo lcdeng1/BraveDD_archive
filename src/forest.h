@@ -53,7 +53,7 @@ class BRAVE_DD::Forest {
      * @param handle        The handle of the node.
      * @return Node         – Output the node stored in NodeManager.
      */
-    inline Node& getNode(const uint16_t level, const NodeHandle& handle) const {
+    inline Node& getNode(const Level level, const NodeHandle& handle) const {
         return nodeMan->getNodeFromHandle(level, handle);
     }
 
@@ -85,7 +85,7 @@ class BRAVE_DD::Forest {
      * @param handle        The given node handle.
      * @return NodeHandle   - Output the next pointer.
      */
-    inline NodeHandle getNodeNext(const uint16_t level, const NodeHandle handle) const {
+    inline NodeHandle getNodeNext(const Level level, const NodeHandle handle) const {
         return nodeMan->getNodeFromHandle(level, handle).getNext();
     }
 
@@ -96,7 +96,7 @@ class BRAVE_DD::Forest {
      * @param handle        The givien node handle.
      * @param next          The next handle to be set.
      */
-    inline void setNodeNext(const uint16_t level, const NodeHandle handle, const NodeHandle next) {
+    inline void setNodeNext(const Level level, const NodeHandle handle, const NodeHandle next) {
         nodeMan->getNodeFromHandle(level, handle).setNext(next);
     }
 
@@ -107,7 +107,7 @@ class BRAVE_DD::Forest {
      * @param handle        The given node handle.
      * @return uint64_t     - Output the node's hash value.
      */
-    inline uint64_t getNodeHash(const uint16_t level, const NodeHandle handle) const {
+    inline uint64_t getNodeHash(const Level level, const NodeHandle handle) const {
         return nodeMan->getNodeFromHandle(level, handle).hash(nodeSize);
     }
 
@@ -119,7 +119,7 @@ class BRAVE_DD::Forest {
      * @param node          The node.
      * @return NodeHandle   - Output the stored node's handle.
      */
-    inline NodeHandle obtainFreeNodeHandle(const uint16_t level, const Node& node) {
+    inline NodeHandle obtainFreeNodeHandle(const Level level, const Node& node) {
         return nodeMan->getFreeNodeHandle(level, node);
     }
     
@@ -130,7 +130,7 @@ class BRAVE_DD::Forest {
      * @param node          The node to insert.
      * @return NodeHandle   - Output the unique node handle stored in UniqueTable.
      */
-    inline NodeHandle insertNode(const uint16_t level, const Node& node) {
+    inline NodeHandle insertNode(const Level level, const Node& node) {
         return uniqueTable->insert(level, node);
     }
 
@@ -142,9 +142,9 @@ class BRAVE_DD::Forest {
      * @param level         The level of the parent node.
      * @param handle        The parent node handle.
      * @param child         The child index.
-     * @return uint16_t     - Output the level
+     * @return Level     - Output the level
      */
-    inline uint16_t getChildLevel(const uint16_t level, const NodeHandle handle, const char child) const {
+    inline Level getChildLevel(const Level level, const NodeHandle handle, const char child) const {
         // check if node in this forest skips level
         if (setting.getReductionSize()==0) return level-1;
         // node storage must have child level information
@@ -159,7 +159,7 @@ class BRAVE_DD::Forest {
      * @param child         The child index.
      * @return NodeHandle   - Output the node handle.
      */
-    inline NodeHandle getChildNodeHandle(const uint16_t level, const NodeHandle handle, const char child) const {
+    inline NodeHandle getChildNodeHandle(const Level level, const NodeHandle handle, const char child) const {
         return getNode(level, handle).childNodeHandle(child, setting.isRelation());
     }
 
@@ -171,7 +171,7 @@ class BRAVE_DD::Forest {
      * @param child         The child index.
      * @return EdgeHandle   - Output the edge handle.
      */
-    inline EdgeHandle getChildEdgeHandle(const uint16_t level, const NodeHandle handle, const char child) const {
+    inline EdgeHandle getChildEdgeHandle(const Level level, const NodeHandle handle, const char child) const {
         // the answer
         EdgeHandle ans = 0;
         // find the node
@@ -185,7 +185,7 @@ class BRAVE_DD::Forest {
         packSwap(ans, node.edgeSwap(child, 0, isRel));
         packSwapTo(ans, node.edgeSwap(child, 1, isRel));
         // fill level
-        uint16_t childLvl = getChildLevel(level, handle, child);
+        Level childLvl = getChildLevel(level, handle, child);
         packLevel(ans, childLvl);
         // fill target
         if (childLvl == 0) {
@@ -211,7 +211,7 @@ class BRAVE_DD::Forest {
         return ans;
     }
 
-    inline Edge getChildEdge(const uint16_t level, const NodeHandle handle, const char child) const {
+    inline Edge getChildEdge(const Level level, const NodeHandle handle, const char child) const {
         Edge ans;
         ans.handle = getChildEdgeHandle(level, handle, child);
         if ((setting.getEncodeMechanism() != TERMINAL)) {
@@ -241,7 +241,7 @@ class BRAVE_DD::Forest {
      * @param child         The child index.
      * @return Value        - Output the terminal value.
      */
-    inline Value getChildTerminalValue(const uint16_t level, const NodeHandle handle, const char child) const {
+    inline Value getChildTerminalValue(const Level level, const NodeHandle handle, const char child) const {
         if (getChildLevel(level, handle, child)>0) {
             std::cout << "[BRAVE_DD] ERROR!\t No value for nonterminal node!"<< std::endl;
             exit(0);
@@ -284,7 +284,7 @@ class BRAVE_DD::Forest {
      * @param child         The child index.
      * @return EdgeLabel    - Output the target node's child edge label.
      */
-    inline EdgeLabel getChildLabel(const uint16_t level, const NodeHandle handle, const char child) const {
+    inline EdgeLabel getChildLabel(const Level level, const NodeHandle handle, const char child) const {
         bool isRel = setting.isRelation();
         return getNode(level, handle).edgeLabel(child, isRel);
     }
@@ -311,7 +311,7 @@ class BRAVE_DD::Forest {
      * @param index 
      * @return Edge 
      */
-    inline Edge cofact(const uint16_t lvl, const Edge& edge, const char index) {
+    inline Edge cofact(const Level lvl, const Edge& edge, const char index) {
         if (lvl == 0) return edge;
         if (lvl == edge.getNodeLevel()) {
             char childIndex = index;
@@ -363,7 +363,7 @@ class BRAVE_DD::Forest {
      * @param value         [Optional] The value attached on the incoming edge.
      * @return Edge         - Output: the reduced edge pointing to a reduced node uniquely stored.
      */
-    Edge reduceEdge(const uint16_t beginLevel, const EdgeLabel label, const uint16_t nodeLevel, const std::vector<Edge>& down, const Value& value = Value());
+    Edge reduceEdge(const Level beginLevel, const EdgeLabel label, const Level nodeLevel, const std::vector<Edge>& down, const Value& value = Value());
 
 
 
@@ -447,8 +447,8 @@ class BRAVE_DD::Forest {
     /***************************** Cardinality **********************/
     uint64_t countNodes();   // all Funcs
     uint64_t countNodes(Func func);
-    uint64_t countNodesAtLevel(uint16_t lvl);
-    uint64_t countNodesAtLevel(uint16_t lvl, Func func);
+    uint64_t countNodesAtLevel(Level lvl);
+    uint64_t countNodesAtLevel(Level lvl, Func func);
 
     uint64_t mass(Func func);
 
@@ -463,7 +463,7 @@ class BRAVE_DD::Forest {
 
     /************************* Garbage Collection *******************/
     void deleteNode(NodeHandle handle);
-    inline void sweepNodeMan(uint16_t level) {nodeMan->sweep(level);}
+    inline void sweepNodeMan(Level level) {nodeMan->sweep(level);}
     /**
      * @brief Assuming the necessary nodes are marked, 
      * the unmarked nodes will be removed and the marked nodes will be unmarked
@@ -473,12 +473,12 @@ class BRAVE_DD::Forest {
     // TBD
 
     /************************* Statistics Information ***************/
-    inline uint32_t getNodeManUsed(const uint16_t level) const {
+    inline uint32_t getNodeManUsed(const Level level) const {
         return nodeMan->numUsed(level);
     }
     inline uint64_t getNodeManUsed() const {
         uint64_t total = 0;
-        for (uint16_t k=1; k<=setting.getNumVars(); k++) {
+        for (Level k=1; k<=setting.getNumVars(); k++) {
             total += getNodeManUsed(k);
         }
         return total;
@@ -487,7 +487,7 @@ class BRAVE_DD::Forest {
         unmark();
         markNodes(func);
         uint64_t num = 0;
-        for (uint16_t i=1; i<=func.getEdge().getNodeLevel(); i++) {
+        for (Level i=1; i<=func.getEdge().getNodeLevel(); i++) {
             num += nodeMan->numMarked(i);
         }
         unmark();
@@ -497,22 +497,22 @@ class BRAVE_DD::Forest {
         unmark();
         for (size_t i=0; i<funs.size(); i++) markNodes(funs[i]);
         uint64_t num = 0;
-        for (uint16_t i=1; i<=setting.getNumVars(); i++) {
+        for (Level i=1; i<=setting.getNumVars(); i++) {
             num += nodeMan->numMarked(i);
         }
         unmark();
         return num;
     }
-    inline uint32_t getNodeManAlloc(const uint16_t level) const {
+    inline uint32_t getNodeManAlloc(const Level level) const {
         return nodeMan->numAlloc(level);
     }
-    inline uint32_t getNodeManPeak(const uint16_t level) const {
+    inline uint32_t getNodeManPeak(const Level level) const {
         return nodeMan->numPeakAlloc(level);
     }
     inline uint64_t getNodeManPeak() const {
         return nodeMan->numRealPeak();
     }
-    inline uint32_t getUTEntriesNum(const uint16_t level) const {
+    inline uint32_t getUTEntriesNum(const Level level) const {
         return uniqueTable->getNumEntries(level);
     }
     void reportNodesNum(std::ostream& out) const;
@@ -559,7 +559,7 @@ class BRAVE_DD::Forest {
      * @param down          The vector of child edges of the node.
      * @param out           Output: edge label (rule/value, flags).
      */
-    Edge normalizeNode(const uint16_t nodeLevel, const std::vector<Edge>& down);
+    Edge normalizeNode(const Level nodeLevel, const std::vector<Edge>& down);
 
     /**
      * @brief Normalize a long edge to be legal for this forest setting. If the reduction rule
@@ -569,7 +569,7 @@ class BRAVE_DD::Forest {
      * @param edge          The given long edge to be normalized.
      * @return Edge         Output: normalized edge.
      */
-    Edge normalizeEdge(const uint16_t level, const Edge& edge);
+    Edge normalizeEdge(const Level level, const Edge& edge);
     
     /**
      * @brief Reduce a node assuming the incoming edge is a short edge with 0 edge value.
@@ -578,7 +578,7 @@ class BRAVE_DD::Forest {
      * @param down          The vector of child edges of the unreduced node.
      * @return Edge         - Output: reduced edge.
      */
-    Edge reduceNode(const uint16_t nodeLevel, const std::vector<Edge>& down);
+    Edge reduceNode(const Level nodeLevel, const std::vector<Edge>& down);
 
     /**
      * @brief Merge the incoming edge having EdgeLabel "label", which is respect of 
@@ -593,7 +593,7 @@ class BRAVE_DD::Forest {
      * @param value         [Optional] The value attached on the incoming edge.
      * @return Edge         - Output: merged edge (label, target node handle).
      */
-    Edge mergeEdge(const uint16_t beginLevel, const uint16_t mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value = Value());
+    Edge mergeEdge(const Level beginLevel, const Level mergeLevel, const EdgeLabel label, const Edge& reduced, const Value& value = Value());
 
     /**
      * @brief Check if the swap-all bit is useless, by giving the parent forest and edge
@@ -604,12 +604,12 @@ class BRAVE_DD::Forest {
      */
     char isSwapAllUseless(Edge& e);
 
-    Edge unreduceEdge(const uint16_t level, const Edge& edge);
+    Edge unreduceEdge(const Level level, const Edge& edge);
 
     // these are only used by BDDs operations
 
-    Edge buildHalf(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2, const bool isLow);
-    Edge buildUmb(const uint16_t beginLvl, const uint16_t endLvl, const Edge& e1, const Edge& e2, const Edge& e3);
+    Edge buildHalf(const Level beginLvl, const Level endLvl, const Edge& e1, const Edge& e2, const bool isLow);
+    Edge buildUmb(const Level beginLvl, const Level endLvl, const Edge& e1, const Edge& e2, const Edge& e3);
 
     /* Marker */
     void markNodes(const Edge& edge) const;

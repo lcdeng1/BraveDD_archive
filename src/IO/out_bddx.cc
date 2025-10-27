@@ -32,7 +32,7 @@ void BddxMaker::buildBddx(const Func& func)
 void BddxMaker::buildBddx(const std::vector<Func>& func)
 {
     // TODO: change this for MxDD
-    uint16_t numVars = parent->getSetting().getNumVars();
+    Level numVars = parent->getSetting().getNumVars();
     char dim = parent->getSetting().isRelation() ? 2 : 1;
     std::string name = parent->getSetting().getName();
     std::string range;
@@ -90,7 +90,7 @@ void BddxMaker::buildBddx(const std::vector<Func>& func)
             }
         }
     }
-    for (uint16_t i=1;i<=numVars;i++) {
+    for (Level i=1;i<=numVars;i++) {
         for (Edge curr: edgeByLevel[i]) {
             outfile << "\tN" << curr.getNodeHandle() << " L " << i << ": ";
             for (char j=0;j<numChild;j++) {
