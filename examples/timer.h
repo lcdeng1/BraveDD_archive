@@ -19,7 +19,7 @@ class timer
 {
 	struct timeval curr_time, prev_time;
 	// struct timezone time_zone;
-	long last_interval; 
+	long last_interval=0; 
 
 public:
 	timer()

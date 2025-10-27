@@ -1940,7 +1940,7 @@ void compute_saturation(const Func& target, const std::vector<Func>& relations)
     std::cout << std::left << std::setw(align0) << "Saturation (final):" << nodes_Sat << std::endl;
     std::cout << std::left << std::setw(align0) << "Saturation (peak):" << nodes_Sat_Peak << std::endl;
 
-    if (N==2 && M==2){
+    if (N<=2 && M<=2){
         DotMaker dot2(forest1, "distance_sat");
         dot2.buildGraph(states_Sat);
         dot2.runDot("pdf");
@@ -2159,6 +2159,11 @@ int main(int argc, const char** argv)
     /* Encode final target configure to BDD */
     Func target(forest1);
     target = encodePuzzle2BDD(conf);
+    if ((N<=2) && (M<=2)) {
+        DotMaker dot1(forest1, "target_Conf");
+        dot1.buildGraph(target);
+        dot1.runDot("pdf");
+    }
     // print
     // if (isEmptyBot || isEmptyTop) {
     //     target.getEdge().print(std::cout);

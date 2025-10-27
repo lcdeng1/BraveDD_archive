@@ -726,7 +726,7 @@ int main(int argc, const char** argv)
                 std::vector<Func> concretizedRST;
                 std::vector<Func> concretizedOSM;
                 std::vector<Func> concretizedTSM;
-                // double timeRST = 0.0, timeOSM = 0.0, timeTSM = 0.0;
+                double timeRST = 0.0, timeOSM = 0.0, timeTSM = 0.0;
                 Func cz(forest);
                 Func czDC = DC;
                 /* Restrict */
@@ -740,21 +740,21 @@ int main(int argc, const char** argv)
                     watch1.note_time();
                     apply(CONCRETIZE_RST, results[permutation[i]], czDC, cz);
                     watch1.note_time();
-                    // timeRST += watch1.get_last_seconds();
+                    timeRST += watch1.get_last_seconds();
                     concretizedRST.push_back(cz);
                     // One-sided-match
                     watch1.reset();
                     watch1.note_time();
                     apply(CONCRETIZE_OSM, results[permutation[i]], czDC, cz);
                     watch1.note_time();
-                    // timeOSM += watch1.get_last_seconds();
+                    timeOSM += watch1.get_last_seconds();
                     concretizedOSM.push_back(cz);
                     // Two-sided-match
                     watch1.reset();
                     watch1.note_time();
                     apply(CONCRETIZE_TSM, results[permutation[i]], czDC, cz);
                     watch1.note_time();
-                    // timeTSM += watch1.get_last_seconds();
+                    timeTSM += watch1.get_last_seconds();
                     concretizedTSM.push_back(cz);
                 }
                 watch1.note_time();
@@ -762,11 +762,11 @@ int main(int argc, const char** argv)
                 nodes_osm = forest->getNodeManUsed(concretizedOSM);
                 nodes_tsm = forest->getNodeManUsed(concretizedTSM);
                 std::cerr << "RST: number of nodes: " << nodes_rst << std::endl;
-                // std::cerr << "RST: time: " << timeRST << std::endl;
+                std::cerr << "RST: time: " << timeRST << std::endl;
                 std::cerr << "OSM: number of nodes: " << nodes_osm << std::endl;
-                // std::cerr << "OSM: time: " << timeOSM << std::endl;
+                std::cerr << "OSM: time: " << timeOSM << std::endl;
                 std::cerr << "TSM: number of nodes: " << nodes_tsm << std::endl;
-                // std::cerr << "TSM: time: " << timeTSM << std::endl;                
+                std::cerr << "TSM: time: " << timeTSM << std::endl;                
             }
         } else {
             /* ExplictFunc to store */
