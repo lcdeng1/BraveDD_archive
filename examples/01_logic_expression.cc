@@ -66,13 +66,13 @@ int main (int argc, const char** argv) {
     y2.variable(2);
     y3.variable(3);
     y4.variable(4);
-    target = (!y4 & !y1) | (y3 & y2);
+    Func new_target = (!y4 & !y1) | (y3 & y2);
 
     if (isVisual) {
         /* Build BDD in DOT language for visualization */
         // this will generate a .gv file and compile it to the corresponding .pdf file
         DotMaker dot2(forest1, "02_logic_expression_example_RexBDD");
-        dot2.buildGraph(target);
+        dot2.buildGraph(new_target);
         dot2.runDot("pdf");
     }
 
@@ -80,10 +80,20 @@ int main (int argc, const char** argv) {
     align = 36;
     std::cout << std::left << std::setw(align) << "BDD name: " << setting1.getName() << std::endl;
     std::cout << std::left << std::setw(align) << "Number of variables: " << setting1.getNumVars() << std::endl;
-    std::cout << std::left << std::setw(align) << "Number of nodes: " << forest1->getNodeManUsed(target) << std::endl;
+    std::cout << std::left << std::setw(align) << "Number of nodes: " << forest1->getNodeManUsed(new_target) << std::endl;
     numOnes = 0;
-    apply(CARDINALITY, target, numOnes);
-    std::cout << std::left << std::setw(align) << "Number of assignments point to 1: " << numOnes << std::endl;
+    apply(CARDINALITY, new_target, numOnes);
+    std::cout << std::left << std::setw(align) << "Number of assignments to 1: " << numOnes << std::endl;
+
+    /* Copy the original to another BDD type */
+    Func copy(forest1);
+    apply(COPY, target, copy);
+    std::cout << std::left << std::setw(align) << "Copied BDD: " << setting1.getName() << std::endl;
+    std::cout << std::left << std::setw(align) << "Number of variables: " << setting1.getNumVars() << std::endl;
+    std::cout << std::left << std::setw(align) << "Number of nodes (copy): " << forest1->getNodeManUsed(copy) << std::endl;
+    numOnes = 0;
+    apply(CARDINALITY, copy, numOnes);
+    std::cout << std::left << std::setw(align) << "Number of assignments to 1 (copy): " << numOnes << std::endl;
 
     /**
      * Clean Everything
