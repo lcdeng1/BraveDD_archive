@@ -73,7 +73,7 @@ int usage(const char* who)
     out << std::left << std::setw(2*align) << "  -n <number>" << "Set the number of philosophers. Default: 3" << std::endl;
     out << std::left << std::setw(2*align) << "  -type <string>" << "Select the predefined BDD type. Default: FBDD" << std::endl;
     out << std::left << std::setw(2*align) << "" << "Supported: FBDD, CFBDD, SFBDD, CSFBDD, ZBDD, ESRBDD, CESRBDD, REXBDD" << std::endl;
-    out << std::left << std::setw(2*align) << "  -log, -l " << "Display help message and usage" << std::endl;
+    out << std::left << std::setw(2*align) << "  -log, -l " << "Display log message in the process" << std::endl;
     out << std::endl;
     out << std::left << std::setw(align) << "EXAMPLES: "<< std::endl;
     out << std::left << std::setw(align) << "" << name << " -n 10" << std::endl;

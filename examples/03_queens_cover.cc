@@ -48,6 +48,8 @@ using namespace BRAVE_DD;
 
 // Flag to output help info
 bool isHelp = 0;
+// Flag to output log info
+bool isLog = 0;
 // The size of board
 int N = 6;
 // BDD type
@@ -72,6 +74,8 @@ int usage(const char* who)
     out << std::left << std::setw(2*align) << "  -n <number>" << "Set the board size (number of queens). Default: 6" << std::endl;
     out << std::left << std::setw(2*align) << "  -type <string>" << "Select the predefined BDD type. Default: REXBDD" << std::endl;
     out << std::left << std::setw(2*align) << "" << "Supported: FBDD, CFBDD, SFBDD, CSFBDD, ZBDD, ESRBDD, CESRBDD, REXBDD" << std::endl;
+    out << std::left << std::setw(2*align) << "  -log, -l " << "Display log message in the process" << std::endl;
+
     out << std::endl;
     out << std::left << std::setw(align) << "EXAMPLES: "<< std::endl;
     out << std::left << std::setw(align) << "" << name << " -n 8" << std::endl;
@@ -111,6 +115,10 @@ bool processArgs(int argc, const char** argv)
             if ((strcmp("-help", argv[i])==0) || (strcmp("-h", argv[i])==0)) {
                 isHelp = 1;
                 return 1;
+            }
+            if ((strcmp("-log", argv[i])==0) || (strcmp("-l", argv[i])==0)) {
+                isLog = 1;
+                continue;
             }
             if (strcmp("-n", argv[i])==0) {
                 N = atoi(argv[i+1]);
@@ -178,17 +186,34 @@ Func attackConstraint(const std::vector<std::vector<Func> >& board, int row, int
     return constraint;
 }
 
-/* This could be implemented into library as MIN_COST */
-int minQueens(const uint16_t lvl, const Edge solutions)
+/* This will construct a BDD represents that the constraint of exact n queens placed */
+Func exactNQueens(const Level L, const Level n)
 {
-    if (solutions.isConstantOne()) return 0;
-    if (solutions.isConstantZero()) return forest->getSetting().getNumVars();   // big enough
-    int m0=0, m1=0;
-    Edge low = forest->cofact(lvl, solutions, 0);
-    Edge high = forest->cofact(lvl, solutions, 1);
-    m0 = minQueens(lvl-1, low);
-    m1 = minQueens(lvl-1, high) + 1;
-    return (m0 < m1) ? m0 : m1;
+    Func ans(forest);
+    // terminal case
+    if ((L == 0) && (n == 0)) {
+        ans.constant(1);
+        return ans;
+    }
+    if (n > L) {
+        ans.constant(0);
+        return ans;
+    }
+    Func var(forest);
+    var.variable(L);
+    ans = (var & exactNQueens(L-1, n-1)) | ((!var) & exactNQueens(L-1, n));
+    return ans;
+}
+
+/* Compute the number of choose n from L, used for testing the result of "exactNQueens" */
+long choose(unsigned int L, unsigned int n) {
+    if (n > L) return 0;
+    if (n > L - n) n = L - n; // symmetry
+    long res = 1;
+    for (unsigned int i = 1; i <= n; ++i) {
+        res = res * (L - n + i) / i;
+    }
+    return res;
 }
 
 int main(int argc, const char** argv)
@@ -205,7 +230,7 @@ int main(int argc, const char** argv)
     // setting.output(std::cerr);
 
     std::cerr << "Using " << getLibInfo(0) << std::endl;
-    std::cerr << "Solving " << N << std::left << std::setw(27) << "-Queens in BDD type: " << setting.getName() << std::endl;
+    std::cerr << "Solving " << N << std::left << std::setw(27) << "-Queens Cover in BDD type: " << setting.getName() << std::endl;
 
     /* Create BDD variables for each cell on the board */
     std::vector<std::vector<Func> > board(N, std::vector<Func>(N, Func(forest)));
@@ -217,6 +242,7 @@ int main(int argc, const char** argv)
     }
     /* Timer start */
     timer watch;
+    watch.reset();
     watch.note_time();
     /* Row, Column, and Diagonal constraint */
     Func solution(forest);
@@ -236,16 +262,54 @@ int main(int argc, const char** argv)
     }
     /* Timer end */
     watch.note_time();
+    forest->registerFunc(solution);
 
-    /* Output */
     int align = 36;
-    long num;
-    apply(CARDINALITY, solution, num);
-    std::cerr << std::left << std::setw(align) << "Number of valid solutions: " << num << std::endl;
-    std::cerr << std::left << std::setw(align) << "Elapsed time (seconds): " << watch.get_last_seconds() << std::endl;
-    std::cerr << std::left << std::setw(align) << "Minimum Queens: " << minQueens(N*N, solution.getEdge()) << std::endl;
-    std::cerr << std::left << std::setw(align) << "Number of nodes (final): " << forest->getNodeManUsed(solution) << std::endl;
-    std::cerr << std::left << std::setw(align) << "Number of nodes (peak): " << forest->getNodeManPeak() << std::endl;
+    if (isLog) {
+        std::cerr << "**************** Process Report ****************" << std::endl;
+        std::cerr << std::left << std::setw(align) << "Built cover constraints, took: " << watch.get_last_seconds() << " seconds" << std::endl;
+        // long num;
+        // apply(CARDINALITY, solution, num);
+        // std::cerr << std::left << std::setw(align) << "Number of valid solutions: " << num << std::endl;
+        std::cerr << std::left << std::setw(align) << "Number of nodes (final): " << forest->getNodeManUsed(solution) << std::endl;
+        std::cerr << std::left << std::setw(align) << "Number of nodes (peak): " << forest->getNodeManPeak() << std::endl;
+    }
+
+    // check with exact n (from 1 to N) queens constraint
+    for (int n=1; n<=N; n++) {
+        // GC
+        // forest->markAllFuncs();
+        // forest->markSweep();
+        timer watch1;
+        watch1.reset();
+        watch1.note_time();
+        Func nqueens = exactNQueens(N*N, n);
+        watch1.note_time();
+        long num = 0;
+        // apply(CARDINALITY, nqueens, num);
+        // std::cerr << "exact queens: " << n << " size: " << num << std::endl;
+        // if (num != choose(N*N, n)) {
+        //     std::cerr << "exact N queens error\n" << std::endl;
+        //     exit(1);
+        // }
+        timer watch2;
+        watch2.reset();
+        watch2.note_time();
+        Func min_solution = nqueens & solution;
+        watch2.note_time();
+        if (isLog) {
+            std::cerr << "**************** Process Report ****************" << std::endl;
+            std::cerr << "Queens: " << n << std::endl;
+            std::cerr << std::left << std::setw(align) << "Built n queens constraints, took: " << watch1.get_last_seconds() << " seconds" << std::endl;
+            std::cerr << std::left << std::setw(align) << "Check solutions, took: " << watch2.get_last_seconds() << " seconds" << std::endl;
+        }
+        if (!((min_solution).getEdge().isConstantZero())) {
+            std::cerr << "******************** Report ********************" << std::endl;
+            apply(CARDINALITY, min_solution, num);
+            std::cerr << "There are " << num << " covers with minimum required queens " << num << std::endl;
+            return 0;
+        }
+    }
 
     /* delete Forest */
     delete forest;
