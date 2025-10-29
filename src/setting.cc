@@ -60,6 +60,22 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         // setting for FBDD
         reductions = Reductions(FULLY);
         name = "FBDD";
+    } else if (type == PredefForest::CFBDD) {
+        // setting for CFBDD
+        reductions = Reductions(FULLY);
+        flags.setCompType(COMP);
+        name = "CFBDD";
+    } else if (type == PredefForest::SFBDD) {
+        // setting for SFBDD
+        reductions = Reductions(FULLY);
+        flags.setSwapType(ONE);
+        name = "SFBDD";
+    } else if (type == PredefForest::CSFBDD) {
+        // setting for CSFBDD
+        reductions = Reductions(FULLY);
+        flags.setSwapType(ONE);
+        flags.setCompType(COMP);
+        name = "CSFBDD";
     } else if (type == PredefForest::ZBDD) {
         // setting for ZBDD
         reductions = Reductions(ZERO_SUP);
@@ -73,6 +89,15 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         addReductionRule(RULE_EH0);
         mergeType = PUSH_UP;
         name = "ESRBDD";
+    } else if (type == PredefForest::CESRBDD) {
+        // setting for CESRBDD
+        reductions = Reductions(USER_DEFINED);
+        addReductionRule(RULE_X);
+        addReductionRule(RULE_EL0);
+        addReductionRule(RULE_EH0);
+        flags.setCompType(COMP);
+        mergeType = PUSH_UP;
+        name = "CESRBDD";
     } else if (type == PredefForest::QBMXD) {
         // setting for QBMxD
         reductions = Reductions(QUASI_QUASI);
@@ -92,6 +117,12 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         reductions = Reductions(FULLY_IDENTITY);
         mergeType = PUSH_UP;
         name = "ESRBMxD";
+    } else if (type == PredefForest::MTBDD) {
+        // setting for MTBDD
+        reductions = Reductions(FULLY);
+        name = "MTBDD";
+        encodingType = TERMINAL;
+        range = Range(RangeType::NNINTEGER,INT);
     } else if (type == PredefForest::EVQBDD) {
         // setting for EV+QBDD
         reductions = Reductions(QUASI);
@@ -230,6 +261,12 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         // Effectively this will act as if there is no mu
         // User will have to set mod value in order to benefit from it
         range.setMaxRange(std::numeric_limits<unsigned long>::max());
+    } else if (bddLower == "mtbdd") {
+        // setting for MTBDD
+        reductions = Reductions(FULLY);
+        name = "MTBDD";
+        encodingType = TERMINAL;
+        range = Range(RangeType::NNINTEGER,INT);
     } else if (bddLower == "ev*qbdd") {
         // setting for EV*QBDD
     } else if (bddLower == "evfbdd" || bddLower == "ev+fbdd") {
