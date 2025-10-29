@@ -127,6 +127,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments);
 std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t> &vertexNames);
 std::string variableName(variable var);
 variable getVariableByValue(int index);
+std::string intToBoolVariable(variable var);
 
 int variable::maxIndex;
 std::vector<variable *> variable::registry;
@@ -421,12 +422,13 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
 
             }
             tempFunction = "-" + std::to_string(belongsTo[renamed.at(curLevelVerticies.front())][0].getMyIndex()) + " ";
+            std::string variableTemp = variableName(belongsTo[renamed.at(curLevelVerticies.front())][0]);
             curLevelVerticies.erase(curLevelVerticies.begin());
             for(int i = 0; i < numStates; i++){
                 for(int x = 0; x < numAssignments; x++){
                     for(int j = 0; j < numStates; j++){
                         function += tempFunction;
-                        std::cout << variableName(belongsTo[renamed.at(curLevelVerticies.front())][0]) << std::endl;
+                        std::cout << variableTemp << std::endl;
                         std::cout << variableName(deltaFun[i][j][x]) << std::endl;
                         function += "-" + std::to_string(deltaFun[i][j][x].getMyIndex()) + " ";
                         //std::cout << (static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x)) << std::endl;
@@ -434,16 +436,19 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
                         function += std::to_string(belongsTo[renamed.at(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x))][j].getMyIndex()) + " 0\n";
                         numClauses++;
                     }
-                    std::cout << function << std::endl; 
+                    //std::cout << function << std::endl; 
                 }
-                std::cout << function << std::endl;
+                //std::cout << function << std::endl;
             }
         }
         verticiesOnLvl = curLevelVerticies.size();
     }
 
+
+    //each state is either final or non final.
+
     
-function = "p cnf " + std::to_string(deltaFun[0][0][0].getMaxIndex()-1) + " " + std::to_string(numClauses) + "\n" + function;
+    function = "p cnf " + std::to_string(deltaFun[0][0][0].getMaxIndex()-1) + " " + std::to_string(numClauses) + "\n" + function;
    
     // add p cnf <num variables> <num clauses> to tope of file
     std::ofstream outFile("satFunctionForQRBDDtoDFA.txt");
@@ -467,7 +472,8 @@ function = "p cnf " + std::to_string(deltaFun[0][0][0].getMaxIndex()-1) + " " + 
 
     std::string line;
     // Loop over each line — O(m), where m is the number of lines
-    /*std::getline(inFile, line);
+    std::getline(inFile, line);
+    std::string latexFunction = "";
     while (std::getline(inFile, line))
     {
         std::istringstream lineStream(line); // O(1)
@@ -479,15 +485,37 @@ function = "p cnf " + std::to_string(deltaFun[0][0][0].getMaxIndex()-1) + " " + 
         {
             if (!isFirst)
             {
+                latexFunction += "\\vee ";
                 std::cout << "\\vee ";
             }
-            std::cout << intToBoolVariable(std::stoi(word)) << " "; // O(1)
+            std::cout << word << std::endl;
+            if (std::stoi(word) < 0){
+                latexFunction += "\\neg " + variableName(getVariableByValue(abs(std::stoi(word)))) + " ";
+                std::cout << "\\neg " + variableName(getVariableByValue(abs(std::stoi(word)))) << " ";
+            }
+            else{
+                latexFunction += variableName(getVariableByValue(abs(std::stoi(word)))) + " ";
+                std::cout << variableName(getVariableByValue(abs(std::stoi(word)))) << " ";
+            }
+             // O(1)
             isFirst = false;
         }
+        latexFunction += "\\wedge \\\\ \n";
         std::cout << "\\wedge \\\\" << std::endl;
-    }*/
+    }
 
     inFile.close(); // O(1)*/
+
+    std::ofstream outFileLatx("satFunctionForQRBDDtoDFALatex.txt");
+    if (!outFileLatx)
+    {
+        std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFALatex.txt" << std::endl; // O(1)
+        return;
+    }
+
+    outFileLatx << function; // O(n) — writes each character of the string
+    outFileLatx.close();     // O(1) — flushes and closes the file
+
 
 
     std::string command = "/home/dara/Git/kissat/build/kissat ";
@@ -616,4 +644,9 @@ variable getVariableByValue(int index)
         throw std::runtime_error("No variable at this index."); // O(1)
     }
     return *ptr; // O(1)
+}
+
+
+std::string intToBoolVariable(variable var){
+
 }
