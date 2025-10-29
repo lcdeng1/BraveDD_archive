@@ -1,0 +1,12 @@
+Currently, only the unit tests have been numbered and renamed.
+To ensure overall consistency and for subsequent regression testing, some work remains to be done
+
+TODOs:
+    1. Standardize the style of all test files: overview, usage,...
+    2. Support reading command-line arguments
+    3. Merge the function-related tests
+    4. Add tests to Cmake file
+
+Last Update: 
+Oct 29, 2025
+Lichuan Deng
