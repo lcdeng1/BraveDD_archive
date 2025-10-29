@@ -152,12 +152,6 @@ Func transition(const int phil, const int trans)
     if (trans == 0) {
         /* "Release" */
         // Enabling: X_hasL == 1, X_hasR == 1
-        // var_from.variable(6*(phil%N)+1, 0);
-        // ans &= ((var_from & const_zero) | ((!var_from) & (!const_zero)));
-        // var_from.variable(6*((phil+1)%N)+1, 0);
-        // ans &= ((var_from & const_zero) | ((!var_from) & (!const_zero)));
-        // var_from.variable(6*phil + 2, 0);
-        // ans &= ((var_from & const_zero) | ((!var_from) & (!const_zero)));
         var_from.variable(6*phil + 4, 0);
         ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
         var_from.variable(6*phil + 6, 0);
@@ -182,10 +176,6 @@ Func transition(const int phil, const int trans)
     } else if (trans == 1) {
         /* "GoEat" */
         // Enabling: X_idle == 1
-        // var_from.variable(6*phil + 3, 0);
-        // ans &= ((var_from & const_zero) | ((!var_from) & (!const_zero)));
-        // var_from.variable(6*phil + 5, 0);
-        // ans &= ((var_from & const_zero) | ((!var_from) & (!const_zero)));
         var_from.variable(6*phil + 2, 0);
         ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
         // Firing: X'_waitL == 1, X'_waitR == 1, X'_idle == 0
@@ -202,8 +192,6 @@ Func transition(const int phil, const int trans)
     } else if (trans == 2) {
         /* "GetLeft" */
         // Enabling: Fork_n == 1, X_waitL == 1
-        // var_from.variable(6*phil + 4, 0);
-        // ans &= ((var_from & const_zero) | ((!var_from) & (!const_zero)));
         var_from.variable(6*(phil%N)+1, 0);
         ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
         var_from.variable(6*phil + 3, 0);
@@ -222,8 +210,6 @@ Func transition(const int phil, const int trans)
     } else if (trans == 3) {
         /* "GetRight" */
         // Enabling: Fork_{n+1} == 1, X_waitR == 1
-        // var_from.variable(6*phil + 6, 0);
-        // ans &= ((var_from & const_zero) | ((!var_from) & (!const_zero)));
         var_from.variable(6*((phil+1)%N)+1, 0);
         ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
         var_from.variable(6*phil + 5, 0);
