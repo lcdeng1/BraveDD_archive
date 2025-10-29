@@ -108,29 +108,21 @@ uint64_t num_nodes_final = 0, num_nodes_peak = 0, num_rel_nodes_final = 0, num_r
 
 // internal flags
 int algorithm = 0;
-bool isComputeDistanceBFS = 0;
+bool isComputeDistanceMR = 0;
 bool isRelationUnion = 0;
 bool isConvert = 0;
 
-// set of states reachable to target up to k steps
-std::vector<Func> distance;
 // set of states reachable to target at exact k steps
 std::vector<Func> distance_ex;
 // distribution for relations
 std::vector<long> distribution_rel_state;
 std::vector<long> distribution_rel_node;
-// distribution for "up-to" distance
-std::vector<long> distribution_state;
-std::vector<long> distribution_node;
 // distribution for "exact" distance
 std::vector<long> distribution_ex_state;
 std::vector<long> distribution_ex_node;
 
 // For concretization
 std::vector<int> distance_permutation;
-std::vector<int> distance_permutation_opt;
-std::vector<int> distance_permutation_ex_opt;
-std::vector<Func> distance_concretized;
 std::vector<Func> distance_ex_concretized;
 Func distance_one_root, distance_concretized_one_root;
 uint64_t num_nodes_distance_concretized = 0;
@@ -433,76 +425,51 @@ Func trans(uint16_t from, char direction)  // position FROM and direction
     return result & zero;
 }
 
-bool SSG_BFS(const Func& initial, const std::vector<Func>& relations, Func& target, const double time)
+bool SSG_Frontier(const Func& initial, const std::vector<Func>& relations)
 {
     Func curr = initial;
-    if (isComputeDistanceBFS) distance.push_back(curr);
-    Func nextStep(forest1);
-    Func FF(forest1);
-    FF.falseFunc();
-    Func SS = FF;
+    distance_ex.push_back(curr);
+    Func pre(forest1);
+    pre.constant(0);
     int n = 0;
-    while (true) {
-        if (!isRelationUnion) {
-            for (size_t i=0; i<relations.size(); i++) {
-                std::cout << "BFS image process: " << n << " : (" << i << "/" << relations.size() << ")" << std::endl;
-                // change for distance computing
-                apply(POST_IMAGE, curr, relations[i], nextStep);
-                if (isComputeDistance) {
-                    apply(MINIMUM, FF, nextStep, FF);
-                } else {
-                    if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
-                        FF |= nextStep;
-                    } else {
-                        apply(MAXIMUM, FF, nextStep, FF);
-                    }
-                }
-            }
+    while (true)
+    {
+        Func next(forest1);
+        next.constant(0);
+        if (isRelationUnion) {
+            long num = 0;
+            apply(CARDINALITY, curr, num);
+            std::cout << "Frontier: " << n << " size: " << num << std::endl;
+            // std::cout << "Frontier: " << n << std::endl;
+            apply(POST_IMAGE, curr, relations[0], next);
         } else {
-            std::cout << "BFS image process: " << n << std::endl;
-            apply(POST_IMAGE, curr, relations[0], FF);
+            long num = 0;
+            apply(CARDINALITY, curr, num);
+            std::cout << "Frontier: " << n << " size: " << num << std::endl;
+            Func s_new(forest1);
+            for (size_t i=0; i< relations.size(); i++) {
+                apply(POST_IMAGE, curr, relations[i], s_new);
+                next |= s_new;
+            }
         }
-
+        // next |= pre;
+        // next = next ^ pre;
+        next = next & !pre;
         distance_permutation.push_back(n);
-        n++;
-        if (isComputeDistance) {
-            apply(MINIMUM, curr, FF, SS);
-        } else {
-            if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
-                if (n==1) SS = curr | FF;
-                else SS = FF;
-            } else {
-                apply(MAXIMUM, curr, FF, SS);
-            }
-        }
-
-        // check fixpoint
-        if (SS == curr) break;
-        curr = SS;
-        if (isComputeDistanceBFS) distance.push_back(curr);
+        // check fix point
+        if (next.getEdge().isConstantZero()) break;
+        // push back
+        distance_ex.push_back(next);
         // GC
-        if (isComputeDistanceBFS) {
-            for (size_t i=0; i<distance.size(); i++) {
-                forest1->markNodes(distance[i]);
-            }
-            forest1->markSweep();
-        } else {
-            forest1->registerFunc(curr);
-            std::cout << "forest1 mark nodes; num funcs: " << forest1->numFuncs() << std::endl;
-            forest1->markAllFuncs();
-            std::cout << "forest1 mark and sweep: " << std::endl;
-            forest1->markSweep();
-            forest1->deregisterFunc(curr);
+        for (size_t i=0; i<distance_ex.size(); i++) {
+            forest1->markNodes(distance_ex[i]);
         }
-        FF.falseFunc();
-        // check if time out
-        watch.note_time();
-        if (watch.get_last_seconds() >= time) {
-            target = SS;
-            return 0;
-        }
+        forest1->markSweep();
+        // update
+        pre = curr;
+        curr = next;
+        n++;
     }
-    target = SS;
     return 1;
 }
 
@@ -659,58 +626,22 @@ Func concretizeFunc_tsm(const Func& initial)
  */
 void concretize(const int heuristics)
 {
-    if (isComputeDistanceBFS) {
-        watch_concretized.reset();
-        watch_concretized.note_time();
-        /* for up-to distance */
-        if (heuristics == 0) {
-            distance_concretized.push_back(concretizeFunc_rst(distance[distance_permutation[0]], distance_ex.back()));
-        } else if (heuristics == 1) {
-            distance_concretized.push_back(concretizeFunc_osm(distance[distance_permutation[0]], distance_ex.back()));
-        } else if (heuristics == 2) {
-            distance_concretized.push_back(concretizeFunc_tsm(distance[distance_permutation[0]], distance_ex.back()));
-        } else {
-            std::cerr << "Unknown concretization heuristics!" << std::endl;
-            return;
-        }
-        Func dc = distance_ex.back();
-        for (size_t i=1; i<distance_permutation.size()-1; i++) {    // -1: remove the last one
-            // update dc
-            for (size_t k=0; k<i; k++) {
-                dc |= distance[distance_permutation[k]];
-            }
-            // concretizing
-            if (heuristics == 0) {
-                distance_concretized.push_back(concretizeFunc_rst(distance[distance_permutation[i]], dc));
-            } else if (heuristics == 1) {
-                distance_concretized.push_back(concretizeFunc_osm(distance[distance_permutation[i]], dc));
-            } else if (heuristics == 2) {
-                distance_concretized.push_back(concretizeFunc_tsm(distance[distance_permutation[i]], dc));
-            }
-        }
-        watch_concretized.note_time();
-        time_concretized = watch_concretized.get_last_seconds();
-        num_nodes_distance_concretized = forest1->getNodeManUsed(distance_concretized);
-        distance_permutation_opt = distance_permutation;
-
+    if (isComputeDistanceMR) {
         // update permutation
-        for (size_t i=0; i<distance_permutation.size(); i++) {
-            distance_permutation[i] = i;
-        }
         std::sort(distance_permutation.begin(), distance_permutation.end(),
                     [&](size_t i, size_t j) { return distribution_ex_node[i] < distribution_ex_node[j]; });
 
         watch_concretized.reset();
         watch_concretized.note_time();
         /* for exact distance */
+        Func dc = distance_ex.back();
         if (heuristics == 0) {
-            distance_ex_concretized.push_back(concretizeFunc_rst(distance_ex[distance_permutation[0]], distance_ex.back()));
+            distance_ex_concretized.push_back(concretizeFunc_rst(distance_ex[distance_permutation[0]], dc));
         } else if (heuristics == 1) {
-            distance_ex_concretized.push_back(concretizeFunc_osm(distance_ex[distance_permutation[0]], distance_ex.back()));
+            distance_ex_concretized.push_back(concretizeFunc_osm(distance_ex[distance_permutation[0]], dc));
         } else if (heuristics == 2) {
-            distance_ex_concretized.push_back(concretizeFunc_tsm(distance_ex[distance_permutation[0]], distance_ex.back()));
+            distance_ex_concretized.push_back(concretizeFunc_tsm(distance_ex[distance_permutation[0]], dc));
         }
-        dc = distance_ex.back();
         for (size_t i=1; i<distance_permutation.size()-1; i++) {    // -1: remove the last one
             // update dc
             for (size_t k=0; k<i; k++) {
@@ -726,9 +657,8 @@ void concretize(const int heuristics)
             }
         }
         watch_concretized.note_time();
-        time_ex_concretized = watch_concretized.get_last_seconds();
+        time_concretized = watch_concretized.get_last_seconds();
         num_nodes_distance_ex_concretized = forest1->getNodeManUsed(distance_ex_concretized);
-        distance_permutation_ex_opt = distance_permutation;
         std::cout << "done concretization\n";
         // test
         if (isTestConcretize) testConcretizationMR(distance_ex_concretized);
@@ -785,63 +715,37 @@ void compute_saturation(const Func& target, const std::vector<Func>& relations)
 
 void compute_BFS(const Func& target, const std::vector<Func>& relations)
 {
-    Func states_BFS(forest1);
-    // Timer start
     watch.reset();
     watch.note_time();
-    getRes = SSG_BFS(target, relations, states_BFS, newTimeLimit);
+    getRes = SSG_Frontier(target, relations);
     watch.note_time();
     // report cache
     // UOPs.reportCacheStat(std::cout);
     // BOPs.reportCacheStat(std::cout);
     // record time
     time_explore = watch.get_last_seconds();
-    // record #states
-    apply(CARDINALITY, states_BFS, num_states);
     // record #nodes
-    num_nodes_final = forest1->getNodeManUsed(states_BFS);
+    num_nodes_final = forest1->getNodeManUsed(distance_ex);
     num_nodes_peak = forest1->getNodeManPeak();
-
-    forest1->registerFunc(states_BFS);
-
-    // compute multi-root distance
-    if (isComputeDistanceBFS) {
-        // get number of final nodes
-        num_nodes_final = forest1->getNodeManUsed(distance);
-        // nodes_dis_BFS_peak = num_nodes_peak;
-        // compute distance at step k
-        distance_ex.push_back(distance[0]);
-
-        watch.reset();
-        watch.note_time();
-        for (size_t i=1; i<distance.size(); i++) {
-            distance_ex.push_back(distance[i] ^ distance[i-1]);
-        }
-        watch.note_time();
-        time_explore += watch.get_last_seconds();
-        num_nodes_final = forest1->getNodeManUsed(distance_ex);
-        num_nodes_peak = forest1->getNodeManPeak();
-
-        // compute distribution
-        long num_state = 0;
-        for (size_t i=0; i<distance.size(); i++) {
-            apply(CARDINALITY, distance[i], num_state);
-            distribution_state.push_back(num_state);
-            distribution_node.push_back(forest1->getNodeManUsed(distance[i]));
-
-            apply(CARDINALITY, distance_ex[i], num_state);
-            distribution_ex_state.push_back(num_state);
-            distribution_ex_node.push_back(forest1->getNodeManUsed(distance_ex[i]));
-        }
-        // push back don't care set
-        Func all(forest1);
-        all.constant(1);
-        distance_ex.push_back(all ^ distance.back());
-        // push back #state and #node for don't-care set
-        apply(CARDINALITY, distance_ex.back(), num_state);
+    // compute distribution
+    long num_state = 0;
+    for (size_t i=0; i<distance_ex.size(); i++) {
+        apply(CARDINALITY, distance_ex[i], num_state);
         distribution_ex_state.push_back(num_state);
-        distribution_ex_node.push_back(forest1->getNodeManUsed(distance_ex.back()));
+        distribution_ex_node.push_back(forest1->getNodeManUsed(distance_ex[i]));
+        num_states += num_state;
     }
+    // push back don't care set
+    Func all(forest1);
+    all.constant(1);
+    for (size_t i=0; i<distance_ex.size(); i++) {
+        all = all & !distance_ex[i];
+    }
+    distance_ex.push_back(all);
+    // push back #state and #node for don't-care set
+    apply(CARDINALITY, distance_ex.back(), num_state);
+    distribution_ex_state.push_back(num_state);
+    distribution_ex_node.push_back(forest1->getNodeManUsed(distance_ex.back()));
 }
 
 int usage(const char* who)
@@ -1016,7 +920,7 @@ void report(std::ostream& out)
     out << std::left << std::setw(align/1.2) << "Relations Final: " << num_rel_nodes_final << std::endl;
     out << std::left << std::setw(align/1.2) << "Relations Peak: " << num_rel_nodes_peak << std::endl;
     out << "----------------------------------------------------------" << std::endl;
-    if (isComputeDistance || isComputeDistanceBFS) {
+    if (isComputeDistance || isComputeDistanceMR) {
         out << std::left << std::setw(align/1.2) << "Final: " << std::setw(align/3) << "" << ((isConvert) ? num_nodes_convert_distance : num_nodes_final) << std::endl;
         out << std::left << std::setw(align/1.2) << "Peak: " << std::setw(align/3) << ((isConvert) ? forest1->getSetting().getName() : "")<< num_nodes_peak << std::endl;
         if (concretization != 0) {
@@ -1092,7 +996,7 @@ int main(int argc, const char** argv)
         // compute distance?
         if (isComputeDistance) {
             isComputeDistance = 0;
-            isComputeDistanceBFS = 1;
+            isComputeDistanceMR = 1;
             isRelationUnion = 1;
             algorithm = 2;
         }
@@ -1103,7 +1007,7 @@ int main(int argc, const char** argv)
             if (N*M >= 9) {
                 // time is too long, converting from multi-root
                 isComputeDistance = 0;
-                isComputeDistanceBFS = 1;
+                isComputeDistanceMR = 1;
                 isRelationUnion = 1;
                 algorithm = 2;
                 setting1 = ForestSetting(PredefForest::CSFBDD, levels);
@@ -1224,7 +1128,7 @@ int main(int argc, const char** argv)
         if (isComputeDistance) {
             fileName += "_Dis";
         }
-        if (isComputeDistanceBFS) {
+        if (isComputeDistanceMR) {
             fileName += "_MR";
         }
         if (isRelationUnion) {
