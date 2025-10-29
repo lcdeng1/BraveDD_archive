@@ -55,7 +55,7 @@ int main (int argc, const char** argv) {
     std::cout << std::left << std::setw(align) << "Number of nodes: " << forest->getNodeManUsed(target) << std::endl;
     long numOnes = 0;
     apply(CARDINALITY, target, numOnes);
-    std::cout << std::left << std::setw(align) << "Number of assignments point to 1: " << numOnes << std::endl;
+    std::cout << std::left << std::setw(align) << "Cardinality: " << numOnes << std::endl;
 
     /* Declare and construct Forest */
     ForestSetting setting1(PredefForest::REXBDD, 4);
@@ -83,17 +83,18 @@ int main (int argc, const char** argv) {
     std::cout << std::left << std::setw(align) << "Number of nodes: " << forest1->getNodeManUsed(new_target) << std::endl;
     numOnes = 0;
     apply(CARDINALITY, new_target, numOnes);
-    std::cout << std::left << std::setw(align) << "Number of assignments to 1: " << numOnes << std::endl;
+    std::cout << std::left << std::setw(align) << "Cardinality: " << numOnes << std::endl;
 
     /* Copy the original to another BDD type */
-    Func copy(forest1);
-    apply(COPY, target, copy);
-    std::cout << std::left << std::setw(align) << "Copied BDD: " << setting1.getName() << std::endl;
+    Func translated(forest1);
+    apply(COPY, target, translated);
+    std::cout << "----------------------------------------------------------" << std::endl;
+    std::cout << std::left << std::setw(align) << "Translated to BDD: " << setting1.getName() << std::endl;
     std::cout << std::left << std::setw(align) << "Number of variables: " << setting1.getNumVars() << std::endl;
-    std::cout << std::left << std::setw(align) << "Number of nodes (copy): " << forest1->getNodeManUsed(copy) << std::endl;
+    std::cout << std::left << std::setw(align) << "Number of nodes: " << forest1->getNodeManUsed(translated) << std::endl;
     numOnes = 0;
-    apply(CARDINALITY, copy, numOnes);
-    std::cout << std::left << std::setw(align) << "Number of assignments to 1 (copy): " << numOnes << std::endl;
+    apply(CARDINALITY, translated, numOnes);
+    std::cout << std::left << std::setw(align) << "Cardinality: " << numOnes << std::endl;
 
     /**
      * Clean Everything
