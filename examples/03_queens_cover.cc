@@ -211,17 +211,6 @@ Func exactNQueens(const Level L, const Level n)
     return ans;
 }
 
-/* Compute the number of choose n from L, used for testing the result of "exactNQueens" */
-long choose(unsigned int L, unsigned int n) {
-    if (n > L) return 0;
-    if (n > L - n) n = L - n; // symmetry
-    long res = 1;
-    for (unsigned int i = 1; i <= n; ++i) {
-        res = res * (L - n + i) / i;
-    }
-    return res;
-}
-
 int main(int argc, const char** argv)
 {
     /* Process Args */
@@ -252,8 +241,8 @@ int main(int argc, const char** argv)
     for (int i=0; i<N; i++) {
         rowConstraints.push_back(rowConstraint(board, i));
         colConstraints.push_back(colConstraint(board, i));
-        // forest->registerFunc(rowConstraints[i]);
-        // forest->registerFunc(colConstraints[i]);
+        forest->registerFunc(rowConstraints[i]);
+        forest->registerFunc(colConstraints[i]);
     }
 
     /* Initialize computing table for n queens constraints */
@@ -267,21 +256,18 @@ int main(int argc, const char** argv)
                 isComputed[i][j] = 0;
             }
         }
+        // stop watch
         timer watch1;
         watch1.reset();
         watch1.note_time();
         Func nqueens = exactNQueens(N*N, n);
         watch1.note_time();
-        long num = 0;
-        // apply(CARDINALITY, nqueens, num);
-        // std::cerr << "exact queens: " << n << " size: " << num << std::endl;
-        // if (num != choose(N*N, n)) {
-        //     std::cerr << "exact N queens error\n" << std::endl;
-        //     exit(1);
-        // }
+        forest->registerFunc(nqueens);
+        // solutions
         Func solutions = nqueens;
         std::cerr << "Trying to cover with Queens: " << n << std::endl;
         std::cerr << "Adding constraints by row" << std::endl;
+        // stop watch
         timer watch2;
         watch2.reset();
         watch2.note_time();
@@ -298,6 +284,11 @@ int main(int argc, const char** argv)
             }
             std::cerr << " ";
             solutions &= rowcov;
+            // GC
+            forest->registerFunc(solutions);
+            forest->markAllFuncs();
+            forest->markSweep();
+            forest->deregisterFunc(solutions);
         }
         std::cerr << std::endl;
         watch2.note_time();
@@ -310,6 +301,7 @@ int main(int argc, const char** argv)
         }
         if (!((solutions).getEdge().isConstantZero())) {
             std::cerr << "******************** Report ********************" << std::endl;
+            long num = 0;
             apply(CARDINALITY, solutions, num);
             std::cerr << "There are " << num << " covers (including all symmetries) " << std::endl;
             std::cerr << "with minimum required queens " << n << std::endl;
