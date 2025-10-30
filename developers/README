@@ -28,7 +28,7 @@ flags           |   * swap flag type
      | T   | Boolean |  V  |  V  |  V  |  V  |  V  |  V  | X  | V  |  V  |  V  |  X   | X  |  X  | V  |  V  | V  | P5 | X  | X  |
      |     | Others  |  V  |  V  |  P5 |  P5 |  P5 |  P5 | X  | V  |  V  |  V  |  X   | X  |  X  | V  |  P4 | P1 | P5 | X  | X  |
 BDDs +---------------+-----+-----+-----+-----+-----+-----+----+----+-----+-----+------+----+-----+----+-----+----+----+----+----+
-     | EV            |  P1 |  P1 |  X  |  X  |  X  |  X  | X  | P1 |  P2 |  P3 |  X   | X  |  X  | P1 |  P4 | P1 | X  | X  | X  |
+     | EV            |  P1 |  P1 |  X  |  X  |  X  |  X  | X  | V  |  V  |  P3 |  X   | X  |  X  | P1 |  P4 | P1 | X  | X  | X  |
 ---------------------+-----+-----+-----+-----+-----+-----+----+----+-----+-----+------+----+-----+----+-----+----+----+----+----+
      | T   | Boolean |  V  |  V  |  X  |  X  |  X  |  X  | V  | V  |  X  |  X  |  P3  | P3 |  P3 | V  |  V  | V  | V  | V  | V  |
      |     | Others  |  V  |  V  |  X  |  X  |  X  |  X  | P5 | V  |  X  |  X  |  P3  | P3 |  P3 | V  |  P4 | P1 | P5 | P5 | P5 |
@@ -38,39 +38,54 @@ MXDs +---------------+-----+-----+-----+-----+-----+-----+----+----+-----+-----+
 [X]: illegal and won't be implemented; [V]: legal and implemented;
 [P(1-5)]: legal but not implemented (with priority number, the smaller the higher priority)
 
-[Date: Jan 27, 2025]
+[Date: Oct 30, 2025]
 =========================================== Development Status ============================================
                     |                       |   TERMINAL            |   EDGE_PLUS/MOD/MULT
 -----------------------------------------------------------------------------------------------------------
-ForestSetting       |   predefined type     |       I               |       U
+ForestSetting       |   predefined type     |       D               |       D
                     |   user-defined        |       D               |       D
 -----------------------------------------------------------------------------------------------------------
 Forest              |   compatibility       |               U
                     |   insertNode          |               D
                     |   markNodes           |               D
                     |   unmark              |               D
-                    |   reduceEdge          |       D               |       U
-                    |   reduceNode          |       D               |       U
-                    |   normalize           |       D               |       U
-                    |   mergeEdge           |       D               |       U
+                    |   reduceEdge          |       D               |       D
+                    |   reduceNode          |       D               |       D
+                    |   normalize           |       D               |       D
+                    |   mergeEdge           |       D               |       D
                     |   ....
 -----------------------------------------------------------------------------------------------------------
-evaluation          |                       |       I               |       U
+evaluation          |                       |       D               |       D
 -----------------------------------------------------------------------------------------------------------
-output              |   DotMaker            |       D               |       U
-                    |   BDDX                |       U               |       U
+output              |   DotMaker            |       D               |       D
+                    |   BDDX                |       D               |       U
 -----------------------------------------------------------------------------------------------------------
 input               |   BDDX                |       U               |       U
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-operation           |   front end           |       I               |       I
+Operation           |   front end           |       D               |       I
+        Unary       |   Copy                |       D               |       I
+                    |   Cardinality         |       D               |       D
+                    |   Complement          |       D               |       U
+        Binary      |   Union/Intersection  |       D               |       -
+                    |   Difference          |       I               |       U
+                    |   Plus/Minus          |       I               |       I
+                    |   Multiply/Divide     |       U               |       U
+                    |   MAX/MIN             |       D               |       D
+                    |   Less/Greater/Equal  |       U               |       U
+        Symbolic    |   Image               |       D               |       I
+                    |   Saturation          |       D               |       D
+                    |   Concretize          |       D               |       D
+                    |
                     |   ....
 -----------------------------------------------------------------------------------------------------------
-unionAssignment(s)  |       TBD
+unionAssignment(s)  |                               D
 -----------------------------------------------------------------------------------------------------------
-ComputingTable      |       TBD
+ComputingTable      |                               D
 -----------------------------------------------------------------------------------------------------------
-application         |   queens              |               I
-                    |   sliding             |               I
+application         |   N-Queens            |               D
+                    |   Queens Cover        |               D
+                    |   N*M-Sliding Puzzle  |               I
+                    |   N-Dining Philosopher|               D
                     |   ....
 ===========================================================================================================
 [U]: under implementation; [I]: implemented but under testing; [D]: implemented and tested; [N]: not supported
@@ -79,32 +94,18 @@ application         |   queens              |               I
 TODOs:
 * forest.cc
     1. Check compatibility of settings in Forst
-    2. Normalize MXDs nonterminal nodes
-    3. reduceEdge for edge-value
-* function.cc
-    1. evaluation for MXDs
-    2. evaluation for edge-valued
 * operations/operation.h
-    1. COPY implementation
-    2. COMPLEMENT implementation
-    3. UNION implementation
-    4. IMAGE (next) implementation
+    1. Difference implementation: so far Diff(A,B) can be done by (A & (!B))
+    2. PLUS/MINUS implementation test
+    3. MULTIPLY/DIVIDE implementation
+    4. LESS/GREAT/EQUAL implementation
     ...
-    (unionAssignment implementation should move to here)
 * operations/apply.h
     1. Front end for more operations (refer to operations/builtin.h)
-* operations/operations_generator.cc
-    1. Duplicate
 * operators.cc
     1. Apply
     2. IO
 
-Tests:
-    1. reduceEdge for terminal-encoding MXDs with X or I
-    2. reduceEdge for arbitrary subset of reduction rules
-    3. reduceEdge for swap-all
-    4. reduceEdge for edge-valued
-    5. COPY form and to terminal-encoding BDDs
-    6. UNION for terminal-encoding BDDs/MXDs
-    7. IMAGE for terminal-encoding
-    
+Last Update:
+Oct 30, 2025
+Lichuan Deng    

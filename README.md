@@ -21,6 +21,7 @@ This supports the following types of BDDs:
 - Reduction-on-Edge Complement-and-Swap BDDs ([RexBDDs](https://dl.acm.org/doi/10.1145/3649329.3656533))
 
 ## 🧩 Folder Structure
+- `developers`: Documentation of status progress to BraveDD developers
 - `doxygen/`: Generated doxygen docs from source code
 - `examples/`: Stand-alone applications that use the library
 - `src/`: Library source code
