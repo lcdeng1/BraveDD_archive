@@ -1,7 +1,7 @@
 # 👑 BraveDD
 ***Binary Reduction and Value on Edge Decision Diagram library***
 🔗 Available:
-    - [GitHub]()
+    - [GitHub](https://github.com/lcdeng1/BraveDD_archive)
     - [Zenodo]()
 
 ## 💡 Overview
