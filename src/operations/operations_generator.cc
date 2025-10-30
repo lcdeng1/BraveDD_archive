@@ -85,6 +85,15 @@ BinaryOperation* BRAVE_DD::INTERSECTION(Forest* arg1, Forest* arg2, Forest* res)
     return BOPs.add(bop);
 }
 
+BinaryOperation* BRAVE_DD::DIFFERENCE(Forest* arg1, Forest* arg2, Forest* res)
+{
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_DIFFERENCE, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_DIFFERENCE, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+
 BinaryOperation* BRAVE_DD::MINIMUM(Forest* arg1, Forest* arg2, Forest* res)
 {
     if (!arg1) return nullptr;
@@ -127,6 +136,87 @@ BinaryOperation* BRAVE_DD::PLUS(Forest* arg1, Forest* arg2, Forest* res)
     BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_PLUS, arg1, arg2, res);
     if (bop) return bop;
     bop = new BinaryOperation(BinaryOperationType::BOP_PLUS, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::MINUS(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_MINUS, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_MINUS, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::MULTIPLY(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_MULTIPLY, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_MULTIPLY, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::DIVIDE(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_DIVIDE, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_DIVIDE, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::EQUAL(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_EQUAL, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_EQUAL, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::NOT_EQUAL(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_NOTEQUAL, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_NOTEQUAL, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::LESS_THAN(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_LESSTHAN, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_LESSTHAN, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::LESS_THAN_EQUAL(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_LESSTHANEQ, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_LESSTHANEQ, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::GREATER_THAN(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_GREATERTHAN, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_GREATERTHAN, arg1, arg2, res);
+    return BOPs.add(bop);
+}
+
+BinaryOperation* BRAVE_DD::GREATER_THAN_EQUAL(Forest* arg1, Forest* arg2, Forest* res)
+{
+    if (!arg1) return nullptr;
+    BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_GREATERTHANEQ, arg1, arg2, res);
+    if (bop) return bop;
+    bop = new BinaryOperation(BinaryOperationType::BOP_GREATERTHANEQ, arg1, arg2, res);
     return BOPs.add(bop);
 }
 
