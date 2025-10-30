@@ -57,6 +57,9 @@ std::string bdd_type = "RexBDD";
 // BDD forest
 Forest* forest;
 
+std::vector<std::vector<bool>> isComputed;
+std::vector<std::vector<Func>> cache;
+
 /* Usage message */
 int usage(const char* who)
 {
@@ -138,52 +141,49 @@ bool processArgs(int argc, const char** argv)
     return 0;
 }
 
-Func attackConstraint(const std::vector<std::vector<Func> >& board, int row, int col)
+Func rowConstraint(const std::vector<std::vector<Func> >& board, const int row)
 {
-    /* Start the constraint */
-    Func constraint = board[row][col];
     Func rowAttack(forest);
     rowAttack.falseFunc();
+    /* Be attacked by the same row */
+    for (int j=0; j<N; j++) {
+        rowAttack |= board[row][j];
+    }
+    return rowAttack;
+}
+
+Func colConstraint(const std::vector<std::vector<Func> >& board, const int col)
+{
     Func colAttack(forest);
     colAttack.falseFunc();
-    Func diaAttack(forest);
-    diaAttack.falseFunc();
-    Func atdiaAttack(forest);
-    atdiaAttack.falseFunc();
-
-    /* Be attacked by the same row */
-    for (int j=0; j<col; j++) {
-        rowAttack |= board[row][j];
-    }
-    for (int j=col+1; j<N; j++) {
-        rowAttack |= board[row][j];
-    }
     /* Be attacked by the same column */
-    for (int i=0; i<row; i++) {
+    for (int i=0; i<N; i++) {
         colAttack |= board[i][col];
     }
-    for (int i=row+1; i<N; i++) {
-        colAttack |= board[i][col];
-    }
+    return colAttack;
+}
+
+Func diagConstraint(const std::vector<std::vector<Func> >& board, int row, int col)
+{
+    Func diagAttack0(forest);
+    diagAttack0.falseFunc();
+    Func diagAttack1(forest);
+    diagAttack1.falseFunc();
     /* Be attacked by the same diagonal */
     for (int i=row-1, j=col-1; i>=0 && j>=0; i--, j--) {
-        diaAttack |= board[i][j];
+        diagAttack0 |= board[i][j];
     }
     for (int i=row+1, j=col+1; i<N && j<N; i++, j++) {
-        diaAttack |= board[i][j];
+        diagAttack0 |= board[i][j];
     }
     /* Be attacked by the same anti-diagonal */
     for (int i=row+1, j=col-1; i<N && j>=0; i++, j--) {
-        atdiaAttack |= board[i][j];
+        diagAttack1 |= board[i][j];
     }
     for (int i=row-1, j=col+1; i>=0 && j<N; i--, j++) {
-        atdiaAttack |= board[i][j];
+        diagAttack1 |= board[i][j];
     }
-    constraint |= rowAttack;
-    constraint |= colAttack;
-    constraint |= diaAttack;
-    constraint |= atdiaAttack;
-    return constraint;
+    return diagAttack0 | diagAttack1;
 }
 
 /* This will construct a BDD represents that the constraint of exact n queens placed */
@@ -199,9 +199,15 @@ Func exactNQueens(const Level L, const Level n)
         ans.constant(0);
         return ans;
     }
+    // check if it is computed
+    if (isComputed[L][n]) {
+        return cache[L][n];
+    }
     Func var(forest);
     var.variable(L);
     ans = (var & exactNQueens(L-1, n-1)) | ((!var) & exactNQueens(L-1, n));
+    cache[L][n] = ans;
+    isComputed[L][n] = 1;
     return ans;
 }
 
@@ -223,12 +229,10 @@ int main(int argc, const char** argv)
         if (isHelp) return helpInfo(argv[0]);
         return usage(argv[0]);
     }
-
     /* Initialize BraveDD forest */
     ForestSetting setting(bdd_type, N*N);   // Set the BDD type and the number of variables
     forest = new Forest(setting);
     // setting.output(std::cerr);
-
     std::cerr << "Using " << getLibInfo(0) << std::endl;
     std::cerr << "Solving " << N << std::left << std::setw(27) << "-Queens Cover in BDD type: " << setting.getName() << std::endl;
 
@@ -240,46 +244,29 @@ int main(int argc, const char** argv)
             forest->registerFunc(board[i][j]); // register function to protect for GC
         }
     }
-    /* Timer start */
-    timer watch;
-    watch.reset();
-    watch.note_time();
-    /* Row, Column, and Diagonal constraint */
-    Func solution(forest);
-    solution.trueFunc();
+
+    // /* Row, Column, and Diagonal constraint */
+    std::vector<Func> rowConstraints;
+    std::vector<Func> colConstraints;
+    // pre compute row and column constraints
     for (int i=0; i<N; i++) {
-        Func rowSolution(forest);
-        rowSolution.trueFunc();
-        for (int j=0; j<N; j++) {
-            rowSolution &= attackConstraint(board, i, j);
-        }
-        solution &= rowSolution;
-        // mark nodes and GC
-        forest->registerFunc(solution);
-        forest->markAllFuncs();
-        forest->markSweep();
-        forest->deregisterFunc(solution);
-    }
-    /* Timer end */
-    watch.note_time();
-    forest->registerFunc(solution);
-
-    int align = 36;
-    if (isLog) {
-        std::cerr << "**************** Process Report ****************" << std::endl;
-        std::cerr << std::left << std::setw(align) << "Built cover constraints, took: " << watch.get_last_seconds() << " seconds" << std::endl;
-        // long num;
-        // apply(CARDINALITY, solution, num);
-        // std::cerr << std::left << std::setw(align) << "Number of valid solutions: " << num << std::endl;
-        std::cerr << std::left << std::setw(align) << "Number of nodes (final): " << forest->getNodeManUsed(solution) << std::endl;
-        std::cerr << std::left << std::setw(align) << "Number of nodes (peak): " << forest->getNodeManPeak() << std::endl;
+        rowConstraints.push_back(rowConstraint(board, i));
+        colConstraints.push_back(colConstraint(board, i));
+        // forest->registerFunc(rowConstraints[i]);
+        // forest->registerFunc(colConstraints[i]);
     }
 
-    // check with exact n (from 1 to N) queens constraint
+    /* Initialize computing table for n queens constraints */
+    isComputed = std::vector<std::vector<bool>>(N*N+1, std::vector<bool>(N+1, 0));
+    cache = std::vector<std::vector<Func>>(N*N+1, std::vector<Func>(N+1, Func(forest)));
+    /* check with exact n (from 1 to N) queens constraint */
     for (int n=1; n<=N; n++) {
-        // GC
-        // forest->markAllFuncs();
-        // forest->markSweep();
+        // clear cache
+        for (size_t i=0; i<isComputed.size(); i++) {
+            for (int j=0; j<=n; j++) {
+                isComputed[i][j] = 0;
+            }
+        }
         timer watch1;
         watch1.reset();
         watch1.note_time();
@@ -292,25 +279,45 @@ int main(int argc, const char** argv)
         //     std::cerr << "exact N queens error\n" << std::endl;
         //     exit(1);
         // }
+        Func solutions = nqueens;
+        std::cerr << "Trying to cover with Queens: " << n << std::endl;
+        std::cerr << "Adding constraints by row" << std::endl;
         timer watch2;
         watch2.reset();
         watch2.note_time();
-        Func min_solution = nqueens & solution;
+        // Func min_solution = nqueens & solution;
+        for (int i=0; i<N; i++) {
+            std::cerr << N-i;
+            Func rowcov = nqueens;
+            Func qir = rowConstraints[i];
+            for (int j=0; j<N; j++) {
+                Func col = colConstraints[j];
+                col |= diagConstraint(board, i, j);
+                col |= qir;
+                rowcov &= col;
+            }
+            std::cerr << " ";
+            solutions &= rowcov;
+        }
+        std::cerr << std::endl;
         watch2.note_time();
+        int align = 36;
         if (isLog) {
             std::cerr << "**************** Process Report ****************" << std::endl;
-            std::cerr << "Queens: " << n << std::endl;
-            std::cerr << std::left << std::setw(align) << "Built n queens constraints, took: " << watch1.get_last_seconds() << " seconds" << std::endl;
-            std::cerr << std::left << std::setw(align) << "Check solutions, took: " << watch2.get_last_seconds() << " seconds" << std::endl;
+            std::cerr << std::left << std::setw(align) << "Built n queens constraint, took: " << watch1.get_last_seconds() << " seconds" << std::endl;
+            std::cerr << std::left << std::setw(align) << "Added constraints, took: " << watch2.get_last_seconds() << " seconds" << std::endl;
+            std::cerr << "------------------------------------------------" << std::endl;
         }
-        if (!((min_solution).getEdge().isConstantZero())) {
+        if (!((solutions).getEdge().isConstantZero())) {
             std::cerr << "******************** Report ********************" << std::endl;
-            apply(CARDINALITY, min_solution, num);
-            std::cerr << "There are " << num << " covers with minimum required queens " << num << std::endl;
+            apply(CARDINALITY, solutions, num);
+            std::cerr << "There are " << num << " covers (including all symmetries) " << std::endl;
+            std::cerr << "with minimum required queens " << n << std::endl;
             return 0;
+        } else {
+            std::cerr << "No solutions\n" << std::endl;
         }
     }
-
     /* delete Forest */
     delete forest;
 }
