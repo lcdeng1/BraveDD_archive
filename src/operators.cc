@@ -16,19 +16,19 @@ namespace BRAVE_DD {
     }
     Func operator-(const Func &f1, const Func &f2)
     {
-        Func out;
-        // implementations TBD
+        Func out(f1.getForest());
+        apply(MINUS, f1, f2, out);
         return out;
     }
     Func operator*(const Func &f1, const Func &f2){
-        Func out;
-        // implementations TBD
+        Func out(f1.getForest());
+        apply(MULTIPLY, f1, f2, out);
         return out;
     }
     Func operator/(const Func &f1, const Func &f2)
     {
-        Func out;
-        // implementations TBD
+        Func out(f1.getForest());
+        apply(DIVIDE, f1, f2, out);
         return out;
     }
 
@@ -68,17 +68,17 @@ namespace BRAVE_DD {
     }
     Func operator-=(Func &f1, const Func &f2)
     {
-        // implementations TBD
+        apply(MINUS, f1, f2, f1);
         return f1;
     }
     Func operator*=(Func &f1, const Func &f2)
     {
-        // implementations TBD
+        apply(MULTIPLY, f1, f2, f1);
         return f1;
     }
     Func operator/=(Func &f1, const Func &f2)
     {
-        // implementations TBD
+        apply(DIVIDE, f1, f2, f1);
         return f1;
     }
 
@@ -97,14 +97,26 @@ namespace BRAVE_DD {
         return f1 ^ f2;
     }
 
-    // Func operator!=(Func &f1, const Func &f2)
-    // {
-    //     return f1;
-    // }
-    // Func operator==(Func &f1, const Func &f2)
-    // {
-    //     return f2;
-    // }
+    Func operator<(Func &f1, const Func &f2)
+    {
+        apply(LESS_THAN, f1, f2, f1);
+        return f1;
+    }
+    Func operator>(Func &f1, const Func &f2)
+    {
+        apply(GREATER_THAN, f1, f2, f1);
+        return f1;
+    }
+    Func operator<=(Func &f1, const Func &f2)
+    {
+        apply(LESS_THAN_EQUAL, f1, f2, f1);
+        return f1;
+    }
+    Func operator>=(Func &f1, const Func &f2)
+    {
+        apply(GREATER_THAN_EQUAL, f1, f2, f1);
+        return f1;
+    }
     /* These will let us do C++ style output, with our output class */
     inline Output& operator<<(Output &s, const ForestSetting &setting)
     {

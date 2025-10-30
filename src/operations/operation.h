@@ -112,6 +112,33 @@ namespace BRAVE_DD {
         case BinaryOperationType::BOP_PLUS:
             optype = "Plus";
             break;
+        case BinaryOperationType::BOP_MINUS:
+            optype = "Minus";
+            break;
+        case BinaryOperationType::BOP_MULTIPLY:
+            optype = "Multiply";
+            break;
+        case BinaryOperationType::BOP_DIVIDE:
+            optype = "Divide";
+            break;
+        case BinaryOperationType::BOP_EQUAL:
+            optype = "Equivalence";
+            break;
+        case BinaryOperationType::BOP_NOTEQUAL:
+            optype = "Not Equivalence";
+            break;
+        case BinaryOperationType::BOP_LESSTHAN:
+            optype = "Less than";
+            break;
+        case BinaryOperationType::BOP_LESSTHANEQ:
+            optype = "Less than equal";
+            break;
+        case BinaryOperationType::BOP_GREATERTHAN:
+            optype = "Greater than";
+            break;
+        case BinaryOperationType::BOP_GREATERTHANEQ:
+            optype = "Greater than equal";
+            break;
         case BinaryOperationType::BOP_PREIMAGE:
             optype = "PreImage";
             break;

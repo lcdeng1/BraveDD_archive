@@ -1176,8 +1176,18 @@ void BinaryOperation::compute(const Func& source1, const Func& source2, Func& re
         Func ansEqu(source1.getForest(), ans);
         cp1->compute(ansEqu, res);
         return;
+    } else if (opType == BinaryOperationType::BOP_DIFFERENCE) {
+        // temporary implementation
+        UnaryOperation* comp = UOPs.find(UnaryOperationType::UOP_COMPLEMENT, source2Equ.getForest(), source2Equ.getForest());
+        comp->compute(source2Equ, source2Equ);
+        BinaryOperation* bop = BOPs.find(BinaryOperationType::BOP_INTERSECTION, source1Equ.getForest(), source1Equ.getForest(), source1Equ.getForest());
+        bop->compute(source1Equ, source2Equ, source1Equ);
+        ans = source1Equ.getEdge();
     } else {
         // TBD
+        std::cerr << "[BraveDD] Warning: Operation \"" << BOP2String(opType) << "\" is not supported yet." << std::endl;
+        std::cerr << "          This feature will be available soon in the next release." << std::endl;
+        exit(1);
     }
     // passing result
     res.setEdge(ans);
