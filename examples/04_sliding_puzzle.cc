@@ -933,33 +933,6 @@ void report(std::ostream& out)
     out << "=========================| State |========================" << std::endl;
     out << std::left << std::setw(align) << explore_alg << num_states << std::endl;
 
-    // if (isConcretize) {
-    //     for (size_t i=0; i<distance_permutation_ex_opt.size()-1; i++) {
-    //         out << distance_permutation_ex_opt[i] << " ";
-    //     }
-    //     out << std::endl;
-    // }
-
-    // out << "====================| Distribution |======================" << std::endl;
-    // out << std::left << std::setw(15) << "Up-to" << std::left << std::setw(15) << "#state" << std::left << std::setw(15) << "#node" << std::endl;
-    // for (size_t i=0; i<distance.size(); i++) {
-    //     out << std::left << std::setw(15) << i 
-    //     << std::left << std::setw(15) << distribution_state[i] 
-    //     << std::left << std::setw(15) << distribution_node[i] << std::endl;
-    // }
-    // out << "----------------------------------------------------------" << std::endl;
-    // out << std::left << std::setw(15) << "Exact" << std::left << std::setw(15) << "#state" << std::left << std::setw(15) << "#node" << std::endl;
-    // for (size_t i=0; i<distance.size(); i++) {
-    //     out << std::left << std::setw(15) << i 
-    //     << std::left << std::setw(15) << distribution_ex_state[i] 
-    //     << std::left << std::setw(15) << distribution_ex_node[i] << std::endl;
-    // }
-    // out << "----------------------------------------------------------" << std::endl;
-    // out << std::left << std::setw(15) << "Don't-care"
-    //     // << std::left << std::setw(15) << distribution_ex_state.back()
-    //     << std::left << std::setw(15) << ((0x01UL<<forest1->getSetting().getNumVars()) - distribution_state.back())
-    //     << std::left << std::setw(15) << distribution_ex_node.back() << std::endl;
-
     out << "=========================| Time |=========================" << std::endl;
     out << std::left << std::setw(align) << explore_alg << time_explore << std::endl;
     out << "----------------------------------------------------------" << std::endl;
