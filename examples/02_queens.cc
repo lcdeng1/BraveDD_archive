@@ -85,7 +85,6 @@ int helpInfo(const char* who)
 {
     std::ostream& out = std::cerr;
     int align = 10;
-    // out << std::left << std::setw(align) << "OVERVIEW: " << "N-Queens Problem" << std::endl;
     out << std::left << std::setw(align) << "OVERVIEW: "
     << R"(
     This program symbolically encodes the N-Queens problem using Binary Decision
