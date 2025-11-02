@@ -536,7 +536,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     bool stop = false;
 
     // prep DFA format
-    std::string DFAFormat = "DFA" + name + "\n";
+    std::string DFAFormat = "DFA " + name + "\n";
     DFAFormat += "STATES " + std::to_string(numStates) + "\n";
     DFAFormat += "ALPHABET a";
     for (int i = 1; i < numAssignments; i++)
@@ -586,7 +586,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
                     switch (tempVar.getVarType())
                     {
                     case v_AlphBelongsToq_i:
-                        if (tempVar.alpha == numverticis)
+                        if (tempVar.alpha == numverticis -1)
                         {
                             if (isFirstFinalDFAState == true)
                             {
@@ -603,12 +603,13 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
                         if (isFirstDelta == true)
                         {
                             DFAFormat += "\n";
-                            isFirstFinalDFAState = false;
-                            DFAFormat += std::to_string(tempVar.i);
+                            isFirstDelta = false;
+                            DFAFormat += "DELTA\n";
+                            DFAFormat += "\t" + std::to_string(tempVar.i) + ": "+ intToAlphaString(tempVar.x) + " -> " + std::to_string(tempVar.j) + "\n"; 
                         }
                         else
                         {
-                            DFAFormat += std::to_string(tempVar.i);
+                            DFAFormat += "\t" + std::to_string(tempVar.i) + ": "+ intToAlphaString(tempVar.x) + " -> " + std::to_string(tempVar.j) + "\n";
                         }
                         break;
                     }
@@ -618,7 +619,8 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
         }
     }
 
-    std::cout << std::endl;
+    DFAFormat += "END";
+    std::cout << DFAFormat << std::endl;
 
     fileKissat.close();
 
