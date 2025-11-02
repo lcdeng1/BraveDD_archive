@@ -513,7 +513,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
         return;
     }
 
-    outFileLatx << function; // O(n) — writes each character of the string
+    outFileLatx << latexFunction; // O(n) — writes each character of the string
     outFileLatx.close();     // O(1) — flushes and closes the file
 
 
