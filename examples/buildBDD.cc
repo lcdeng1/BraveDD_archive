@@ -4,9 +4,7 @@
 #include <fstream>
 #include <sstream>
 
-
 using namespace BRAVE_DD;
-
 
 enum VarType
 {
@@ -49,14 +47,12 @@ private:
 
     static std::vector<variable *> registry;
 
-
-
 public:
     /**
      * @brief Default constructor for the Variable class.
      *
      */
-        variable()
+    variable()
     {
         myIndex = 0;
     }
@@ -74,7 +70,6 @@ public:
     int j;
 
     int x;
-
 
     variable(int varType, int alphaT, int iT)
     {
@@ -112,13 +107,16 @@ public:
     {
         return myIndex;
     }
-    int getVarType(){
+    int getVarType()
+    {
         return varTypeG;
     }
-    int getMaxIndex(){
+    int getMaxIndex()
+    {
         return maxIndex;
     }
-    std::vector<variable *> getRegistry(){
+    std::vector<variable *> getRegistry()
+    {
         return registry;
     }
 };
@@ -127,6 +125,7 @@ std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t> &ve
 std::string variableName(variable var);
 variable getVariableByValue(int index);
 std::string intToBoolVariable(variable var);
+std::string intToAlphaString(int number);
 
 int variable::maxIndex;
 std::vector<variable *> variable::registry;
@@ -169,7 +168,7 @@ int main()
     dot1.buildGraph(result);
     dot1.runDot("pdf");
 
-    qRBDDToBoolForDFA(result, 4, 2,"Func2");
+    qRBDDToBoolForDFA(result, 4, 2, "Func2");
 
     delete forestx_1;
     delete forestx_2;
@@ -201,6 +200,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     BRAVE_DD::NodeHandle curVertexHandle;
     curLevelVerticies.push_back(uniqueVertexName);
     seen.insert(uniqueVertexName);
+    variable tempVar;
 
     // Rename verticies
     std::vector<uint64_t> allVerticies;
@@ -210,7 +210,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     {
         for (verticiesOnLvl; verticiesOnLvl > 0; verticiesOnLvl--)
         {
-            //std::cout << std::hex << "Result: 0x" << curLevelVerticies.front() << std::endl;
+            // std::cout << std::hex << "Result: 0x" << curLevelVerticies.front() << std::endl;
             parentVertexHandle = curLevelVerticies.front();
             for (int x = 0; x < numAssignments; x++)
             {
@@ -218,8 +218,8 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
                 curVertexHandle = qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x);
                 // create a unique name from handle and level
                 uniqueVertexName = static_cast<uint64_t>(lvl) << 48 | curVertexHandle;
-                //std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
-                // check if seen befor and add it to seen if not
+                // std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
+                //  check if seen befor and add it to seen if not
                 if (seen.insert(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x)).second)
                 {
                     // add to the stack
@@ -244,7 +244,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     {
         for (int i = 0; i < numStates; i++)
         {
-            belongsTo[alpha][i] = variable(v_AlphBelongsToq_i,alpha,i);
+            belongsTo[alpha][i] = variable(v_AlphBelongsToq_i, alpha, i);
             // belongsTo[alpha][i].activate();
         }
     }
@@ -256,9 +256,9 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
         {
             for (int j = 0; j < numStates; j++)
             {
-                deltaFun[i][j][x] = variable(deltaq_iXIsq_j,i,j,x);
-                //std::cout << variableName(deltaFun[i][j][x]) << std::endl;
-                // delta[i][j][x].activate();
+                deltaFun[i][j][x] = variable(deltaq_iXIsq_j, i, j, x);
+                // std::cout << variableName(deltaFun[i][j][x]) << std::endl;
+                //  delta[i][j][x].activate();
             }
         }
     }
@@ -296,7 +296,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     seen.clear();
     curLevelVerticies.clear();
     uniqueVertexName = (static_cast<uint64_t>(0x4) << 48) | parentVertexHandle;
-    //std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
+    // std::cout << std::hex << "Result: 0x" << uniqueVertexName << std::endl;
     curLevelVerticies.push_back(uniqueVertexName);
     seen.insert(uniqueVertexName);
     verticiesOnLvl = curLevelVerticies.size();
@@ -349,14 +349,14 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
             {
 
                 deltaFun[j][i][x].activate();
-                //std::cout << variableName(deltaFun[j][i][x]) << std::endl;
-                // printf("%d\n",delta[x][i][j].getMyIndex());
+                // std::cout << variableName(deltaFun[j][i][x]) << std::endl;
+                //  printf("%d\n",delta[x][i][j].getMyIndex());
                 function += std::to_string(deltaFun[j][i][x].getMyIndex()) + " ";
             }
             function += "0\n";
             numClauses++;
         }
-        //std::cout << function << std::endl;
+        // std::cout << function << std::endl;
     }
 
     // each delta must be at most 1
@@ -369,22 +369,19 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
                 for (int jSub = jPrime + 1; jSub < numStates; jSub++)
                 {
                     deltaFun[i][jPrime][x].activate();
-                    //std::cout << variableName(deltaFun[i][jPrime][x]) << std::endl;
+                    // std::cout << variableName(deltaFun[i][jPrime][x]) << std::endl;
                     function += "-" + std::to_string(deltaFun[i][jPrime][x].getMyIndex()) + " ";
                     deltaFun[i][jSub][x].activate();
-                    //std::cout << variableName(deltaFun[i][jSub][x]) << std::endl;
+                    // std::cout << variableName(deltaFun[i][jSub][x]) << std::endl;
                     function += "-" + std::to_string(deltaFun[i][jSub][x].getMyIndex()) + " ";
                     function += "0\n";
-                    //std::cout << function << std::endl;
+                    // std::cout << function << std::endl;
                     numClauses++;
                 }
             }
-            //std::cout << function << std::endl;
+            // std::cout << function << std::endl;
         }
     }
-
-
-
 
     /*// notes for using renamed
     for (const auto& [name, id] : renamed) {
@@ -392,10 +389,9 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
         std::cout << "TestID Retrival " << name << " -> ID " << renamed.at(name) << "\n";
     }*/
 
-
-    //make sure the DFA agrees with BDD
-    //set up base
-    //get children
+    // make sure the DFA agrees with BDD
+    // set up base
+    // get children
     seen.clear();
     curLevelVerticies.clear();
     parentVertexHandle = qrbdd.getEdge().getNodeHandle();
@@ -405,9 +401,11 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     verticiesOnLvl = curLevelVerticies.size();
     for (int lvl = maxLvl - 1; lvl >= 0; lvl--)
     {
-        for (verticiesOnLvl; verticiesOnLvl > 0; verticiesOnLvl--){
+        for (verticiesOnLvl; verticiesOnLvl > 0; verticiesOnLvl--)
+        {
             parentVertexHandle = curLevelVerticies.front();
-            for (int x = 0; x < numAssignments; x++){
+            for (int x = 0; x < numAssignments; x++)
+            {
                 // get handle of the vertecy
                 curVertexHandle = qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x);
                 // create a unique name from handle and level
@@ -423,33 +421,35 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
             auto parent = renamed.at(curLevelVerticies.front());
             tempFunction = "-" + std::to_string(belongsTo[parent][0].getMyIndex()) + " ";
             curLevelVerticies.erase(curLevelVerticies.begin());
-            for(int i = 0; i < numStates; i++){
-                for(int x = 0; x < numAssignments; x++){
-                    for(int j = 0; j < numStates; j++){
+            for (int i = 0; i < numStates; i++)
+            {
+                for (int x = 0; x < numAssignments; x++)
+                {
+                    for (int j = 0; j < numStates; j++)
+                    {
                         belongsTo[parent][i].activate();
                         tempFunction = "-" + std::to_string(belongsTo[parent][i].getMyIndex()) + " ";
                         function += tempFunction;
                         std::cout << variableName(deltaFun[i][j][x]) << std::endl;
                         function += "-" + std::to_string(deltaFun[i][j][x].getMyIndex()) + " ";
-                        //std::cout << (static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x)) << std::endl;
-                        std::cout << variableName(belongsTo[renamed.at(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x))][j]) << "\n" << std::endl;
+                        // std::cout << (static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x)) << std::endl;
+                        std::cout << variableName(belongsTo[renamed.at(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x))][j]) << "\n"
+                                  << std::endl;
                         function += std::to_string(belongsTo[renamed.at(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x))][j].getMyIndex()) + " 0\n";
                         numClauses++;
                     }
-                    //std::cout << function << std::endl; 
+                    // std::cout << function << std::endl;
                 }
-                //std::cout << function << std::endl;
+                // std::cout << function << std::endl;
             }
         }
         verticiesOnLvl = curLevelVerticies.size();
     }
 
+    // each state is either final or non final.
 
-    //each state is either final or non final.
+    function = "p cnf " + std::to_string(deltaFun[0][0][0].getMaxIndex() - 1) + " " + std::to_string(numClauses) + "\n" + function;
 
-    
-    function = "p cnf " + std::to_string(deltaFun[0][0][0].getMaxIndex()-1) + " " + std::to_string(numClauses) + "\n" + function;
-   
     // add p cnf <num variables> <num clauses> to tope of file
     std::ofstream outFile("satFunctionForQRBDDtoDFA" + name + ".txt");
     if (!outFile)
@@ -457,8 +457,6 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
         std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFA" + name + ".txt" << std::endl; // O(1)
         return -1;
     }
-
-    
 
     outFile << function; // O(n) — writes each character of the string
     outFile.close();     // O(1) — flushes and closes the file
@@ -489,15 +487,17 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
                 std::cout << "\\vee ";
             }
             std::cout << word << std::endl;
-            if (std::stoi(word) < 0){
+            if (std::stoi(word) < 0)
+            {
                 latexFunction += "\\neg " + variableName(getVariableByValue(abs(std::stoi(word)))) + " ";
                 std::cout << "\\neg " + variableName(getVariableByValue(abs(std::stoi(word)))) << " ";
             }
-            else{
+            else
+            {
                 latexFunction += variableName(getVariableByValue(abs(std::stoi(word)))) + " ";
                 std::cout << variableName(getVariableByValue(abs(std::stoi(word)))) << " ";
             }
-             // O(1)
+            // O(1)
             isFirst = false;
         }
         latexFunction += "\\wedge \\\\ \n";
@@ -514,9 +514,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     }
 
     outFileLatx << latexFunction; // O(n) — writes each character of the string
-    outFileLatx.close();     // O(1) — flushes and closes the file
-
-
+    outFileLatx.close();          // O(1) — flushes and closes the file
 
     std::string command = "/home/dara/Git/kissat/build/kissat ";
     std::string outputFile = "kissat_output" + name + ".txt";
@@ -528,7 +526,8 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     std::ifstream fileKissat("/home/dara/Git/brave_dd/build/examples/kissat_output" + name + ".txt");
 
     // Check if the file was successfully opened
-    if (!fileKissat.is_open()) {
+    if (!fileKissat.is_open())
+    {
         std::cerr << "Error: Could not open file '/home/dara/Git/brave_dd/build/examples/kissat_output" + name + ".txt'\n";
         return -1;
     }
@@ -536,29 +535,84 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     bool foundSatisfiable = false;
     bool stop = false;
 
+    // prep DFA format
+    std::string DFAFormat = "DFA" + name + "\n";
+    DFAFormat += "STATES " + std::to_string(numStates) + "\n";
+    DFAFormat += "ALPHABET a";
+    for (int i = 1; i < numAssignments; i++)
+    {
+        DFAFormat += "," + intToAlphaString(i);
+    }
+    DFAFormat += "\n";
+    DFAFormat += "INITIAL 0\n";
+    DFAFormat += "FINAL ";
+
+    bool isFirstFinalDFAState = true;
+    bool isFirstDelta = true;
+
     // Read the file line by line
-    while (std::getline(fileKissat, line)) {
-        if (stop) break;
-        if (!foundSatisfiable) {
+    while (std::getline(fileKissat, line))
+    {
+        if (stop)
+            break;
+        if (!foundSatisfiable)
+        {
             // Look for the line containing "SATISFIABLE"
-            if (!line.empty() && line[0] == 's') {
+            if (!line.empty() && line[0] == 's')
+            {
                 foundSatisfiable = true;
             }
-        } else {
+        }
+        else
+        {
             // Process lines after "SATISFIABLE"
             std::istringstream iss(line);
             std::string num;
-            while (iss >> num) {
-                if(num == "v"){
+            while (iss >> num)
+            {
+                if (num == "v")
+                {
                 }
-                else if (std::stoi(num) == 0) {
+                else if (std::stoi(num) == 0)
+                {
                     stop = true;
                     break;
                 }
-                else if (std::stoi(num) > 0) {
+                else if (std::stoi(num) > 0)
+                {
                     std::cout << num << std::endl;
                     std::cout << variableName(getVariableByValue(std::stoi(num))) << std::endl;
-                    //std::cout << registry.at(std::stoi(num)) << std::endl;
+                    tempVar = getVariableByValue(std::stoi(num));
+                    switch (tempVar.getVarType())
+                    {
+                    case v_AlphBelongsToq_i:
+                        if (tempVar.alpha == numverticis)
+                        {
+                            if (isFirstFinalDFAState == true)
+                            {
+                                isFirstFinalDFAState = false;
+                                DFAFormat += std::to_string(tempVar.i);
+                            }
+                            else
+                            {
+                                DFAFormat += ", " + std::to_string(tempVar.i);
+                            }
+                        }
+                        break;
+                    case deltaq_iXIsq_j:
+                        if (isFirstDelta == true)
+                        {
+                            DFAFormat += "\n";
+                            isFirstFinalDFAState = false;
+                            DFAFormat += std::to_string(tempVar.i);
+                        }
+                        else
+                        {
+                            DFAFormat += std::to_string(tempVar.i);
+                        }
+                        break;
+                    }
+                    // std::cout << registry.at(std::stoi(num)) << std::endl;
                 }
             }
         }
@@ -617,18 +671,18 @@ std::string intToAlphaString(int number)
     return result;
 }
 
-std::string variableName(variable var){
-    switch (var.getVarType()){
-        case v_AlphBelongsToq_i:
-                return "v_"+ intToAlphaString(var.alpha)+ " \\relSym\\q_" + std::to_string(var.i);
-            break;
-        case deltaq_iXIsq_j:
-                return "\\delta (q_" + std::to_string(var.i) + " ," + std::to_string(var.x) + ") = q_" + std::to_string(var.j);
-            break;
+std::string variableName(variable var)
+{
+    switch (var.getVarType())
+    {
+    case v_AlphBelongsToq_i:
+        return "v_" + intToAlphaString(var.alpha) + " \\relSym\\q_" + std::to_string(var.i);
+        break;
+    case deltaq_iXIsq_j:
+        return "\\delta (q_" + std::to_string(var.i) + " ," + std::to_string(var.x) + ") = q_" + std::to_string(var.j);
+        break;
     }
 }
-
-
 
 /**
  * @brief Retrieves a copy of the variable object at a given index.
@@ -638,11 +692,10 @@ std::string variableName(variable var){
  */
 variable getVariableByValue(int index)
 {
-    variable* ptr = variable::getvariableIndex(index); // O(1)
+    variable *ptr = variable::getvariableIndex(index); // O(1)
     if (ptr == nullptr)
     {
         throw std::runtime_error("No variable at this index."); // O(1)
     }
     return *ptr; // O(1)
 }
-
