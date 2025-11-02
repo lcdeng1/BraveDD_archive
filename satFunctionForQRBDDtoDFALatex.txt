@@ -1,0 +1,432 @@
+v_a \relSym\q_0 \wedge \\ 
+v_b \relSym\q_0 \vee v_b \relSym\q_1 \vee v_b \relSym\q_2 \vee v_b \relSym\q_3 \wedge \\ 
+v_c \relSym\q_0 \vee v_c \relSym\q_1 \vee v_c \relSym\q_2 \vee v_c \relSym\q_3 \wedge \\ 
+v_d \relSym\q_0 \vee v_d \relSym\q_1 \vee v_d \relSym\q_2 \vee v_d \relSym\q_3 \wedge \\ 
+v_e \relSym\q_0 \vee v_e \relSym\q_1 \vee v_e \relSym\q_2 \vee v_e \relSym\q_3 \wedge \\ 
+v_f \relSym\q_0 \vee v_f \relSym\q_1 \vee v_f \relSym\q_2 \vee v_f \relSym\q_3 \wedge \\ 
+v_g \relSym\q_0 \vee v_g \relSym\q_1 \vee v_g \relSym\q_2 \vee v_g \relSym\q_3 \wedge \\ 
+v_h \relSym\q_0 \vee v_h \relSym\q_1 \vee v_h \relSym\q_2 \vee v_h \relSym\q_3 \wedge \\ 
+v_i \relSym\q_0 \vee v_i \relSym\q_1 \vee v_i \relSym\q_2 \vee v_i \relSym\q_3 \wedge \\ 
+v_j \relSym\q_0 \vee v_j \relSym\q_1 \vee v_j \relSym\q_2 \vee v_j \relSym\q_3 \wedge \\ 
+v_k \relSym\q_0 \vee v_k \relSym\q_1 \vee v_k \relSym\q_2 \vee v_k \relSym\q_3 \wedge \\ 
+v_l \relSym\q_0 \vee v_l \relSym\q_1 \vee v_l \relSym\q_2 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_b \relSym\q_0 \vee \neg v_c \relSym\q_0 \wedge \\ 
+\neg v_b \relSym\q_1 \vee \neg v_c \relSym\q_1 \wedge \\ 
+\neg v_b \relSym\q_2 \vee \neg v_c \relSym\q_2 \wedge \\ 
+\neg v_b \relSym\q_3 \vee \neg v_c \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg v_e \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg v_f \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg v_g \relSym\q_0 \wedge \\ 
+\neg v_e \relSym\q_0 \vee \neg v_f \relSym\q_0 \wedge \\ 
+\neg v_e \relSym\q_0 \vee \neg v_g \relSym\q_0 \wedge \\ 
+\neg v_f \relSym\q_0 \vee \neg v_g \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg v_e \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg v_f \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg v_g \relSym\q_1 \wedge \\ 
+\neg v_e \relSym\q_1 \vee \neg v_f \relSym\q_1 \wedge \\ 
+\neg v_e \relSym\q_1 \vee \neg v_g \relSym\q_1 \wedge \\ 
+\neg v_f \relSym\q_1 \vee \neg v_g \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg v_e \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg v_f \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg v_g \relSym\q_2 \wedge \\ 
+\neg v_e \relSym\q_2 \vee \neg v_f \relSym\q_2 \wedge \\ 
+\neg v_e \relSym\q_2 \vee \neg v_g \relSym\q_2 \wedge \\ 
+\neg v_f \relSym\q_2 \vee \neg v_g \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg v_e \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg v_f \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg v_g \relSym\q_3 \wedge \\ 
+\neg v_e \relSym\q_3 \vee \neg v_f \relSym\q_3 \wedge \\ 
+\neg v_e \relSym\q_3 \vee \neg v_g \relSym\q_3 \wedge \\ 
+\neg v_f \relSym\q_3 \vee \neg v_g \relSym\q_3 \wedge \\ 
+\neg v_h \relSym\q_0 \vee \neg v_i \relSym\q_0 \wedge \\ 
+\neg v_h \relSym\q_0 \vee \neg v_j \relSym\q_0 \wedge \\ 
+\neg v_i \relSym\q_0 \vee \neg v_j \relSym\q_0 \wedge \\ 
+\neg v_h \relSym\q_1 \vee \neg v_i \relSym\q_1 \wedge \\ 
+\neg v_h \relSym\q_1 \vee \neg v_j \relSym\q_1 \wedge \\ 
+\neg v_i \relSym\q_1 \vee \neg v_j \relSym\q_1 \wedge \\ 
+\neg v_h \relSym\q_2 \vee \neg v_i \relSym\q_2 \wedge \\ 
+\neg v_h \relSym\q_2 \vee \neg v_j \relSym\q_2 \wedge \\ 
+\neg v_i \relSym\q_2 \vee \neg v_j \relSym\q_2 \wedge \\ 
+\neg v_h \relSym\q_3 \vee \neg v_i \relSym\q_3 \wedge \\ 
+\neg v_h \relSym\q_3 \vee \neg v_j \relSym\q_3 \wedge \\ 
+\neg v_i \relSym\q_3 \vee \neg v_j \relSym\q_3 \wedge \\ 
+\neg v_k \relSym\q_0 \vee \neg v_l \relSym\q_0 \wedge \\ 
+\neg v_k \relSym\q_1 \vee \neg v_l \relSym\q_1 \wedge \\ 
+\neg v_k \relSym\q_2 \vee \neg v_l \relSym\q_2 \wedge \\ 
+\neg v_k \relSym\q_3 \vee \neg v_l \relSym\q_3 \wedge \\ 
+\delta (q_0 ,0) = q_0 \vee \delta (q_0 ,0) = q_1 \vee \delta (q_0 ,0) = q_2 \vee \delta (q_0 ,0) = q_3 \wedge \\ 
+\delta (q_1 ,0) = q_0 \vee \delta (q_1 ,0) = q_1 \vee \delta (q_1 ,0) = q_2 \vee \delta (q_1 ,0) = q_3 \wedge \\ 
+\delta (q_2 ,0) = q_0 \vee \delta (q_2 ,0) = q_1 \vee \delta (q_2 ,0) = q_2 \vee \delta (q_2 ,0) = q_3 \wedge \\ 
+\delta (q_3 ,0) = q_0 \vee \delta (q_3 ,0) = q_1 \vee \delta (q_3 ,0) = q_2 \vee \delta (q_3 ,0) = q_3 \wedge \\ 
+\delta (q_0 ,1) = q_0 \vee \delta (q_0 ,1) = q_1 \vee \delta (q_0 ,1) = q_2 \vee \delta (q_0 ,1) = q_3 \wedge \\ 
+\delta (q_1 ,1) = q_0 \vee \delta (q_1 ,1) = q_1 \vee \delta (q_1 ,1) = q_2 \vee \delta (q_1 ,1) = q_3 \wedge \\ 
+\delta (q_2 ,1) = q_0 \vee \delta (q_2 ,1) = q_1 \vee \delta (q_2 ,1) = q_2 \vee \delta (q_2 ,1) = q_3 \wedge \\ 
+\delta (q_3 ,1) = q_0 \vee \delta (q_3 ,1) = q_1 \vee \delta (q_3 ,1) = q_2 \vee \delta (q_3 ,1) = q_3 \wedge \\ 
+\neg \delta (q_0 ,0) = q_0 \vee \neg \delta (q_0 ,0) = q_1 \wedge \\ 
+\neg \delta (q_0 ,0) = q_0 \vee \neg \delta (q_0 ,0) = q_2 \wedge \\ 
+\neg \delta (q_0 ,0) = q_0 \vee \neg \delta (q_0 ,0) = q_3 \wedge \\ 
+\neg \delta (q_0 ,0) = q_1 \vee \neg \delta (q_0 ,0) = q_2 \wedge \\ 
+\neg \delta (q_0 ,0) = q_1 \vee \neg \delta (q_0 ,0) = q_3 \wedge \\ 
+\neg \delta (q_0 ,0) = q_2 \vee \neg \delta (q_0 ,0) = q_3 \wedge \\ 
+\neg \delta (q_1 ,0) = q_0 \vee \neg \delta (q_1 ,0) = q_1 \wedge \\ 
+\neg \delta (q_1 ,0) = q_0 \vee \neg \delta (q_1 ,0) = q_2 \wedge \\ 
+\neg \delta (q_1 ,0) = q_0 \vee \neg \delta (q_1 ,0) = q_3 \wedge \\ 
+\neg \delta (q_1 ,0) = q_1 \vee \neg \delta (q_1 ,0) = q_2 \wedge \\ 
+\neg \delta (q_1 ,0) = q_1 \vee \neg \delta (q_1 ,0) = q_3 \wedge \\ 
+\neg \delta (q_1 ,0) = q_2 \vee \neg \delta (q_1 ,0) = q_3 \wedge \\ 
+\neg \delta (q_2 ,0) = q_0 \vee \neg \delta (q_2 ,0) = q_1 \wedge \\ 
+\neg \delta (q_2 ,0) = q_0 \vee \neg \delta (q_2 ,0) = q_2 \wedge \\ 
+\neg \delta (q_2 ,0) = q_0 \vee \neg \delta (q_2 ,0) = q_3 \wedge \\ 
+\neg \delta (q_2 ,0) = q_1 \vee \neg \delta (q_2 ,0) = q_2 \wedge \\ 
+\neg \delta (q_2 ,0) = q_1 \vee \neg \delta (q_2 ,0) = q_3 \wedge \\ 
+\neg \delta (q_2 ,0) = q_2 \vee \neg \delta (q_2 ,0) = q_3 \wedge \\ 
+\neg \delta (q_3 ,0) = q_0 \vee \neg \delta (q_3 ,0) = q_1 \wedge \\ 
+\neg \delta (q_3 ,0) = q_0 \vee \neg \delta (q_3 ,0) = q_2 \wedge \\ 
+\neg \delta (q_3 ,0) = q_0 \vee \neg \delta (q_3 ,0) = q_3 \wedge \\ 
+\neg \delta (q_3 ,0) = q_1 \vee \neg \delta (q_3 ,0) = q_2 \wedge \\ 
+\neg \delta (q_3 ,0) = q_1 \vee \neg \delta (q_3 ,0) = q_3 \wedge \\ 
+\neg \delta (q_3 ,0) = q_2 \vee \neg \delta (q_3 ,0) = q_3 \wedge \\ 
+\neg \delta (q_0 ,1) = q_0 \vee \neg \delta (q_0 ,1) = q_1 \wedge \\ 
+\neg \delta (q_0 ,1) = q_0 \vee \neg \delta (q_0 ,1) = q_2 \wedge \\ 
+\neg \delta (q_0 ,1) = q_0 \vee \neg \delta (q_0 ,1) = q_3 \wedge \\ 
+\neg \delta (q_0 ,1) = q_1 \vee \neg \delta (q_0 ,1) = q_2 \wedge \\ 
+\neg \delta (q_0 ,1) = q_1 \vee \neg \delta (q_0 ,1) = q_3 \wedge \\ 
+\neg \delta (q_0 ,1) = q_2 \vee \neg \delta (q_0 ,1) = q_3 \wedge \\ 
+\neg \delta (q_1 ,1) = q_0 \vee \neg \delta (q_1 ,1) = q_1 \wedge \\ 
+\neg \delta (q_1 ,1) = q_0 \vee \neg \delta (q_1 ,1) = q_2 \wedge \\ 
+\neg \delta (q_1 ,1) = q_0 \vee \neg \delta (q_1 ,1) = q_3 \wedge \\ 
+\neg \delta (q_1 ,1) = q_1 \vee \neg \delta (q_1 ,1) = q_2 \wedge \\ 
+\neg \delta (q_1 ,1) = q_1 \vee \neg \delta (q_1 ,1) = q_3 \wedge \\ 
+\neg \delta (q_1 ,1) = q_2 \vee \neg \delta (q_1 ,1) = q_3 \wedge \\ 
+\neg \delta (q_2 ,1) = q_0 \vee \neg \delta (q_2 ,1) = q_1 \wedge \\ 
+\neg \delta (q_2 ,1) = q_0 \vee \neg \delta (q_2 ,1) = q_2 \wedge \\ 
+\neg \delta (q_2 ,1) = q_0 \vee \neg \delta (q_2 ,1) = q_3 \wedge \\ 
+\neg \delta (q_2 ,1) = q_1 \vee \neg \delta (q_2 ,1) = q_2 \wedge \\ 
+\neg \delta (q_2 ,1) = q_1 \vee \neg \delta (q_2 ,1) = q_3 \wedge \\ 
+\neg \delta (q_2 ,1) = q_2 \vee \neg \delta (q_2 ,1) = q_3 \wedge \\ 
+\neg \delta (q_3 ,1) = q_0 \vee \neg \delta (q_3 ,1) = q_1 \wedge \\ 
+\neg \delta (q_3 ,1) = q_0 \vee \neg \delta (q_3 ,1) = q_2 \wedge \\ 
+\neg \delta (q_3 ,1) = q_0 \vee \neg \delta (q_3 ,1) = q_3 \wedge \\ 
+\neg \delta (q_3 ,1) = q_1 \vee \neg \delta (q_3 ,1) = q_2 \wedge \\ 
+\neg \delta (q_3 ,1) = q_1 \vee \neg \delta (q_3 ,1) = q_3 \wedge \\ 
+\neg \delta (q_3 ,1) = q_2 \vee \neg \delta (q_3 ,1) = q_3 \wedge \\ 
+\neg v_a \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_0 \vee v_b \relSym\q_0 \wedge \\ 
+\neg v_a \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_1 \vee v_b \relSym\q_1 \wedge \\ 
+\neg v_a \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_2 \vee v_b \relSym\q_2 \wedge \\ 
+\neg v_a \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_3 \vee v_b \relSym\q_3 \wedge \\ 
+\neg v_a \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_0 \vee v_c \relSym\q_0 \wedge \\ 
+\neg v_a \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_1 \vee v_c \relSym\q_1 \wedge \\ 
+\neg v_a \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_2 \vee v_c \relSym\q_2 \wedge \\ 
+\neg v_a \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_3 \vee v_c \relSym\q_3 \wedge \\ 
+\neg v_a \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_0 \vee v_b \relSym\q_0 \wedge \\ 
+\neg v_a \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_1 \vee v_b \relSym\q_1 \wedge \\ 
+\neg v_a \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_2 \vee v_b \relSym\q_2 \wedge \\ 
+\neg v_a \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_3 \vee v_b \relSym\q_3 \wedge \\ 
+\neg v_a \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_0 \vee v_c \relSym\q_0 \wedge \\ 
+\neg v_a \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_1 \vee v_c \relSym\q_1 \wedge \\ 
+\neg v_a \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_2 \vee v_c \relSym\q_2 \wedge \\ 
+\neg v_a \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_3 \vee v_c \relSym\q_3 \wedge \\ 
+\neg v_a \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_0 \vee v_b \relSym\q_0 \wedge \\ 
+\neg v_a \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_1 \vee v_b \relSym\q_1 \wedge \\ 
+\neg v_a \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_2 \vee v_b \relSym\q_2 \wedge \\ 
+\neg v_a \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_3 \vee v_b \relSym\q_3 \wedge \\ 
+\neg v_a \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_0 \vee v_c \relSym\q_0 \wedge \\ 
+\neg v_a \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_1 \vee v_c \relSym\q_1 \wedge \\ 
+\neg v_a \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_2 \vee v_c \relSym\q_2 \wedge \\ 
+\neg v_a \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_3 \vee v_c \relSym\q_3 \wedge \\ 
+\neg v_a \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_0 \vee v_b \relSym\q_0 \wedge \\ 
+\neg v_a \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_1 \vee v_b \relSym\q_1 \wedge \\ 
+\neg v_a \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_2 \vee v_b \relSym\q_2 \wedge \\ 
+\neg v_a \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_3 \vee v_b \relSym\q_3 \wedge \\ 
+\neg v_a \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_0 \vee v_c \relSym\q_0 \wedge \\ 
+\neg v_a \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_1 \vee v_c \relSym\q_1 \wedge \\ 
+\neg v_a \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_2 \vee v_c \relSym\q_2 \wedge \\ 
+\neg v_a \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_3 \vee v_c \relSym\q_3 \wedge \\ 
+\neg v_b \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_0 \vee v_d \relSym\q_0 \wedge \\ 
+\neg v_b \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_1 \vee v_d \relSym\q_1 \wedge \\ 
+\neg v_b \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_2 \vee v_d \relSym\q_2 \wedge \\ 
+\neg v_b \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_3 \vee v_d \relSym\q_3 \wedge \\ 
+\neg v_b \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_0 \vee v_e \relSym\q_0 \wedge \\ 
+\neg v_b \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_1 \vee v_e \relSym\q_1 \wedge \\ 
+\neg v_b \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_2 \vee v_e \relSym\q_2 \wedge \\ 
+\neg v_b \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_3 \vee v_e \relSym\q_3 \wedge \\ 
+\neg v_b \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_0 \vee v_d \relSym\q_0 \wedge \\ 
+\neg v_b \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_1 \vee v_d \relSym\q_1 \wedge \\ 
+\neg v_b \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_2 \vee v_d \relSym\q_2 \wedge \\ 
+\neg v_b \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_3 \vee v_d \relSym\q_3 \wedge \\ 
+\neg v_b \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_0 \vee v_e \relSym\q_0 \wedge \\ 
+\neg v_b \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_1 \vee v_e \relSym\q_1 \wedge \\ 
+\neg v_b \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_2 \vee v_e \relSym\q_2 \wedge \\ 
+\neg v_b \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_3 \vee v_e \relSym\q_3 \wedge \\ 
+\neg v_b \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_0 \vee v_d \relSym\q_0 \wedge \\ 
+\neg v_b \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_1 \vee v_d \relSym\q_1 \wedge \\ 
+\neg v_b \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_2 \vee v_d \relSym\q_2 \wedge \\ 
+\neg v_b \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_3 \vee v_d \relSym\q_3 \wedge \\ 
+\neg v_b \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_0 \vee v_e \relSym\q_0 \wedge \\ 
+\neg v_b \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_1 \vee v_e \relSym\q_1 \wedge \\ 
+\neg v_b \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_2 \vee v_e \relSym\q_2 \wedge \\ 
+\neg v_b \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_3 \vee v_e \relSym\q_3 \wedge \\ 
+\neg v_b \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_0 \vee v_d \relSym\q_0 \wedge \\ 
+\neg v_b \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_1 \vee v_d \relSym\q_1 \wedge \\ 
+\neg v_b \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_2 \vee v_d \relSym\q_2 \wedge \\ 
+\neg v_b \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_3 \vee v_d \relSym\q_3 \wedge \\ 
+\neg v_b \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_0 \vee v_e \relSym\q_0 \wedge \\ 
+\neg v_b \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_1 \vee v_e \relSym\q_1 \wedge \\ 
+\neg v_b \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_2 \vee v_e \relSym\q_2 \wedge \\ 
+\neg v_b \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_3 \vee v_e \relSym\q_3 \wedge \\ 
+\neg v_c \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_0 \vee v_f \relSym\q_0 \wedge \\ 
+\neg v_c \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_1 \vee v_f \relSym\q_1 \wedge \\ 
+\neg v_c \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_2 \vee v_f \relSym\q_2 \wedge \\ 
+\neg v_c \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_3 \vee v_f \relSym\q_3 \wedge \\ 
+\neg v_c \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_0 \vee v_g \relSym\q_0 \wedge \\ 
+\neg v_c \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_1 \vee v_g \relSym\q_1 \wedge \\ 
+\neg v_c \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_2 \vee v_g \relSym\q_2 \wedge \\ 
+\neg v_c \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_3 \vee v_g \relSym\q_3 \wedge \\ 
+\neg v_c \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_0 \vee v_f \relSym\q_0 \wedge \\ 
+\neg v_c \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_1 \vee v_f \relSym\q_1 \wedge \\ 
+\neg v_c \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_2 \vee v_f \relSym\q_2 \wedge \\ 
+\neg v_c \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_3 \vee v_f \relSym\q_3 \wedge \\ 
+\neg v_c \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_0 \vee v_g \relSym\q_0 \wedge \\ 
+\neg v_c \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_1 \vee v_g \relSym\q_1 \wedge \\ 
+\neg v_c \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_2 \vee v_g \relSym\q_2 \wedge \\ 
+\neg v_c \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_3 \vee v_g \relSym\q_3 \wedge \\ 
+\neg v_c \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_0 \vee v_f \relSym\q_0 \wedge \\ 
+\neg v_c \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_1 \vee v_f \relSym\q_1 \wedge \\ 
+\neg v_c \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_2 \vee v_f \relSym\q_2 \wedge \\ 
+\neg v_c \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_3 \vee v_f \relSym\q_3 \wedge \\ 
+\neg v_c \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_0 \vee v_g \relSym\q_0 \wedge \\ 
+\neg v_c \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_1 \vee v_g \relSym\q_1 \wedge \\ 
+\neg v_c \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_2 \vee v_g \relSym\q_2 \wedge \\ 
+\neg v_c \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_3 \vee v_g \relSym\q_3 \wedge \\ 
+\neg v_c \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_0 \vee v_f \relSym\q_0 \wedge \\ 
+\neg v_c \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_1 \vee v_f \relSym\q_1 \wedge \\ 
+\neg v_c \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_2 \vee v_f \relSym\q_2 \wedge \\ 
+\neg v_c \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_3 \vee v_f \relSym\q_3 \wedge \\ 
+\neg v_c \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_0 \vee v_g \relSym\q_0 \wedge \\ 
+\neg v_c \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_1 \vee v_g \relSym\q_1 \wedge \\ 
+\neg v_c \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_2 \vee v_g \relSym\q_2 \wedge \\ 
+\neg v_c \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_3 \vee v_g \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_d \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_e \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_e \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_e \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_e \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_e \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_e \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_e \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_e \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_e \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_e \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_e \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_e \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_e \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_e \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_e \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_e \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_e \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_e \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_e \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_e \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_e \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_e \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_e \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_e \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_e \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_e \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_e \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_e \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_e \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_e \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_e \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_e \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_f \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_f \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_f \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_f \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_f \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_0 \vee v_j \relSym\q_0 \wedge \\ 
+\neg v_f \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_1 \vee v_j \relSym\q_1 \wedge \\ 
+\neg v_f \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_2 \vee v_j \relSym\q_2 \wedge \\ 
+\neg v_f \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_3 \vee v_j \relSym\q_3 \wedge \\ 
+\neg v_f \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_f \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_f \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_f \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_f \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_0 \vee v_j \relSym\q_0 \wedge \\ 
+\neg v_f \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_1 \vee v_j \relSym\q_1 \wedge \\ 
+\neg v_f \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_2 \vee v_j \relSym\q_2 \wedge \\ 
+\neg v_f \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_3 \vee v_j \relSym\q_3 \wedge \\ 
+\neg v_f \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_f \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_f \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_f \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_f \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_0 \vee v_j \relSym\q_0 \wedge \\ 
+\neg v_f \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_1 \vee v_j \relSym\q_1 \wedge \\ 
+\neg v_f \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_2 \vee v_j \relSym\q_2 \wedge \\ 
+\neg v_f \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_3 \vee v_j \relSym\q_3 \wedge \\ 
+\neg v_f \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_0 \vee v_h \relSym\q_0 \wedge \\ 
+\neg v_f \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_1 \vee v_h \relSym\q_1 \wedge \\ 
+\neg v_f \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_2 \vee v_h \relSym\q_2 \wedge \\ 
+\neg v_f \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_3 \vee v_h \relSym\q_3 \wedge \\ 
+\neg v_f \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_0 \vee v_j \relSym\q_0 \wedge \\ 
+\neg v_f \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_1 \vee v_j \relSym\q_1 \wedge \\ 
+\neg v_f \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_2 \vee v_j \relSym\q_2 \wedge \\ 
+\neg v_f \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_3 \vee v_j \relSym\q_3 \wedge \\ 
+\neg v_g \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_g \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_g \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_g \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_g \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_0 \vee v_j \relSym\q_0 \wedge \\ 
+\neg v_g \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_1 \vee v_j \relSym\q_1 \wedge \\ 
+\neg v_g \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_2 \vee v_j \relSym\q_2 \wedge \\ 
+\neg v_g \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_3 \vee v_j \relSym\q_3 \wedge \\ 
+\neg v_g \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_g \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_g \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_g \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_g \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_0 \vee v_j \relSym\q_0 \wedge \\ 
+\neg v_g \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_1 \vee v_j \relSym\q_1 \wedge \\ 
+\neg v_g \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_2 \vee v_j \relSym\q_2 \wedge \\ 
+\neg v_g \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_3 \vee v_j \relSym\q_3 \wedge \\ 
+\neg v_g \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_g \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_g \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_g \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_g \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_0 \vee v_j \relSym\q_0 \wedge \\ 
+\neg v_g \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_1 \vee v_j \relSym\q_1 \wedge \\ 
+\neg v_g \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_2 \vee v_j \relSym\q_2 \wedge \\ 
+\neg v_g \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_3 \vee v_j \relSym\q_3 \wedge \\ 
+\neg v_g \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_0 \vee v_i \relSym\q_0 \wedge \\ 
+\neg v_g \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_1 \vee v_i \relSym\q_1 \wedge \\ 
+\neg v_g \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_2 \vee v_i \relSym\q_2 \wedge \\ 
+\neg v_g \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_3 \vee v_i \relSym\q_3 \wedge \\ 
+\neg v_g \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_0 \vee v_j \relSym\q_0 \wedge \\ 
+\neg v_g \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_1 \vee v_j \relSym\q_1 \wedge \\ 
+\neg v_g \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_2 \vee v_j \relSym\q_2 \wedge \\ 
+\neg v_g \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_3 \vee v_j \relSym\q_3 \wedge \\ 
+\neg v_h \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_h \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_h \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_h \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_h \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_h \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_h \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_h \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_h \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_h \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_h \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_h \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_h \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_h \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_h \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_h \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_h \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_h \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_h \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_h \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_h \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_h \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_h \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_h \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_h \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_h \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_h \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_h \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_h \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_h \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_h \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_h \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_i \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_i \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_i \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_i \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_i \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_i \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_i \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_i \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_i \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_i \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_i \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_i \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_i \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_i \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_i \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_i \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_i \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_i \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_i \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_i \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_i \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_i \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_i \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_i \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_i \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_0 \vee v_k \relSym\q_0 \wedge \\ 
+\neg v_i \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_1 \vee v_k \relSym\q_1 \wedge \\ 
+\neg v_i \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_2 \vee v_k \relSym\q_2 \wedge \\ 
+\neg v_i \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_3 \vee v_k \relSym\q_3 \wedge \\ 
+\neg v_i \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_i \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_i \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_i \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_j \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_j \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_j \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_j \relSym\q_0 \vee \neg \delta (q_0 ,0) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_j \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_j \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_j \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_j \relSym\q_0 \vee \neg \delta (q_0 ,1) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_j \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_j \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_j \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_j \relSym\q_1 \vee \neg \delta (q_1 ,0) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_j \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_j \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_j \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_j \relSym\q_1 \vee \neg \delta (q_1 ,1) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_j \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_j \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_j \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_j \relSym\q_2 \vee \neg \delta (q_2 ,0) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_j \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_j \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_j \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_j \relSym\q_2 \vee \neg \delta (q_2 ,1) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_j \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_j \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_j \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_j \relSym\q_3 \vee \neg \delta (q_3 ,0) = q_3 \vee v_l \relSym\q_3 \wedge \\ 
+\neg v_j \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_0 \vee v_l \relSym\q_0 \wedge \\ 
+\neg v_j \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_1 \vee v_l \relSym\q_1 \wedge \\ 
+\neg v_j \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_2 \vee v_l \relSym\q_2 \wedge \\ 
+\neg v_j \relSym\q_3 \vee \neg \delta (q_3 ,1) = q_3 \vee v_l \relSym\q_3 \wedge \\ 

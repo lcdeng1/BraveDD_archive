@@ -122,8 +122,7 @@ public:
         return registry;
     }
 };
-
-int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments);
+int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, std::string name);
 std::unordered_map<uint64_t, int> renameVertices(const std::vector<uint64_t> &vertexNames);
 std::string variableName(variable var);
 variable getVariableByValue(int index);
@@ -170,7 +169,7 @@ int main()
     dot1.buildGraph(result);
     dot1.runDot("pdf");
 
-    qRBDDToBoolForDFA(result, 4, 2);
+    qRBDDToBoolForDFA(result, 4, 2,"Func2");
 
     delete forestx_1;
     delete forestx_2;
@@ -191,7 +190,7 @@ int maxLvl = 4;
  * this the sat solver will give wether or not it is possible to create a DFA of the given size
  * if it is possible, you can use the assignments to construct it.
  **/
-int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
+int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, std::string name)
 {
     numStatesG = numStates;
 
@@ -419,16 +418,17 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
                     // add to the stack
                     curLevelVerticies.push_back(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x));
                 }
-
             }
-            tempFunction = "-" + std::to_string(belongsTo[renamed.at(curLevelVerticies.front())][0].getMyIndex()) + " ";
-            std::string variableTemp = variableName(belongsTo[renamed.at(curLevelVerticies.front())][0]);
+
+            auto parent = renamed.at(curLevelVerticies.front());
+            tempFunction = "-" + std::to_string(belongsTo[parent][0].getMyIndex()) + " ";
             curLevelVerticies.erase(curLevelVerticies.begin());
             for(int i = 0; i < numStates; i++){
                 for(int x = 0; x < numAssignments; x++){
                     for(int j = 0; j < numStates; j++){
+                        belongsTo[parent][i].activate();
+                        tempFunction = "-" + std::to_string(belongsTo[parent][i].getMyIndex()) + " ";
                         function += tempFunction;
-                        std::cout << variableTemp << std::endl;
                         std::cout << variableName(deltaFun[i][j][x]) << std::endl;
                         function += "-" + std::to_string(deltaFun[i][j][x].getMyIndex()) + " ";
                         //std::cout << (static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x)) << std::endl;
@@ -451,11 +451,11 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     function = "p cnf " + std::to_string(deltaFun[0][0][0].getMaxIndex()-1) + " " + std::to_string(numClauses) + "\n" + function;
    
     // add p cnf <num variables> <num clauses> to tope of file
-    std::ofstream outFile("satFunctionForQRBDDtoDFA.txt");
+    std::ofstream outFile("satFunctionForQRBDDtoDFA" + name + ".txt");
     if (!outFile)
     {
-        std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFA.txt" << std::endl; // O(1)
-        return;
+        std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFA" + name + ".txt" << std::endl; // O(1)
+        return -1;
     }
 
     
@@ -463,11 +463,11 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
     outFile << function; // O(n) — writes each character of the string
     outFile.close();     // O(1) — flushes and closes the file
 
-    std::ifstream inFile("satFunctionForQRBDDtoDFA.txt");
+    std::ifstream inFile("satFunctionForQRBDDtoDFA" + name + ".txt");
     if (!inFile)
     {
-        std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFA.txt" << std::endl; // O(1)
-        return;
+        std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFA" + name + ".txt" << std::endl; // O(1)
+        return -1;
     }
 
     std::string line;
@@ -506,11 +506,11 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
 
     inFile.close(); // O(1)*/
 
-    std::ofstream outFileLatx("satFunctionForQRBDDtoDFALatex.txt");
+    std::ofstream outFileLatx("satFunctionForQRBDDtoDFALatex" + name + ".txt");
     if (!outFileLatx)
     {
-        std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFALatex.txt" << std::endl; // O(1)
-        return;
+        std::cerr << "Error opening file: " << "satFunctionForQRBDDtoDFALatex" + name + ".txt" << std::endl; // O(1)
+        return -1;
     }
 
     outFileLatx << latexFunction; // O(n) — writes each character of the string
@@ -519,18 +519,18 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments)
 
 
     std::string command = "/home/dara/Git/kissat/build/kissat ";
-    std::string outputFile = "kissat_output.txt";
-    command += "/home/dara/Git/brave_dd/build/examples/satFunctionForQRBDDtoDFA.txt > " + outputFile;
+    std::string outputFile = "kissat_output" + name + ".txt";
+    command += "/home/dara/Git/brave_dd/build/examples/satFunctionForQRBDDtoDFA" + name + ".txt > " + outputFile;
     std::cout << "Executing: " << command << std::endl;
 
     int result = std::system(command.c_str());
 
-    std::ifstream fileKissat("/home/dara/Git/brave_dd/build/examples/kissat_output.txt");
+    std::ifstream fileKissat("/home/dara/Git/brave_dd/build/examples/kissat_output" + name + ".txt");
 
     // Check if the file was successfully opened
     if (!fileKissat.is_open()) {
-        std::cerr << "Error: Could not open file '/home/dara/Git/brave_dd/build/examples/kissat_output.txt'\n";
-        return;
+        std::cerr << "Error: Could not open file '/home/dara/Git/brave_dd/build/examples/kissat_output" + name + ".txt'\n";
+        return -1;
     }
 
     bool foundSatisfiable = false;
@@ -646,7 +646,3 @@ variable getVariableByValue(int index)
     return *ptr; // O(1)
 }
 
-
-std::string intToBoolVariable(variable var){
-
-}
