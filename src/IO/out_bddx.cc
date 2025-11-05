@@ -1,5 +1,6 @@
 #include "out_bddx.h"
 #include "../forest.h"
+#include <unordered_map>
 
 using namespace BRAVE_DD;
 // ******************************************************************
