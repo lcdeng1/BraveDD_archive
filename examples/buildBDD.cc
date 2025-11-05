@@ -619,10 +619,23 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
         }
     }
 
+    fileKissat.close();
     DFAFormat += "END";
     std::cout << DFAFormat << std::endl;
 
-    fileKissat.close();
+    std::ofstream outFileDFAFormat("DFAFormat" + name + ".txt");
+    if (!outFileDFAFormat)
+    {
+        std::cerr << "Error opening file: " << "DFAFormat" + name + ".txt" << std::endl; // O(1)
+        return -1;
+    }
+
+    outFileDFAFormat << DFAFormat; // O(n) — writes each character of the string
+    outFileDFAFormat.close();     // O(1) — flushes and closes the file
+
+    
+
+
 
     return 0;
 }
