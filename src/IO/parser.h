@@ -1,56 +1,16 @@
 #ifndef BRAVE_DD_PARSER_H
 #define BRAVE_DD_PARSER_H
 
-#include"../defines.h"
+#include "../defines.h"
+#include "lexer.h"
+#include "../forest.h"
 
 namespace BRAVE_DD{
-    class FileReader;
     class Parser;
     class ParserPla;
     class ParserBin;        // TBD
     class ParserBddx;       // TBD
 } // end of namespace
-
-// ******************************************************************
-// *                                                                *
-// *                      FileReader class                          *
-// *                                                                *
-// ******************************************************************
-class BRAVE_DD::FileReader {
-    /*-------------------------------------------------------------*/
-    public:
-    /*-------------------------------------------------------------*/
-    FileReader(const char* inpath);
-    ~FileReader();
-
-    inline bool fok() const { return infile != nullptr; }
-    inline bool eof() { return feof(infile); }
-    inline int get() { return fgetc(infile); }
-    inline unsigned readUnsigned() {
-        unsigned x;
-        fscanf(infile, "%u", &x);
-        return x;
-    }
-    inline size_t readSize() {
-        size_t x;
-        fscanf(infile, "%zu", &x);
-        return x;
-    }
-    inline void unget(int c) { ungetc(c, infile); }
-    inline char getFormat() { return format; }
-
-    /*-------------------------------------------------------------*/
-    private:
-    /*-------------------------------------------------------------*/
-    // helper functions to determine format and compress type
-    bool matches(const char* ext, char fmt, char comp);
-    bool fileType(const char* path);
-
-    FILE*       infile;         // for popen
-    char        format;         // 'p' for PLA, 'b' for BIN, 'x' for BDDX
-    char        compress;       // ' ' for none, 'x' for xz, 'g' for gzip, 'b' for bzip2
-    bool        closeNeed;      // infile needs pclose if true, or fclose if false
-};
 
 // ******************************************************************
 // *                                                                *
@@ -61,8 +21,9 @@ class BRAVE_DD::Parser {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-    Parser(FileReader* FR);
-    virtual ~Parser();
+    // Parser(FileReader* FR);
+    Parser(const std::string inpath):reader(inpath) {};
+    // virtual ~Parser();
 
     virtual void readHeader() = 0;
 
@@ -70,11 +31,12 @@ class BRAVE_DD::Parser {
     protected:
     /*-------------------------------------------------------------*/
     // helper functions for parsing
-    inline bool eof() { return reader->eof(); }
-    inline int get() { return reader->get(); }
-    inline void unget(int c) { reader->unget(c); }
-    inline unsigned readUnsigned() { return reader->readUnsigned(); }
-    inline size_t readSize() { return reader->readSize(); }
+    inline char getFormat() { return reader.getFormat(); }
+    inline bool eof() { return reader.eof(); }
+    inline int get() { return reader.get(); }
+    inline void unget(int c) { reader.unget(c); }
+    inline unsigned readUnsigned() { return reader.readUnsigned(); }
+    inline size_t readSize() { return reader.readSize(); }
     inline int skipUntil(char x) {
         for (;;) {
             int c = get();
@@ -86,7 +48,7 @@ class BRAVE_DD::Parser {
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-    FileReader*     reader;
+    FileReader      reader;
 };
 
 // ******************************************************************
@@ -98,8 +60,17 @@ class BRAVE_DD::ParserPla : public Parser {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-    ParserPla(FileReader* FR);
-    ~ParserPla();
+    // ParserPla(FileReader* FR);
+    ParserPla(const std::string inpath) : Parser(inpath) {
+        if (getFormat() != 'p') {
+            std::cout << "[BRAVE_DD] ERROR!\t ParserPla(): Unexpected file format.\n";
+            exit(1);
+        }
+        inbits = 0;
+        outbits = 0;
+        numf = 0;
+    }
+    // ~ParserPla();
 
     // main functions
     virtual void readHeader() override;
@@ -118,6 +89,61 @@ class BRAVE_DD::ParserPla : public Parser {
     size_t              numf;       // number of assignments
 };
 
-// more parsers for BIN, BDDX
+// ******************************************************************
+// *                                                                *
+// *                      ParserBddx class                          *
+// *                                                                *
+// ******************************************************************
+class BRAVE_DD::ParserBddx {
+    /*-------------------------------------------------------------*/
+    public:
+    /*-------------------------------------------------------------*/
+    ParserBddx(const std::string& inpath) : lexer(inpath) {
+        numNodes = 0;
+        numRoots = 0;
+        numVars = 0;
+        isReduced = 0;
+        std::cerr << "Parser Bddx construction done!\n";
+    }
+    ~ParserBddx() {
+        std::cerr << "destruct parser\n";
+        lexer.~BddxLexer();
+    }
+
+    // main functions
+
+    /* Parse and build all nodes in the given forest */
+    bool parse(Forest* forest);
+    /* return the first root built */
+    bool buildFunc(Func& root);
+    /* return all the roots */
+    bool buildFunc(std::vector<Func>& roots);
+    
+    // get bdd info
+    inline uint64_t getNumNodes() { return numNodes; }
+    inline uint64_t getNumRoots() { return numRoots; }
+    inline Level getNumVars() { return numVars; }
+
+    /*-------------------------------------------------------------*/
+    private:
+    /*-------------------------------------------------------------*/
+    /* Helper functions */
+    bool match(const TokenType tt, const std::string name);
+    bool parseHeader();
+    bool parseNodes();
+    bool parseRoots();
+
+    BddxLexer           lexer;          // lexer to read bddx tokens
+
+    std::unordered_map<NodeHandle, Edge>    nodesMap;   // map of nodes to new reduced edge
+
+    uint64_t            numNodes;       // number of nonterminal nodes
+    uint64_t            numRoots;       // number of root edges
+    Level               numVars;        // number of variables
+    bool                isReduced;      // put it here for now
+
+};
+
+// more parsers for BIN
 
 #endif
