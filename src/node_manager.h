@@ -100,6 +100,8 @@ class BRAVE_DD::NodeManager {
 
         // ========================================================
             friend class NodeManager;
+            friend class BddxMaker;
+
             Forest*                 parent;         // Parent forest
             std::vector<Node>       nodes;          // Actual node storage; the 1st slot (nodes[0]) will not be used
             int                     sizeIndex;      // Index of prime number for size
@@ -109,6 +111,7 @@ class BRAVE_DD::NodeManager {
             uint32_t                recycled;       // Last recycled node index
             uint32_t                peak;           // Peak number of nodes
     }; // class SubManager
+    friend class BddxMaker;
 
     // ======================Helper Methods====================
 

@@ -14,7 +14,7 @@ BddxMaker::BddxMaker(const Forest* f, const std::string bn)
     std::string fName = basename + ".bddx";
     outfile.open(fName);
     if (!outfile) {
-        std::cout << "[BRAVE_DD] Error!\t Could not open or create the file: "<< fName << std::endl;
+        std::cout << "[BRAVE_DD] Error!\t BddxMaker(): Could not open or create the file: "<< fName << std::endl;
         exit(1);
     }
     parent = f;
@@ -24,145 +24,142 @@ BddxMaker::~BddxMaker()
     //
 }
 
+void BddxMaker::makeHeader()
+{
+    outfile << "FOREST {\n";
+    outfile << "\tTYPE " << parent->getSetting().getName() << "\n";
+    outfile << "\tREDUCED true\n";
+    outfile << "\tLVLS " << parent->getSetting().getNumVars() << " * " << (parent->getSetting().isRelation() ? 2 : 1) << "\n";
+    outfile << "\tRANGE " << rangeType2String(parent->getSetting().getRangeType()) << "\n";
+}
+
 void BddxMaker::buildBddx(const Func& func)
 {
-    //
+    // header
+    makeHeader();
+    outfile << "\tNNUM " << parent->getNodeManUsed(func) << "\n";
+    outfile << "\tRNUM 1\n";
+    outfile << "}\n";
+
+    // nodes map for global index
+    struct pairHash
+    {
+        std::size_t operator()(const std::pair<Level, NodeHandle>& p) const noexcept {
+            return (static_cast<std::size_t>(p.first) << 32) ^ p.second;
+        }
+    };
+    std::unordered_map<std::pair<Level, NodeHandle>, uint64_t, pairHash> nodeMap(parent->getNodeManUsed(func));
+    // nodes
+    bool isMxd = parent->getSetting().isRelation();
+    bool hasLevelInfo = parent->getSetting().getReductionSize() > 0;
+    int numChild = (isMxd) ? 4 : 2;
+    outfile << "NODES {\n";
+    parent->markNodes(func);
+    uint64_t nodeIndex = 1;
+    for (Level l=1; l<=parent->getSetting().getNumVars(); l++) {
+        for (uint32_t i=1; i<parent->nodeMan->chunks[l-1].firstUnalloc; i++) {
+            Node node = parent->nodeMan->chunks[l-1].nodes[i];
+            if (node.isMarked()) {
+                // node header
+                outfile << "\tN"<< nodeIndex << " L " << l << ": ";
+                // save map
+                nodeMap[{l, i}] = nodeIndex;
+                nodeIndex++;
+                // print child edges
+                for (int c=0; c<numChild; c++) {
+                    outfile << c << ":<" << rule2String(node.edgeRule(c, isMxd))
+                            << "," << (int)node.edgeComp(c, isMxd)
+                            << "," << (int)node.edgeSwap(c, 0, isMxd);
+                    Level childLvl = (hasLevelInfo) ? node.childNodeLevel(c, isMxd) : l-1;
+                    outfile << "," << ((childLvl == 0) ? "T" : "")
+                            << ((childLvl == 0) ? node.childNodeHandle(c, isMxd) : nodeMap[{childLvl, node.childNodeHandle(c, isMxd)}])
+                            << ">";
+                    if (c < numChild-1) {
+                        outfile << ",";
+                    } else {
+                        outfile << "\n";
+                    }
+                }
+            }
+        } // end for subnodeman
+    } // end for level
+    outfile << "}\n";
+
+    // roots
+    outfile << "ROOTS {\n";
+    outfile << "\tr1 <" << rule2String(func.getEdge().getRule()) 
+            << "," << (int)func.getEdge().getComp()
+            << "," << (int)func.getEdge().getSwap(0)
+            << "," << ((func.getEdge().getNodeLevel() == 0) ? "T" : "")
+            << ((func.getEdge().getNodeLevel() == 0) ? func.getEdge().getNodeHandle() : nodeMap[{func.getEdge().getNodeLevel(), func.getEdge().getNodeHandle()}])
+            << ">\n";
+    outfile << "}\n";
+    outfile.close();
 }
 
 void BddxMaker::buildBddx(const std::vector<Func>& func)
 {
-    // TODO: change this for MxDD
-    Level numVars = parent->getSetting().getNumVars();
-    char dim = parent->getSetting().isRelation() ? 2 : 1;
-    std::string name = parent->getSetting().getName();
-    std::string range;
-    // TODO: discuss the names for ev diagrams
-    if (parent->getSetting().getRangeType() == BOOLEAN) range = "BOOL";    
-    std::vector<Edge> roots;
-    for (Func fun: func) {
-        roots.push_back(fun.getEdge());
-    }
-    char numChild = (parent->getSetting().isRelation()) ? 4 : 2;
-    int numRules = parent->getSetting().getReductionSize();
-    CompSet cs = parent->getSetting().getCompType();
-    SwapSet ss = parent->getSetting().getSwapType();
-
-    parent->unmark();
-    /* start */
-    outfile << "FOREST {\n";
-    outfile << "\tTYPE " << name << "\n";
-    // the forests are always reduced
-    outfile << "\tREDUCED true\n"; 
-    outfile << "\tLVLS " << numVars << " x " << static_cast<int>(dim) << "\n";
-    outfile << "\tRANGE " << range << "\n";
-    // TODO
-    outfile << "\tNNUM " << parent->getNodeManUsed() << "\n";
-    // TODO
-    outfile << "\tRNUM " << roots.size() << "\n";
+    // header
+    makeHeader();
+    outfile << "\tNNUM " << parent->getNodeManUsed(func) << "\n";
+    outfile << "\tRNUM 1\n";
     outfile << "}\n";
 
+    // nodes map for global index
+    struct pairHash
+    {
+        std::size_t operator()(const std::pair<Level, NodeHandle>& p) const noexcept {
+            return (static_cast<std::size_t>(p.first) << 32) ^ p.second;
+        }
+    };
+    std::unordered_map<std::pair<Level, NodeHandle>, uint64_t, pairHash> nodeMap(parent->getNodeManUsed(func));
+    // nodes
+    bool isMxd = parent->getSetting().isRelation();
+    bool hasLevelInfo = parent->getSetting().getReductionSize() > 0;
+    int numChild = (isMxd) ? 4 : 2;
     outfile << "NODES {\n";
-    
-    // Loop through and find all the nodes
-    std::queue<Edge> frontier;
-    std::vector<std::unordered_map<NodeHandle, bool>> visited(numVars+1);
-    std::vector<std::vector<Edge>> edgeByLevel(numVars+1);
-    for (Edge root:roots) {
-        if (!visited[root.getNodeLevel()][root.getNodeHandle()]) {
-            edgeByLevel[root.getNodeLevel()].push_back(root);
-            visited[root.getNodeLevel()][root.getNodeHandle()] = true;
-            if (root.getNodeLevel() != 0) {
-                frontier.push(root);
-            }
-        }
-    }
-    while (frontier.size()) {
-        Edge curr = frontier.front();
-        frontier.pop();
-        for (char j=0;j<numChild;j++) {
-            Edge child = parent->getChildEdge(curr.getNodeLevel(), curr.getNodeHandle(), j);
-            if (!visited[child.getNodeLevel()][child.getNodeHandle()]) {
-                edgeByLevel[child.getNodeLevel()].push_back(child);
-                visited[child.getNodeLevel()][child.getNodeHandle()] = true;
-                if (child.getNodeLevel() != 0) {
-                    frontier.push(child);
-                }
-            }
-        }
-    }
-    for (Level i=1;i<=numVars;i++) {
-        for (Edge curr: edgeByLevel[i]) {
-            outfile << "\tN" << curr.getNodeHandle() << " L " << i << ": ";
-            for (char j=0;j<numChild;j++) {
-                Edge child = parent->getChildEdge(curr.getNodeLevel(), curr.getNodeHandle(), j);
-                outfile << static_cast<int>(j) <<":";
+    parent->markNodes(func);
+    uint64_t nodeIndex = 1;
+    for (Level l=1; l<=parent->getSetting().getNumVars(); l++) {
+        for (uint32_t i=1; i<parent->nodeMan->chunks[l-1].firstUnalloc; i++) {
+            Node node = parent->nodeMan->chunks[l-1].nodes[i];
+            if (node.isMarked()) {
+                // node header
+                outfile << "\tN"<< nodeIndex << " L " << l << ": ";
+                // save map
+                nodeMap[{l, i}] = nodeIndex;
+                nodeIndex++;
+                // print child edges
+                for (int c=0; c<numChild; c++) {
+                    outfile << c << ":<" << rule2String(node.edgeRule(c, isMxd))
+                            << "," << (int)node.edgeComp(c, isMxd)
+                            << "," << (int)node.edgeSwap(c, 0, isMxd);
+                    Level childLvl = (hasLevelInfo) ? node.childNodeLevel(c, isMxd) : l-1;
 
-                std::string label = "";
-                label += "<";
-                if (numRules > 0) {
-                    ReductionRule rule = child.getRule();
-                    label += ((rule == RULE_X) && !parent->getSetting().hasReductionRule(rule)) ? "N" : rule2String(rule);
-                }
-                if (cs != NO_COMP) {
-                    label += (child.getComp()) ? ", c" : ", _";
-                }
-                if (ss != NO_SWAP) {
-                    if (ss == ONE) {
-                        label += (child.getSwap(0)) ? ", s_o" : ", _";
-                    } else if (ss == ALL) {
-                        label += (child.getSwap(0)) ? ", s_a" : ", _";
-                    } else if (ss == FROM || ss == FROM_TO) {
-                        label += (child.getSwap(0)) ? ", s_f" : ", _";
-                    } else if (ss == TO) {
-                        label += (child.getSwap(1)) ? ", s_t" : ", _";
-                    }
-                    if (ss == FROM_TO) {
-                        label += (child.getSwap(1)) ? ", s_t" : ", _";
+                    outfile << "," << ((childLvl == 0) ? "T" : "")
+                            << ((childLvl == 0) ? node.childNodeHandle(c, isMxd) : nodeMap[{childLvl, node.childNodeHandle(c, isMxd)}])
+                            << ">";
+                    if (c < numChild-1) {
+                        outfile << ",";
+                    } else {
+                        outfile << "\n";
                     }
                 }
-                label += ",";
-                if (child.getNodeLevel() == 0) label += "T" + unpackTermiValue(child.getEdgeHandle());
-                else label += std::to_string(child.getNodeHandle());
-                label += ">";
-
-                outfile << label;
-                if (j < numChild-1) outfile << ",";
-                else outfile << "\n";
             }
-        }
-    }
+        } // end for subnodeman
+    } // end for level
     outfile << "}\n";
+
+    // roots
     outfile << "ROOTS {\n";
-    for (Edge root:roots) {
-        outfile << "\tr" << root.getNodeHandle() << " ";
-        std::string label = "";
-        label += "<";
-        if (numRules > 0) {
-            ReductionRule rule = root.getRule();
-            label += ((rule == RULE_X) && !parent->getSetting().hasReductionRule(rule)) ? "N" : rule2String(rule);
-        }
-        if (cs != NO_COMP) {
-            label += (root.getComp()) ? ", c" : ", _";
-        }
-        if (ss != NO_SWAP) {
-            if (ss == ONE) {
-                label += (root.getSwap(0)) ? ", s_o" : ", _";
-            } else if (ss == ALL) {
-                label += (root.getSwap(0)) ? ", s_a" : ", _";
-            } else if (ss == FROM || ss == FROM_TO) {
-                label += (root.getSwap(0)) ? ", s_f" : ", _";
-            } else if (ss == TO) {
-                label += (root.getSwap(1)) ? ", s_t" : ", _";
-            }
-            if (ss == FROM_TO) {
-                label += (root.getSwap(1)) ? ", s_t" : ", _";
-            }
-        }
-        label += ",";
-        if (root.getNodeLevel() == 0) label += "T" + unpackTermiValue(root.getEdgeHandle());
-        else label += std::to_string(root.getNodeHandle());
-        label += ">";
-        outfile << label << "\n";
+    for (size_t i=0; i<func.size(); i++) {
+        outfile << "\tr" << i+1 << " <" << rule2String(func[i].getEdge().getRule()) 
+            << "," << (int)func[i].getEdge().getComp()
+            << "," << (int)func[i].getEdge().getSwap(0)
+            << "," << ((func[i].getEdge().getNodeLevel() == 0) ? "T" : "")
+            << ((func[i].getEdge().getNodeLevel() == 0) ? func[i].getEdge().getNodeHandle() : nodeMap[{func[i].getEdge().getNodeLevel(), func[i].getEdge().getNodeHandle()}])
+            << ">\n";
     }
     outfile << "}\n";
+    outfile.close();
 }

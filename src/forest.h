@@ -384,6 +384,12 @@ class BRAVE_DD::Forest {
      */
     inline void markNodes(const Func& func) const {markNodes(func.edge);}
 
+    inline void markNodes(const std::vector<Func>& func) const {
+        for (size_t i=0; i<func.size(); i++) {
+            markNodes(func[i]);
+        }
+    }
+
     /**
      * @brief Mark all the nonterminal nodes reachable from all Func edge in 
      * the forest.
@@ -495,7 +501,7 @@ class BRAVE_DD::Forest {
     }
     inline uint64_t getNodeManUsed(const std::vector<Func>& funs) const {
         unmark();
-        for (size_t i=0; i<funs.size(); i++) markNodes(funs[i]);
+        markNodes(funs);
         uint64_t num = 0;
         for (Level i=1; i<=setting.getNumVars(); i++) {
             num += nodeMan->numMarked(i);
@@ -623,6 +629,8 @@ class BRAVE_DD::Forest {
     friend class UnaryOperation;
     friend class BinaryOperation;
     friend class SaturationOperation;
+    friend class BddxMaker;
+
     ForestSetting               setting;        // Specification setting of this forest.
     NodeManager*                nodeMan;        // Node manager.
     UniqueTable*                uniqueTable;    // Unique table.

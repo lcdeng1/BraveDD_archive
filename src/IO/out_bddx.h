@@ -27,9 +27,11 @@ class BRAVE_DD::BddxMaker {
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-        const Forest* parent;
-        std::string basename;
-        std::ofstream outfile;
+    void makeHeader();
+
+    const Forest* parent;
+    std::string basename;
+    std::ofstream outfile;
 };
 
 #endif

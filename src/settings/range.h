@@ -16,7 +16,7 @@ namespace BRAVE_DD {
     static inline std::string rangeType2String(RangeType rt) {
         std::string rangeType;
         if (rt == BOOLEAN) {
-            rangeType = "Boolean";
+            rangeType = "BOOL";
         } else if (rt == FINITE) {
             rangeType = "Finite";
         } else if (rt == NNINTEGER) {
