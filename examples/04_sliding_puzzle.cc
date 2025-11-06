@@ -85,8 +85,11 @@ double timeLimit = 1800.0, newTimeLimit = timeLimit;
 bool isTimeLimitGlobal = 0;
 // program flags
 bool isEmptyTop = 0;    // new way for encoding
+bool isEmptyBot = 0;
 bool isReportToFile = 0;
 bool isComputeDistance = 0;
+bool isUptoDistance = 0;
+bool isShowSize = 0;
 int concretization = 0;
 bool isTestConcretize = 0;
 
@@ -113,17 +116,17 @@ bool isRelationUnion = 0;
 bool isConvert = 0;
 
 // set of states reachable to target at exact k steps
-std::vector<Func> distance_ex;
+std::vector<Func> distance;
 // distribution for relations
 std::vector<long> distribution_rel_state;
 std::vector<long> distribution_rel_node;
 // distribution for "exact" distance
-std::vector<long> distribution_ex_state;
-std::vector<long> distribution_ex_node;
+std::vector<long> distribution_state;
+std::vector<long> distribution_node;
 
 // For concretization
 std::vector<int> distance_permutation;
-std::vector<Func> distance_ex_concretized;
+std::vector<Func> distance_concretized;
 Func distance_one_root, distance_concretized_one_root;
 uint64_t num_nodes_distance_concretized = 0;
 uint64_t num_nodes_distance_ex_concretized = 0;
@@ -174,7 +177,7 @@ Func encodePuzzle2BDD(const PuzzleState& puzzle)
     Func var(forest1);
     uint16_t row, col;
     /* Encoding */
-    if (isEmptyTop) {
+    if (isEmptyTop || isEmptyBot) {
         bool foundEmpty = 0;
         for (uint16_t i=1; i<=N*M; i++) {
             row = (i%M==0) ? i/M-1 : i/M;
@@ -186,17 +189,17 @@ Func encodePuzzle2BDD(const PuzzleState& puzzle)
                 for (uint16_t b=0; b<bits; b++) {
                     if (isComputeDistance) {
                         // for distance
-                        var.variable(emptyLvl + b, Value(SpecialValue::POS_INF), Value(0));
+                        var.variable(emptyLvl + (bits-1) - b, Value(SpecialValue::POS_INF), Value(0));
                         if (i & (0x01<<b)) {
                             apply(MAXIMUM, result, var, result);
                         } else {
                             Func negVar(forest1);
-                            negVar.variable(emptyLvl + b, Value(0), Value(SpecialValue::POS_INF));
+                            negVar.variable(emptyLvl + (bits-1) - b, Value(0), Value(SpecialValue::POS_INF));
                             apply(MAXIMUM, result, negVar, result);
                         }
                     } else {
                         // for SSG
-                        var.variable(emptyLvl + b, Value(0), Value(1));
+                        var.variable(emptyLvl + (bits-1) - b, Value(0), Value(1));
                         if (i & (0x01<<b)) {
                             if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
                                 result &= var;
@@ -208,7 +211,7 @@ Func encodePuzzle2BDD(const PuzzleState& puzzle)
                                 result &= !var;
                             } else {
                                 Func negVar(forest1);
-                                negVar.variable(emptyLvl + b, Value(1), Value(0));
+                                negVar.variable(emptyLvl + (bits-1) - b, Value(1), Value(0));
                                 apply(MINIMUM, result, negVar, result);
                             }
                         }
@@ -218,20 +221,21 @@ Func encodePuzzle2BDD(const PuzzleState& puzzle)
             }
             uint16_t Lvl = (i-1)*bits+1;
             if (foundEmpty) Lvl -= bits;
+            if (isEmptyBot) Lvl += bits;
             for (uint16_t b=0; b<bits; b++) {
                 if (isComputeDistance) {
                     // for distance
-                    var.variable(Lvl + b, Value(SpecialValue::POS_INF), Value(0));
+                    var.variable(Lvl + (bits-1) - b, Value(SpecialValue::POS_INF), Value(0));
                     if (puzzle[row][col] & (0x01<<b)) {
                         apply(MAXIMUM, result, var, result);
                     } else {
                         Func negVar(forest1);
-                        negVar.variable(Lvl + b, Value(0), Value(SpecialValue::POS_INF));
+                        negVar.variable(Lvl + (bits-1) - b, Value(0), Value(SpecialValue::POS_INF));
                         apply(MAXIMUM, result, negVar, result);
                     }
                 } else {
                     // for SSG
-                    var.variable(Lvl + b, Value(0), Value(1));
+                    var.variable(Lvl + (bits-1) - b, Value(0), Value(1));
                     if (puzzle[row][col] & (0x01<<b)) {
                         if ((forest1->getSetting().getRangeType() == BOOLEAN) && (forest1->getSetting().getEncodeMechanism() == TERMINAL)) {
                             result &= var;
@@ -243,7 +247,7 @@ Func encodePuzzle2BDD(const PuzzleState& puzzle)
                             result &= !var;
                         } else {
                             Func negVar(forest1);
-                            negVar.variable(Lvl + b, Value(1), Value(0));
+                            negVar.variable(Lvl + (bits-1) - b, Value(1), Value(0));
                             apply(MINIMUM, result, negVar, result);
                         }
                     }
@@ -342,10 +346,7 @@ Func trans(uint16_t from, char direction)  // position FROM and direction
     zero.constant(0);
     /* result starts from constant true */
     result.constant(1);
-    if (isEmptyTop) {
-        if ((direction == 3) || (direction == 4)) {
-            //
-        }
+    if (isEmptyTop || isEmptyBot) {
         /* Enabling */
         /* Left:    X_empty == from - 1 = to
          * Right:   X_empty == from + 1
@@ -356,7 +357,7 @@ Func trans(uint16_t from, char direction)  // position FROM and direction
         uint16_t emptyLvl = (isEmptyTop) ? (N*M-1)*bits+1 : 1;
         for (uint16_t i=0; i<bits; i++) {
             dependance[emptyLvl+i] = 1;
-            empty.variable(emptyLvl+i, 0);
+            empty.variable(emptyLvl+(bits-1) - i, 0);
             if (!(to & (0x01<<i))) empty = !empty;
             result &= empty;
         }
@@ -367,29 +368,33 @@ Func trans(uint16_t from, char direction)  // position FROM and direction
          * Up:      X'_to = X_[from-1], X'_[to+1] = X_to, ... X'_[from-1] = X_[to+M-2]
          */
         for (uint16_t i=0; i<bits; i++) {
-            empty.variable(emptyLvl+i, 1);
+            empty.variable(emptyLvl+(bits-1) - i, 1);
             if (!(from & (0x01<<i))) empty = !empty;
             result &= empty;
         }
         if ((direction == 1) || (direction == 2)) { // Down or Up
             uint16_t startFrom = (direction == 1) ? (from)*bits+1 : (to-1)*bits+1;
             uint16_t startTo = (direction == 1) ? (from-1)*bits+1 : (to)*bits+1;
+            if (isEmptyBot) {
+                startFrom += bits;
+                startTo += bits;
+            }
             // edge case
             for (uint16_t b=0; b<bits; b++) {
                 uint16_t startFrom1 = (direction == 1) ? startFrom-bits : startFrom+(M-1)*bits;
                 uint16_t startTo1 = (direction == 1) ? startTo+(M-1)*bits : startTo-bits;
                 dependance[startFrom1+b] = 1;
                 dependance[startTo1+b] = 1;
-                varTo.variable(startTo1+b, 1);
-                varFrom.variable(startFrom1+b, 0);
+                varTo.variable(startTo1+(bits-1) - b, 1);
+                varFrom.variable(startFrom1+(bits-1) - b, 0);
                 result &= ((varTo & varFrom) | ((!varTo) & (!varFrom)));  // equivalence interface for performance TBD
             }
             for (uint16_t i=0; i<M-1; i++) {
                 for (uint16_t b=0; b<bits; b++) {
                     dependance[startTo+i*bits+b] = 1;
                     dependance[startFrom+i*bits+b] = 1;
-                    varTo.variable(startTo+i*bits+b, 1);
-                    varFrom.variable(startFrom+i*bits+b, 0);
+                    varTo.variable(startTo+i*bits+(bits-1) - b, 1);
+                    varFrom.variable(startFrom+i*bits+(bits-1) - b, 0);
                     result &= ((varTo & varFrom) | ((!varTo) & (!varFrom)));  // equivalence interface for performance TBD
                 }
             }
@@ -425,10 +430,62 @@ Func trans(uint16_t from, char direction)  // position FROM and direction
     return result & zero;
 }
 
+bool SSG_Frontier_upto(const Func& initial, const std::vector<Func>& relations)
+{
+    Func curr = initial;
+    distance.push_back(curr);
+    Func next(forest1);
+    next.constant(0);
+    int n = 0;
+    while (true)
+    {
+        if (isRelationUnion) {
+            std::cout << "Frontier: " << n;
+            if (isShowSize) {
+                long num = 0;
+                apply(CARDINALITY, curr, num);
+                std::cout << " size: " << num;
+            }
+            std::cout << std::endl;
+            apply(POST_IMAGE, curr, relations[0], next);
+        } else {
+            std::cout << "Frontier: " << n;
+            if (isShowSize) {
+                long num = 0;
+                apply(CARDINALITY, curr, num);
+                std::cout << " size: " << num;
+            }
+            std::cout << std::endl;
+            Func s_new(forest1);
+            for (size_t i=0; i< relations.size(); i++) {
+                apply(POST_IMAGE, curr, relations[i], s_new);
+                next |= s_new;
+            }
+        }
+        if (n==0) {
+            next |= curr;
+        }
+        distance_permutation.push_back(n);
+        // check fix point
+        if (next == curr) break;
+        // push back
+        distance.push_back(next);
+        // GC
+        for (size_t i=0; i<distance.size(); i++) {
+            forest1->markNodes(distance[i]);
+        }
+        forest1->markSweep();
+        // update
+        curr = next;
+        n++;
+    }
+    return 1;
+}
+
 bool SSG_Frontier(const Func& initial, const std::vector<Func>& relations)
 {
     Func curr = initial;
-    distance_ex.push_back(curr);
+    distance.push_back(curr);
     Func pre(forest1);
     pre.constant(0);
     int n = 0;
@@ -437,15 +494,22 @@ bool SSG_Frontier(const Func& initial, const std::vector<Func>& relations)
         Func next(forest1);
         next.constant(0);
         if (isRelationUnion) {
-            long num = 0;
-            apply(CARDINALITY, curr, num);
-            std::cout << "Frontier: " << n << " size: " << num << std::endl;
-            // std::cout << "Frontier: " << n << std::endl;
+            std::cout << "Frontier: " << n;
+            if (isShowSize) {
+                long num = 0;
+                apply(CARDINALITY, curr, num);
+                std::cout << " size: " << num;
+            }
+            std::cout << std::endl;
             apply(POST_IMAGE, curr, relations[0], next);
         } else {
-            long num = 0;
-            apply(CARDINALITY, curr, num);
-            std::cout << "Frontier: " << n << " size: " << num << std::endl;
+            std::cout << "Frontier: " << n;
+            if (isShowSize) {
+                long num = 0;
+                apply(CARDINALITY, curr, num);
+                std::cout << " size: " << num;
+            }
+            std::cout << std::endl;
             Func s_new(forest1);
             for (size_t i=0; i< relations.size(); i++) {
                 apply(POST_IMAGE, curr, relations[i], s_new);
@@ -459,10 +523,10 @@ bool SSG_Frontier(const Func& initial, const std::vector<Func>& relations)
         // check fix point
         if (next.getEdge().isConstantZero()) break;
         // push back
-        distance_ex.push_back(next);
+        distance.push_back(next);
         // GC
-        for (size_t i=0; i<distance_ex.size(); i++) {
-            forest1->markNodes(distance_ex[i]);
+        for (size_t i=0; i<distance.size(); i++) {
+            forest1->markNodes(distance[i]);
         }
         forest1->markSweep();
         // update
@@ -517,8 +581,8 @@ Func convert()
     ans.constant(SpecialValue::POS_INF);
     Edge converted = ans.getEdge();
     // converting
-    for (size_t d=0; d<distance_ex.size()-1; d++) {
-        converted = convertEdge(forest3->getSetting().getNumVars(), converted, distance_ex[d].getEdge(), d);
+    for (size_t d=0; d<distance.size()-1; d++) {
+        converted = convertEdge(forest3->getSetting().getNumVars(), converted, distance[d].getEdge(), d);
     }
     ans.setEdge(converted);
     return ans;
@@ -533,7 +597,7 @@ void testConcretizationMR(std::vector<Func>& mr)
             for (size_t k=1; k<=assignment.size()-1; k++) {
                 assignment[k] = n & (1<<(k-1));
             }
-            if (distance_ex[distance_permutation[d]].evaluate(assignment) != Value(1)) {continue;}
+            if (distance[distance_permutation[d]].evaluate(assignment) != Value(1)) {continue;}
             bool before = 0;
             for (size_t i=0; i<d; i++) {
                 if (mr[i].evaluate(assignment) == Value(1)) {
@@ -541,7 +605,7 @@ void testConcretizationMR(std::vector<Func>& mr)
                     break;
                 }
             }
-            if ((distance_ex[distance_permutation[d]].evaluate(assignment) == Value(1)) && ((mr[d].evaluate(assignment) != Value(1)) || before)) {
+            if ((distance[distance_permutation[d]].evaluate(assignment) == Value(1)) && ((mr[d].evaluate(assignment) != Value(1)) || before)) {
                 std::cout << "Error! Evaluation for concretization\n";
                 exit(1);
             }
@@ -629,39 +693,39 @@ void concretize(const int heuristics)
     if (isComputeDistanceMR) {
         // update permutation
         std::sort(distance_permutation.begin(), distance_permutation.end(),
-                    [&](size_t i, size_t j) { return distribution_ex_node[i] < distribution_ex_node[j]; });
+                    [&](size_t i, size_t j) { return distribution_node[i] < distribution_node[j]; });
 
         watch_concretized.reset();
         watch_concretized.note_time();
         /* for exact distance */
-        Func dc = distance_ex.back();
+        Func dc = distance.back();
         if (heuristics == 0) {
-            distance_ex_concretized.push_back(concretizeFunc_rst(distance_ex[distance_permutation[0]], dc));
+            distance_concretized.push_back(concretizeFunc_rst(distance[distance_permutation[0]], dc));
         } else if (heuristics == 1) {
-            distance_ex_concretized.push_back(concretizeFunc_osm(distance_ex[distance_permutation[0]], dc));
+            distance_concretized.push_back(concretizeFunc_osm(distance[distance_permutation[0]], dc));
         } else if (heuristics == 2) {
-            distance_ex_concretized.push_back(concretizeFunc_tsm(distance_ex[distance_permutation[0]], dc));
+            distance_concretized.push_back(concretizeFunc_tsm(distance[distance_permutation[0]], dc));
         }
         for (size_t i=1; i<distance_permutation.size()-1; i++) {    // -1: remove the last one
             // update dc
             for (size_t k=0; k<i; k++) {
-                dc |= distance_ex[distance_permutation[k]];
+                dc |= distance[distance_permutation[k]];
             }
             // concretizing
             if (heuristics == 0) {
-                distance_ex_concretized.push_back(concretizeFunc_rst(distance_ex[distance_permutation[i]], dc));
+                distance_concretized.push_back(concretizeFunc_rst(distance[distance_permutation[i]], dc));
             } else if (heuristics == 1) {
-                distance_ex_concretized.push_back(concretizeFunc_osm(distance_ex[distance_permutation[i]], dc));
+                distance_concretized.push_back(concretizeFunc_osm(distance[distance_permutation[i]], dc));
             } else if (heuristics == 2) {
-                distance_ex_concretized.push_back(concretizeFunc_tsm(distance_ex[distance_permutation[i]], dc));
+                distance_concretized.push_back(concretizeFunc_tsm(distance[distance_permutation[i]], dc));
             }
         }
         watch_concretized.note_time();
         time_concretized = watch_concretized.get_last_seconds();
-        num_nodes_distance_ex_concretized = forest1->getNodeManUsed(distance_ex_concretized);
+        num_nodes_distance_ex_concretized = forest1->getNodeManUsed(distance_concretized);
         std::cout << "done concretization\n";
         // test
-        if (isTestConcretize) testConcretizationMR(distance_ex_concretized);
+        if (isTestConcretize) testConcretizationMR(distance_concretized);
     } else {
         watch_concretized.reset();
         watch_concretized.note_time();
@@ -717,7 +781,7 @@ void compute_BFS(const Func& target, const std::vector<Func>& relations)
 {
     watch.reset();
     watch.note_time();
-    getRes = SSG_Frontier(target, relations);
+    getRes = (isUptoDistance) ? SSG_Frontier_upto(target, relations) : SSG_Frontier(target, relations);
     watch.note_time();
     // report cache
     // UOPs.reportCacheStat(std::cout);
@@ -725,27 +789,31 @@ void compute_BFS(const Func& target, const std::vector<Func>& relations)
     // record time
     time_explore = watch.get_last_seconds();
     // record #nodes
-    num_nodes_final = forest1->getNodeManUsed(distance_ex);
+    num_nodes_final = forest1->getNodeManUsed(distance);
     num_nodes_peak = forest1->getNodeManPeak();
     // compute distribution
     long num_state = 0;
-    for (size_t i=0; i<distance_ex.size(); i++) {
-        apply(CARDINALITY, distance_ex[i], num_state);
-        distribution_ex_state.push_back(num_state);
-        distribution_ex_node.push_back(forest1->getNodeManUsed(distance_ex[i]));
-        num_states += num_state;
+    for (size_t i=0; i<distance.size(); i++) {
+        apply(CARDINALITY, distance[i], num_state);
+        distribution_state.push_back(num_state);
+        distribution_node.push_back(forest1->getNodeManUsed(distance[i]));
+        if (isUptoDistance) {
+            if (i == distance.size()-1) num_states = num_state;
+        } else {
+            num_states += num_state;
+        }
     }
     // push back don't care set
     Func all(forest1);
     all.constant(1);
-    for (size_t i=0; i<distance_ex.size(); i++) {
-        all = all & !distance_ex[i];
+    for (size_t i=0; i<distance.size(); i++) {
+        all = all & !distance[i];
     }
-    distance_ex.push_back(all);
+    distance.push_back(all);
     // push back #state and #node for don't-care set
-    apply(CARDINALITY, distance_ex.back(), num_state);
-    distribution_ex_state.push_back(num_state);
-    distribution_ex_node.push_back(forest1->getNodeManUsed(distance_ex.back()));
+    apply(CARDINALITY, distance.back(), num_state);
+    distribution_state.push_back(num_state);
+    distribution_node.push_back(forest1->getNodeManUsed(distance.back()));
 }
 
 int usage(const char* who)
@@ -846,6 +914,14 @@ bool processArgs(int argc, const char** argv)
                 continue;
             }
             /* Hide to users */
+            if ((strcmp("-upto_distance", argv[i])==0) || (strcmp("-ud", argv[i])==0)) {
+                isUptoDistance = 1;
+                continue;
+            }
+            if ((strcmp("-show", argv[i])==0) || (strcmp("-s", argv[i])==0)) {
+                isShowSize = 1;
+                continue;
+            }
             // option for time out
             if (strcmp("-t", argv[i])==0) {
                 timeLimit = std::stod(argv[i+1]);
@@ -865,6 +941,10 @@ bool processArgs(int argc, const char** argv)
             // option for encoding
             if (strcmp("-et", argv[i])==0) {
                 isEmptyTop = 1;
+                continue;
+            }
+            if (strcmp("-eb", argv[i])==0) {
+                isEmptyBot = 1;
                 continue;
             }
             // option for testing concretization result
@@ -1085,6 +1165,7 @@ int main(int argc, const char** argv)
         std::cout << std::left << std::setw(align) << "The [Set] type:" << ((isConvert)? forest3 : forest1)->getSetting().getName() << std::endl;
         std::string encodingType = "Default";
         if (isEmptyTop) encodingType = "Empty_Top";
+        if (isEmptyBot) encodingType = "Empty_Bot";
         std::cout << std::left << std::setw(align) << "Encoding type:" << encodingType << std::endl;
         std::cout << std::left << std::setw(align) << "The [Relation] type:" << forest2->getSetting().getName() << std::endl;
         report(std::cout);
@@ -1100,14 +1181,19 @@ int main(int argc, const char** argv)
         if (isComputeDistance) {
             fileName += "_Dis";
         }
+        // if (isComputeDistanceMR) {
+        //     fileName += "_MR";
+        // }
+        // if (isRelationUnion) {
+        //     fileName += "_UR";
+        // }
+        if (isEmptyTop || isEmptyBot) {
+            fileName += (isEmptyTop) ? "_ET" : "_EB";
+        } else {
+            fileName += "_OG";
+        }
         if (isComputeDistanceMR) {
-            fileName += "_MR";
-        }
-        if (isRelationUnion) {
-            fileName += "_UR";
-        }
-        if (isEmptyTop) {
-            fileName += "_ET";
+            fileName += (isUptoDistance) ? "_LE" : "_EX";
         }
         fileName += ".txt";
         std::ofstream file(fileName, std::ios::app);
