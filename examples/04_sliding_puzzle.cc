@@ -27,7 +27,7 @@
  * 
  * Author: Lichuan Deng
  * Version: 1.0
- * Last Update Date: Oct 27, 2025
+ * Last Update Date: Nov 10, 2025
  */
 
  /* The vector encoding a tiles configure: 
@@ -457,10 +457,13 @@ bool SSG_Frontier_upto(const Func& initial, const std::vector<Func>& relations)
             }
             std::cout << std::endl;
             Func s_new(forest1);
+            Func next_new(forest1);
+            next_new.constant(0);
             for (size_t i=0; i< relations.size(); i++) {
                 apply(POST_IMAGE, curr, relations[i], s_new);
-                next |= s_new;
+                next_new |= s_new;
             }
+            next |= next_new;
         }
         if (n==0) {
             next |= curr;
@@ -511,10 +514,13 @@ bool SSG_Frontier(const Func& initial, const std::vector<Func>& relations)
             }
             std::cout << std::endl;
             Func s_new(forest1);
+            Func next_new(forest1);
+            next_new.constant(0);
             for (size_t i=0; i< relations.size(); i++) {
                 apply(POST_IMAGE, curr, relations[i], s_new);
-                next |= s_new;
+                next_new |= s_new;
             }
+            next |= next_new;
         }
         // next |= pre;
         // next = next ^ pre;
@@ -1049,7 +1055,7 @@ int main(int argc, const char** argv)
         if (isComputeDistance) {
             isComputeDistance = 0;
             isComputeDistanceMR = 1;
-            isRelationUnion = 1;
+            // isRelationUnion = 1;
             algorithm = 2;
         }
     } else {
