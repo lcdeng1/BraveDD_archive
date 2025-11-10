@@ -88,6 +88,7 @@ bool isEmptyTop = 0;    // new way for encoding
 bool isEmptyBot = 0;
 bool isReportToFile = 0;
 bool isComputeDistance = 0;
+bool isRelationUnion = 0;
 bool isUptoDistance = 0;
 bool isShowSize = 0;
 int concretization = 0;
@@ -112,7 +113,6 @@ uint64_t num_nodes_final = 0, num_nodes_peak = 0, num_rel_nodes_final = 0, num_r
 // internal flags
 int algorithm = 0;
 bool isComputeDistanceMR = 0;
-bool isRelationUnion = 0;
 bool isConvert = 0;
 
 // set of states reachable to target at exact k steps
@@ -912,6 +912,10 @@ bool processArgs(int argc, const char** argv)
             }
             if ((strcmp("-distance", argv[i])==0) || (strcmp("-d", argv[i])==0)) {
                 isComputeDistance = 1;
+                continue;
+            }
+            if ((strcmp("-relUnion", argv[i])==0) || (strcmp("-ru", argv[i])==0)) {
+                isRelationUnion = 1;
                 continue;
             }
             if ((strcmp("-concretize", argv[i])==0) || (strcmp("-cz", argv[i])==0)) {
