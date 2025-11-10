@@ -1,8 +1,3 @@
-/* This is an example of building the set of configurations (states) reachable to target configure
- * up to k steps for user-specified sliding puzzle.
- * 
- */
-
 /* The vector encoding a tiles configure: 
 * conf[i][j] = k means that tile k on the position of row i and column j, 
 * while k=0 for the empty.
@@ -28,30 +23,20 @@
 * The max supported scale is 4 X 4
 */
 
-#include <queue>
 #include <cmath>
-
 #include <iomanip>
-#include <iostream>
-#include <unordered_set>
 #include <unordered_map>
-#include <vector>
-#include <queue>
-#include <mutex>
 #include <thread>
-#include <future>
-#include <atomic>
-#include <cstdint>
 #include "brave_dd.h"
 #include "timer.h"
 
 using namespace BRAVE_DD;
-
-
 using PuzzleState = std::vector<std::vector<uint16_t> >; // 2D representation of the puzzles
 using State = uint64_t;
 using PackState = uint32_t;
 using Bound = uint8_t;
+
+bool isHelp = 0;
 
 /* About the puzzle */
 uint16_t N;         // row
@@ -98,7 +83,7 @@ bool isPackState = 0;           // turn on to use packed state for output
 
 timer watch0, watch1;
 
-std::string bdd = "fbdd";
+std::string bdd = "FBDD";
 
 uint64_t nodes_final = 0, nodes_rst = 0, nodes_osm = 0, nodes_tsm = 0;
 
@@ -446,18 +431,69 @@ void parallelFrontier(State initial, size_t num_threads) {
     std::cerr << "Total states discovered: " << total << "\n";
 }
 
+int usage(const char* who)
+{
+    std::ostream& out = std::cerr;
+    int align = 10;
+    /* Strip leading directory, if any: */
+    const char* name = who;
+    for (const char* ptr=who; *ptr; ptr++) {
+        if ('/' == *ptr) name = ptr+1;
+    }
+    out << std::left << std::setw(align) << "USAGE: " << name << " <N> <M>" << std::endl;
+    out << std::endl;
+    out << std::left << std::setw(align) << "OPTIONS: "<< std::endl;
+    out << std::left << std::setw(2*align) << "  -help, -h " << "Display help message and usage" << std::endl;
+    out << std::left << std::setw(2*align) << "  -numThreads, -nt <number>" << std::endl;
+    out << std::left << std::setw(2*align) << "" << "Set the number of threads. Default: 1" << std::endl;
+    out << std::left << std::setw(2*align) << "  -search, -s" << "Enable frontier search" << std::endl;
+    // std::cerr << "Usage: " << name << "[options] N M\n" << std::endl;
+    // std::cerr << "\t            N: the number of board rows" << std::endl;
+    // std::cerr << "\t            M: the number of board columns" << std::endl;
+    // std::cerr << "\t[option]  -nt: followed with a number of threads to BFS distance (default: 1)" << std::endl;
+    // std::cerr << "\t[option]  -s: switch to turn ON parallel Frontier search" << std::endl;
+    // std::cerr << "\t[option]  -ot: switch to turn ON the output of result distance table" << std::endl;
+    // std::cerr << "\t[option]  -p: switch to turn ON pipeline to compress" << std::endl;
+    // std::cerr << "\t[option]  -bb: switch to turn ON the BDD building" << std::endl;
+    out << std::endl;
+    out << std::left << std::setw(align) << "EXAMPLES: "<< std::endl;
+    out << std::left << std::setw(align) << "" << name << " 2 3" << std::endl;
+    out << std::left << std::setw(align) << "" << name << " 2 3 -s" << std::endl;
+    return 1;
+}
+
+/* Help message */
+int helpInfo(const char* who)
+{
+    std::ostream& out = std::cerr;
+    int align = 10;
+    // out << std::left << std::setw(align) << "OVERVIEW: " << "N-Queens Problem" << std::endl;
+    out << std::left << std::setw(align) << "OVERVIEW: "
+    << R"(
+    This program encodes the states of an N*M-Sliding Puzzle using Binary Decision
+    Diagrams (BDDs).
+    )"
+    << std::endl;
+    out << "----------------------------------------------------------" << std::endl;
+    return usage(who);
+}
+
 bool processArgs(int argc, const char** argv)
 {
     bool setN = 0, setM = 0;
     for (int i=1; i<argc; i++) {
         if ('-' == argv[i][0]) {
             // options other than size
-            if (strcmp("-nt", argv[i])==0) {
+            if ((strcmp("-help", argv[i])==0) || (strcmp("-h", argv[i])==0)) {
+                isHelp = 1;
+                return 1;
+            }
+            if ((strcmp("-numThreads", argv[i])==0) || (strcmp("-nt", argv[i])==0)) {
                 numThreads = atoi(argv[i+1]);
                 i++;
                 continue;
             }
-            if (strcmp("-s", argv[i])==0) {
+            if ((strcmp("-search", argv[i])==0) || (strcmp("-s", argv[i])==0)) {
                 isSearch = 1;
                 continue;
             }
@@ -491,6 +527,7 @@ bool processArgs(int argc, const char** argv)
                 i++;
                 continue;
             }
+            /* Hide to users */
             if (strcmp("-pna", argv[i])==0) {
                 isPermutationNodeAsd = 1;
                 continue;
@@ -524,28 +561,8 @@ bool processArgs(int argc, const char** argv)
         if (setN && setM) continue;
     }
 
-    if (!setN || N<1 || !setM || M<1) return 0;
-    // default target configure
-
-    return 1;
-}
-
-int usage(const char* who)
-{
-    /* Strip leading directory, if any: */
-    const char* name = who;
-    for (const char* ptr=who; *ptr; ptr++) {
-        if ('/' == *ptr) name = ptr+1;
-    }
-    std::cerr << "Usage: " << name << "[options] N M\n" << std::endl;
-    std::cerr << "\t            N: the number of board rows" << std::endl;
-    std::cerr << "\t            M: the number of board columns" << std::endl;
-    std::cerr << "\t[option]  -nt: followed with a number of threads to BFS distance (default: 1)" << std::endl;
-    std::cerr << "\t[option]  -s: switch to turn ON parallel Frontier search" << std::endl;
-    std::cerr << "\t[option]  -ot: switch to turn ON the output of result distance table" << std::endl;
-    std::cerr << "\t[option]  -p: switch to turn ON pipeline to compress" << std::endl;
-    std::cerr << "\t[option]  -bb: switch to turn ON the BDD building" << std::endl;
-    return 1;
+    if (!setN || N<1 || !setM || M<1) return 1;
+    return 0;
 }
 
 void report(std::ostream& out)
@@ -564,7 +581,10 @@ int main(int argc, const char** argv)
 {
     
     /* Process arguments and initialize BDD forests*/
-    if (!processArgs(argc, argv)) return usage(argv[0]);
+    if (processArgs(argc, argv)) {
+        if (isHelp) return helpInfo(argv[0]);
+        return usage(argv[0]);
+    }
     std::cerr << "Solving " << N << " x " << M << "-sliding puzzle." << std::endl;
     std::cerr << "Using " << getLibInfo(0) << std::endl;
     std::cerr << "Target configure: " << std::endl;
@@ -642,8 +662,7 @@ int main(int argc, const char** argv)
         tableName += "_";
         tableName += std::to_string(M);
         tableName += ".pla.xz";
-        FileReader FR(tableName.c_str());
-        ParserPla parser(&FR);
+        ParserPla parser(tableName);
         parser.readHeader();
         long numFun = parser.getNum();
         /* Initial forest */
