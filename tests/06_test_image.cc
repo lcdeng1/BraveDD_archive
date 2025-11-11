@@ -155,15 +155,15 @@ bool testImage(uint16_t num, PredefForest bdd, PredefForest bmxd)
 
             std::cout << std::endl;
 
-            DotMaker dot0(forestS, "error_from");
-            dot0.buildGraph(functionS0);
-            dot0.runDot("pdf");
-            DotMaker dot1(forestS, "error_to");
-            dot1.buildGraph(functionS1);
-            dot1.runDot("pdf");
-            DotMaker dot2(forestR, "error_rel");
-            dot2.buildGraph(functionR);
-            dot2.runDot("pdf");
+            DotMaker dot0(forestS);
+            dot0.buildGraph(functionS0, "error_from");
+            dot0.runDot("error_from", "pdf");
+            DotMaker dot1(forestS);
+            dot1.buildGraph(functionS1, "error_to");
+            dot1.runDot("error_to", "pdf");
+            DotMaker dot2(forestR);
+            dot2.buildGraph(functionR, "error_rel");
+            dot2.runDot("error_rel", "pdf");
             return 0;
         }
         hasTo = 0;

@@ -103,13 +103,13 @@ bool buildEvSetForest(uint16_t num, PredefForest bdd, unsigned long maxRange=0)
                 }
                 std::cout << std::endl;
 
-                DotMaker evDot(evforest, "ev_function");
-                evDot.buildGraph(evFunction);
-                evDot.runDot("pdf");
+                DotMaker evDot(evforest);
+                evDot.buildGraph(evFunction, "ev_function");
+                evDot.runDot("ev_function", "pdf");
 
-                DotMaker evModDot(evmodforest, "evmod_function");
-                evModDot.buildGraph(evmodFunction);
-                evModDot.runDot("pdf");
+                DotMaker evModDot(evmodforest);
+                evModDot.buildGraph(evmodFunction, "evmod_function");
+                evModDot.runDot("evmod_function", "pdf");
                 return 0;
             }            
         }

@@ -9,23 +9,41 @@ using namespace BRAVE_DD;
 // *                                                                *
 // ******************************************************************
 
-BddxMaker::BddxMaker(const Forest* f, const std::string bn) 
+void BddxMaker::buildBddx(const Func& func, const std::string fn)
 {
-    basename = bn;
-    std::string fName = basename + ".bddx";
-    outfile.open(fName);
-    if (!outfile) {
-        std::cout << "[BRAVE_DD] Error!\t BddxMaker(): Could not open or create the file: "<< fName << std::endl;
-        exit(1);
+    if (fn == "") {
+        buildBddx(func, std::cout);
+    } else {
+        std::string fileName = fn+".bddx";
+        std::ofstream out;
+        out.open(fileName);
+        if (!out) {
+            std::cout << "[BRAVE_DD] Error!\t BddxMaker::buildBddx(): Could not open or create the file: "<< fileName << std::endl;
+            exit(1);
+        }
+        buildBddx(func, out);
+        out.close();
     }
-    parent = f;
-}
-BddxMaker::~BddxMaker()
-{
-    //
 }
 
-void BddxMaker::makeHeader()
+void BddxMaker::buildBddx(const std::vector<Func>& func, const std::string fn)
+{
+    if (fn == "") {
+        buildBddx(func, std::cout);
+    } else {
+        std::string fileName = fn+".bddx";
+        std::ofstream out;
+        out.open(fileName);
+        if (!out) {
+            std::cout << "[BRAVE_DD] Error!\t BddxMaker::buildBddx(): Could not open or create the file: "<< fileName << std::endl;
+            exit(1);
+        }
+        buildBddx(func, out);
+        out.close();
+    }
+}
+
+void BddxMaker::makeHeader(std::ostream& outfile)
 {
     outfile << "FOREST {\n";
     outfile << "\tTYPE " << parent->getSetting().getName() << "\n";
@@ -34,10 +52,10 @@ void BddxMaker::makeHeader()
     outfile << "\tRANGE " << rangeType2String(parent->getSetting().getRangeType()) << "\n";
 }
 
-void BddxMaker::buildBddx(const Func& func)
+void BddxMaker::buildBddx(const Func& func, std::ostream& outfile)
 {
     // header
-    makeHeader();
+    makeHeader(outfile);
     outfile << "\tNNUM " << parent->getNodeManUsed(func) << "\n";
     outfile << "\tRNUM 1\n";
     outfile << "}\n";
@@ -95,13 +113,12 @@ void BddxMaker::buildBddx(const Func& func)
             << ((func.getEdge().getNodeLevel() == 0) ? func.getEdge().getNodeHandle() : nodeMap[{func.getEdge().getNodeLevel(), func.getEdge().getNodeHandle()}])
             << ">\n";
     outfile << "}\n";
-    outfile.close();
 }
 
-void BddxMaker::buildBddx(const std::vector<Func>& func)
+void BddxMaker::buildBddx(const std::vector<Func>& func, std::ostream& outfile)
 {
     // header
-    makeHeader();
+    makeHeader(outfile);
     outfile << "\tNNUM " << parent->getNodeManUsed(func) << "\n";
     outfile << "\tRNUM " << func.size() << "\n";
     outfile << "}\n";
@@ -162,5 +179,4 @@ void BddxMaker::buildBddx(const std::vector<Func>& func)
             << ">\n";
     }
     outfile << "}\n";
-    outfile.close();
 }
