@@ -82,6 +82,7 @@ bool isPermutationStateAsd = 0; // turn on the Ascending permutation based on #s
 bool isPermutationStateDsd = 0; // turn on the Descending permutation based on #states if isMultiRoot
 bool isResultOutFile = 0;       // turn on to output report in file
 bool isPackState = 0;           // turn on to use packed state for output
+bool isOutBddx = 0;             // turn on to output the bdd in bddx format
 
 timer watch0, watch1;
 
@@ -577,6 +578,7 @@ void file2BDD()
         }
         // store the number of nodes
         nodes_final = forest->getNodeManUsed(results);
+        distance_mr = results;
         std::cerr << "number of nodes: " << nodes_final << std::endl;
 
         /* Concretization */
@@ -670,11 +672,11 @@ void file2BDD()
         /* Build BDD */
         DT.setDefaultValue(Value(SpecialValue::POS_INF));  // set default value
         std::cerr<<"build function\n";
-        Func ans = DT.buildFunc(forest);
-        nodes_final = forest->getNodeManUsed(ans);
+        distance_sr = DT.buildFunc(forest);
+        nodes_final = forest->getNodeManUsed(distance_sr);
         std::cerr << "number of nodes: " << nodes_final << std::endl;
         long numStates = 0;
-        apply(CARDINALITY, ans, numStates);
+        apply(CARDINALITY, distance_sr, numStates);
         std::cerr << "number of states: " << numStates << std::endl;
         if (numStates != numFun) {
             std::cerr << "[BRAVE_DD] Error!\t Cardinality [" << numStates<<"] does not match number of assignments [" << numFun << "]!" << std::endl;
@@ -684,7 +686,7 @@ void file2BDD()
         DT = ExplictFunc();
 
         /* GC forest */
-        forest->markNodes(ans);
+        forest->markNodes(distance_sr);
         forest->markSweep();
 
         /* Concretization */
@@ -693,39 +695,39 @@ void file2BDD()
             Func ans_rst(forest);
             watch0.reset();
             watch0.note_time();
-            apply(CONCRETIZE_RST, ans, Value(SpecialValue::POS_INF), ans_rst);
+            apply(CONCRETIZE_RST, distance_sr, Value(SpecialValue::POS_INF), ans_rst);
             watch0.note_time();
             nodes_rst = forest->getNodeManUsed(ans_rst);
             std::cerr << "RST: number of nodes: " << nodes_rst << std::endl;
             std::cerr << "RST: time: " << watch0.get_last_seconds() << std::endl;
             // GC
-            forest->markNodes(ans);
+            forest->markNodes(distance_sr);
             forest->markSweep();
 
             /* One-sided-match */
             Func ans_osm(forest);
             watch0.reset();
             watch0.note_time();
-            apply(CONCRETIZE_OSM, ans, Value(SpecialValue::POS_INF), ans_osm);
+            apply(CONCRETIZE_OSM, distance_sr, Value(SpecialValue::POS_INF), ans_osm);
             watch0.note_time();
             nodes_osm = forest->getNodeManUsed(ans_osm);
             std::cerr << "OSM: number of nodes: " << nodes_osm << std::endl;
             std::cerr << "OSM: time: " << watch0.get_last_seconds() << std::endl;
             // GC
-            forest->markNodes(ans);
+            forest->markNodes(distance_sr);
             forest->markSweep();
 
             /* Two-sided-match */
             Func ans_tsm(forest);
             watch0.reset();
             watch0.note_time();
-            apply(CONCRETIZE_TSM, ans, Value(SpecialValue::POS_INF), ans_tsm);
+            apply(CONCRETIZE_TSM, distance_sr, Value(SpecialValue::POS_INF), ans_tsm);
             watch0.note_time();
             nodes_tsm = forest->getNodeManUsed(ans_tsm);
             std::cerr << "TSM: number of nodes: " << nodes_tsm << std::endl;
             std::cerr << "OSM: time: " << watch0.get_last_seconds() << std::endl;
             // GC
-            forest->markNodes(ans);
+            forest->markNodes(distance_sr);
             forest->markSweep();
         }
     }
@@ -856,6 +858,10 @@ bool processArgs(int argc, const char** argv)
                 isResultOutFile = 1;
                 continue;
             }
+            if (strcmp("-ob", argv[i])==0) {
+                isOutBddx = 1;
+                continue;
+            }
         }
         if (!setN) {
             N = atoi(argv[i]);
@@ -984,6 +990,29 @@ int main(int argc, const char** argv)
     if (isFileToBDD) {
         file2BDD();
     }
+    if (isOutBddx) {
+        BddxMaker bm(forest);
+        if (isPipe) {
+            if (isMultiRoot) {
+                bm.buildBddx(distance_mr);
+            } else {
+                bm.buildBddx(distance_sr);
+            }
+        } else {
+            std::string bddxName = forest->getSetting().getName();
+            bddxName += "_";
+            bddxName += (isPackState) ? "PK" : "OG";                // states encoding
+            bddxName += "_";
+            bddxName += std::to_string(N);                          // N
+            bddxName += "_";
+            bddxName += std::to_string(M);                          // M
+            if (isMultiRoot) {
+                bm.buildBddx(distance_mr, bddxName);
+            } else {
+                bm.buildBddx(distance_sr, bddxName);
+            }
+        }        
+    }
     // report
     if (isResultOutFile) {
         // the result filename
@@ -991,23 +1020,27 @@ int main(int argc, const char** argv)
         name += "_";
         name += (isMultiRoot) ? "MR" : "SR";                // MR or SR
         name += "_";
+        name += (isPackState) ? "PK" : "OG";                // states encoding
+        name += "_";
         name += std::to_string(N);                          // N
         name += "_";
         name += std::to_string(M);                          // M
-        name += "_";
-        if (isMultiRoot && (isPermutationNodeAsd + isPermutationNodeDsd + isPermutationStateAsd + isPermutationStateDsd == 1)) {
-            //
-            if (isPermutationNodeAsd) {
-                name += "AN";
-            } else if (isPermutationNodeDsd) {
-                name += "DN";
-            } else if (isPermutationStateAsd) {
-                name += "AS";
+        if (isConcretize) {
+            name += "_";
+            if (isMultiRoot && (isPermutationNodeAsd + isPermutationNodeDsd + isPermutationStateAsd + isPermutationStateDsd == 1)) {
+                //
+                if (isPermutationNodeAsd) {
+                    name += "AN";
+                } else if (isPermutationNodeDsd) {
+                    name += "DN";
+                } else if (isPermutationStateAsd) {
+                    name += "AS";
+                } else {
+                    name += "DS";
+                }
             } else {
-                name += "DS";
+                name += "NN";
             }
-        } else {
-            name += "NN";
         }
         name += ".txt";
         std::ofstream file(name, std::ios::app);
