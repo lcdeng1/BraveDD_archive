@@ -103,7 +103,7 @@ void BddxMaker::buildBddx(const std::vector<Func>& func)
     // header
     makeHeader();
     outfile << "\tNNUM " << parent->getNodeManUsed(func) << "\n";
-    outfile << "\tRNUM 1\n";
+    outfile << "\tRNUM " << func.size() << "\n";
     outfile << "}\n";
 
     // nodes map for global index
