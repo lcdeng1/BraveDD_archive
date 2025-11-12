@@ -991,6 +991,7 @@ int main(int argc, const char** argv)
         file2BDD();
     }
     if (isOutBddx) {
+        std::cerr << "out bddx start\n";
         BddxMaker bm(forest);
         if (isPipe) {
             if (isMultiRoot) {
@@ -1011,7 +1012,8 @@ int main(int argc, const char** argv)
             } else {
                 bm.buildBddx(distance_sr, bddxName);
             }
-        }        
+        }
+        std::cerr << "out bddx done\n";
     }
     // report
     if (isResultOutFile) {
