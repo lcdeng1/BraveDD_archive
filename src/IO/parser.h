@@ -8,8 +8,8 @@
 namespace BRAVE_DD{
     class Parser;
     class ParserPla;
+    class ParserBddx;
     class ParserBin;        // TBD
-    class ParserBddx;       // TBD
 } // end of namespace
 
 // ******************************************************************
@@ -103,12 +103,8 @@ class BRAVE_DD::ParserBddx {
         numRoots = 0;
         numVars = 0;
         isReduced = 0;
-        std::cerr << "Parser Bddx construction done!\n";
     }
-    ~ParserBddx() {
-        std::cerr << "destruct parser\n";
-        lexer.~BddxLexer();
-    }
+    // ~ParserBddx() {}
 
     // main functions
 
@@ -123,24 +119,38 @@ class BRAVE_DD::ParserBddx {
     inline uint64_t getNumNodes() { return numNodes; }
     inline uint64_t getNumRoots() { return numRoots; }
     inline Level getNumVars() { return numVars; }
+    inline Func getRoot(size_t id=1) { return rootsMap[id]; }
+    inline std::vector<Func> getAllRoots() { 
+        std::vector<Func> roots;
+        for (const auto& r : rootsMap) {
+            roots.push_back(r.second);
+        }
+        return roots;
+    }
 
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
     /* Helper functions */
     bool match(const TokenType tt, const std::string name);
-    bool parseHeader();
-    bool parseNodes();
-    bool parseRoots();
+    bool parseHeader(Forest* forest);
+    bool parseEdge(Forest* forest, const Level& beginLvl, Edge& edge);
+    bool parseChildEdge(Forest* forest, const Level& beginLvl, std::vector<Edge>& child);
+    bool parseNode(Forest* forest);
+    bool parseNodes(Forest* forest);
+    bool parseRoots(Forest* forest);
 
     BddxLexer           lexer;          // lexer to read bddx tokens
-
-    std::unordered_map<NodeHandle, Edge>    nodesMap;   // map of nodes to new reduced edge
-
+    // map of nodes index to new reduced edge, this is used if input BDD is unreduced
+    std::unordered_map<uint64_t, std::pair<Level, Edge>>            nodesMap;
+    // map of nodes index to inserted node, this is used if input BDD is reduced
+    std::unordered_map<uint64_t, std::pair<Level, NodeHandle>>      reducedNodesMap;
+    // built roots
+    std::unordered_map<uint64_t, Func>   rootsMap;
     uint64_t            numNodes;       // number of nonterminal nodes
     uint64_t            numRoots;       // number of root edges
     Level               numVars;        // number of variables
-    bool                isReduced;      // put it here for now
+    bool                isReduced;      // flag of BDD reduction
 
 };
 

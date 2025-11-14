@@ -168,6 +168,35 @@ namespace BRAVE_DD {
             default: return "UNKNOWN_RULE";
         }
     }
+    static inline ReductionRule string2Rule(const std::string& rule) {
+        std::string ruleLower;
+        ruleLower.resize(rule.size());
+        std::transform(rule.begin(), rule.end(), ruleLower.begin(), 
+                        [](unsigned char c){ return std::tolower(c); });
+        ReductionRule r = RULE_X;
+        if (ruleLower == "el0") {
+            r = RULE_EL0;
+        } else if (ruleLower == "el1") {
+            r = RULE_EL1;
+        } else if (ruleLower == "eh0") {
+            r = RULE_EH0;
+        } else if (ruleLower == "eh1") {
+            r = RULE_EH1;
+        } else if (ruleLower == "al0") {
+            r = RULE_AL0;
+        } else if (ruleLower == "al1") {
+            r = RULE_AL1;
+        } else if (ruleLower == "ah0") {
+            r = RULE_AH0;
+        } else if (ruleLower == "ah1") {
+            r = RULE_AH1;
+        } else if (ruleLower == "i0") {
+            r = RULE_I0;
+        } else if (ruleLower == "i1") {
+            r = RULE_I1;
+        }
+        return r;
+    }
     /// Reduction type and set of rules
     class Reductions;
 }
