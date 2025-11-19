@@ -642,8 +642,8 @@ int main(int argc, const char** argv)
         tableName += "_";
         tableName += std::to_string(M);
         tableName += ".pla.xz";
-        FileReader FR(tableName.c_str());
-        ParserPla parser(&FR);
+        //FileReader FR(tableName.c_str());
+        ParserPla parser(tableName);
         parser.readHeader();
         long numFun = parser.getNum();
         /* Initial forest */

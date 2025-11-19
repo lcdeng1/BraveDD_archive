@@ -129,8 +129,8 @@ int main(int argc, const char** argv)
     /* Process arguments and initialize BDD forests */
     if (!processArgs(argc, argv)) return usage(argv[0]);
     /* Parser to read */
-    FileReader FR(inpath.c_str());
-    ParserPla parser(&FR);
+    //FileReader FR(inpath.c_str());
+    ParserPla parser(inpath);
     parser.readHeader();
     /* Initial forest */
     ForestSetting setting(bddType, parser.getInBits());
