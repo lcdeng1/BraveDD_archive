@@ -26,7 +26,7 @@ int main (int argc, const char** argv) {
     std::cout << std::left << std::setw(align) << "BDD name: " << setting.getName() << std::endl;
     std::cout << std::left << std::setw(align) << "Number of variables: " << setting.getNumVars() << std::endl;
     std::cout << std::left << std::setw(align) << "Number of nodes: " << forest->getNodeManUsed(target) << std::endl;
-    std::cout << std::left << std::setw(align) << "Number of nodes: " << target.numNodes() << std::endl;
+
     long numOnes = 0;
     apply(CARDINALITY, target, numOnes);
     std::cout << std::left << std::setw(align) << "Cardinality: " << numOnes << std::endl;
