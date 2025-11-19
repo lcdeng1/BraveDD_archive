@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 #include "/home/dara/Git/brave_dd/src/brave_dd.h"
 #include "/home/dara/Git/brave_dd/examples/BDDToDFA/Variable.h"
 #include "/home/dara/Git/brave_dd/examples/BDDToDFA/qRBDDToBoolForDFA.cc"
+=======
+#include "brave_dd.h"
+>>>>>>> 7afcd10bb9ee720cb7c939ea0ee6b978ff475eb2
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
@@ -50,9 +54,9 @@ int main()
     Func result(forestx_2);
     result = (root4 & root2) | (root3 & root1);
 
-    DotMaker dot1(forestx_2, "func2");
-    dot1.buildGraph(result);
-    dot1.runDot("pdf");
+    DotMaker dot1(forestx_2);
+    dot1.buildGraph(result, "func2");
+    dot1.runDot("func2", "pdf");
 
     qRBDDToBoolForDFA(result, 4, 2, "Func2");
 

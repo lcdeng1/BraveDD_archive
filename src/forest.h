@@ -630,6 +630,7 @@ class BRAVE_DD::Forest {
     friend class BinaryOperation;
     friend class SaturationOperation;
     friend class BddxMaker;
+    friend class ParserBddx;
 
     ForestSetting               setting;        // Specification setting of this forest.
     NodeManager*                nodeMan;        // Node manager.

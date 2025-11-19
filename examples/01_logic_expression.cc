@@ -44,9 +44,9 @@ int main (int argc, const char** argv) {
     if (isVisual) {
         /* Build BDD in DOT language for visualization */
         // this will generate a .gv file and compile it to the corresponding .pdf file
-        DotMaker dot2(forest, "02_logic_expression_example_FBDD");
-        dot2.buildGraph(target);
-        dot2.runDot("pdf");
+        DotMaker dot2(forest);
+        dot2.buildGraph(target, "01_logic_expression_example_FBDD");
+        dot2.runDot("01_logic_expression_example_FBDD", "pdf");
     }
     /* Report information */
     int align = 36;
@@ -71,9 +71,9 @@ int main (int argc, const char** argv) {
     if (isVisual) {
         /* Build BDD in DOT language for visualization */
         // this will generate a .gv file and compile it to the corresponding .pdf file
-        DotMaker dot2(forest1, "02_logic_expression_example_RexBDD");
-        dot2.buildGraph(new_target);
-        dot2.runDot("pdf");
+        DotMaker dot2(forest1);
+        dot2.buildGraph(new_target, "01_logic_expression_example_RexBDD");
+        dot2.runDot("01_logic_expression_example_RexBDD", "pdf");
     }
 
     /* Report information */

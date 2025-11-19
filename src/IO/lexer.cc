@@ -163,7 +163,7 @@ std::vector<TokenType> BRAVE_DD::BddxLexer::KEY_TYPE = {
 
 bool BRAVE_DD::BddxLexer::consumCommentsML()
 {
-    const unsigned commentLine = lineNumber;
+    const uint64_t commentLine = lineNumber;
     char c = ' ', last = ' ';
     for (;;) {
         // when reach to the end of the buffer, reloading buffer

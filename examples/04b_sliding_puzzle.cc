@@ -1,8 +1,3 @@
-/* This is an example of building the set of configurations (states) reachable to target configure
- * up to k steps for user-specified sliding puzzle.
- * 
- */
-
 /* The vector encoding a tiles configure: 
 * conf[i][j] = k means that tile k on the position of row i and column j, 
 * while k=0 for the empty.
@@ -28,35 +23,26 @@
 * The max supported scale is 4 X 4
 */
 
-#include <queue>
 #include <cmath>
-
 #include <iomanip>
-#include <iostream>
-#include <unordered_set>
 #include <unordered_map>
-#include <vector>
-#include <queue>
-#include <mutex>
 #include <thread>
-#include <future>
-#include <atomic>
-#include <cstdint>
 #include "brave_dd.h"
 #include "timer.h"
 
 using namespace BRAVE_DD;
-
-
 using PuzzleState = std::vector<std::vector<uint16_t> >; // 2D representation of the puzzles
 using State = uint64_t;
 using PackState = uint32_t;
 using Bound = uint8_t;
 
+bool isHelp = 0;
+
 /* About the puzzle */
 uint16_t N;         // row
 uint16_t M;         // column
 uint16_t BITS;      // bits used per position
+uint16_t PACK_LVLS; // levels used for packed states
 uint16_t MSB;       // position of MSB
 uint64_t SIZE;      // target size of state space
 uint64_t MASK;      // mask for bits
@@ -86,8 +72,9 @@ std::ofstream outFile;
 bool isSearch = 0;              // turn on the frontier search
 bool isOutputTable = 0;         // turn on the distance output
 bool isPipe = 0;                // turn on the pipeline mode
-bool isBuildBDD = 0;            // turn on the BDD building
-bool isMultiRoot = 0;           // turn on the MRBDD building if isBuildBDD
+bool isFileToBDD = 0;           // turn on the BDD building
+bool isProcessToBDD = 0;        // turn on the BDD building during the process
+bool isMultiRoot = 0;           // turn on the MRBDD building if isFileToBDD
 bool isConcretize = 0;          // turn on the concretization
 bool isPermutationNodeAsd = 0;  // turn on the Ascending permutation based on #nodes if isMultiRoot
 bool isPermutationNodeDsd = 0;  // turn on the Descending permutation based on #nodes if isMultiRoot
@@ -95,12 +82,17 @@ bool isPermutationStateAsd = 0; // turn on the Ascending permutation based on #s
 bool isPermutationStateDsd = 0; // turn on the Descending permutation based on #states if isMultiRoot
 bool isResultOutFile = 0;       // turn on to output report in file
 bool isPackState = 0;           // turn on to use packed state for output
+bool isOutBddx = 0;             // turn on to output the bdd in bddx format
 
 timer watch0, watch1;
 
-std::string bdd = "fbdd";
+std::string bdd = "FBDD";
+Forest* forest;
+std::vector<Func> distance_mr;
+Func distance_sr;
 
 uint64_t nodes_final = 0, nodes_rst = 0, nodes_osm = 0, nodes_tsm = 0;
+double bdd_time = 0.0, table_time = 0.0, concretize_time = 0.0;
 
 
 /* 
@@ -168,9 +160,9 @@ PuzzleState encodeBits2Puzzle(State puzzle)
 /*
 Encode the puzzle state as a 64 bits
 */
-uint64_t encodePuzzle2Bits(const PuzzleState& puzzle)
+State encodePuzzle2Bits(const PuzzleState& puzzle)
 {
-    uint64_t ans = 0;
+    State ans = 0;
     uint16_t row, col;
     uint16_t shift = MSB-BITS+1;
     for (uint16_t i=1; i<=N*M; i++) {
@@ -181,9 +173,64 @@ uint64_t encodePuzzle2Bits(const PuzzleState& puzzle)
             ans |= (i-1);
         } else {
             ans &= ~(MASK<<shift);
-            ans |= ((uint64_t)puzzle[row][col]<<shift);
+            ans |= ((State)puzzle[row][col]<<shift);
             shift -= BITS;
         }
+    }
+    return ans;
+}
+/*
+Pack the puzzle state
+*/
+uint64_t indexState(const State& puzzle)
+{
+    uint64_t res = 0;
+    std::vector<uint16_t> tiles(N*M, 0);
+    uint16_t shift = MSB-BITS+1;
+    // extract info to a vector
+    for (size_t i=0; i<tiles.size(); i++) {
+        tiles[i] = (puzzle & (MASK << shift)) >> shift;
+        if (i != tiles.size()-1) tiles[i]--;
+        shift -= BITS;
+    }
+    // pack state
+    for (size_t i=0; i<tiles.size()-2; i++) {
+        for (size_t j=i+1; j<tiles.size()-1; j++) {
+            if (tiles[j] >= tiles[i]) tiles[j]--;
+        }
+    }
+    tiles[tiles.size()-3] = 0;
+    // compute the index
+    res = tiles[tiles.size()-4];
+    for (int i=tiles.size()-5; i>=0; i--) {
+        res = (tiles.size()-i-1) * res + tiles[i];
+    }
+    res = N*M*res + tiles.back();
+    return res;
+}
+/*
+State to bool vector
+*/
+std::vector<bool> state2Assignment(const State& puzzle)
+{
+    std::vector<bool> ans(MSB+1, 0);
+    for (size_t i=0; i<ans.size(); i++) {
+        ans[i] = (bool)(puzzle & (0x01ULL << (MSB-i)));
+    }
+    return ans;
+}
+/*
+PackState to bool vector
+*/
+std::vector<bool> indexState2Assignment(const uint64_t puzzle)
+{
+    // size_t size = PACK_LVLS;
+    if (puzzle & (0x01ULL << PACK_LVLS)) {
+        std::cerr << "index out range!\n";
+    }
+    std::vector<bool> ans(PACK_LVLS, 0);
+    for (size_t i=0; i<ans.size(); i++) {
+        ans[i] = (bool)(puzzle & (0x01ULL << (PACK_LVLS-1-i)));
     }
     return ans;
 }
@@ -335,6 +382,31 @@ void parallelFrontier(State initial, size_t num_threads) {
                 outputPlaState((isPipe) ? std::cout : outFile, d.first, depth);
             }
         }
+        // build BDD during process
+        if (isProcessToBDD) {
+            timer watch;
+            watch.reset();
+            watch.note_time();
+            if (isMultiRoot) {
+                ExplictFunc DT;
+                for (auto& d : frontier) {
+                    DT.addAssignment((isPackState) ? indexState2Assignment(indexState(d.first)) : state2Assignment(d.first), Value(1));
+                }
+                distance_mr.push_back(DT.buildFunc(forest));
+                DT = ExplictFunc();
+            } else {
+                ExplictFunc DT;
+                DT.setDefaultValue(Value(SpecialValue::POS_INF));  // set default value
+                for (auto& d : frontier) {
+                    DT.addAssignment((isPackState) ? indexState2Assignment(indexState(d.first)) : state2Assignment(d.first), Value(depth));
+                }
+                apply(MINIMUM, distance_sr, DT.buildFunc(forest), distance_sr);
+                DT = ExplictFunc();
+            }
+            watch.note_time();
+            bdd_time += watch.get_last_seconds();
+        }
+
         std::vector<std::thread> threads;
 
         std::vector<std::vector<std::pair<State, Bound>>> local_frontiers(num_threads);
@@ -421,6 +493,12 @@ void parallelFrontier(State initial, size_t num_threads) {
         }
         ++depth;
     } // end while
+    /* data to report */
+    if (isProcessToBDD) {
+        nodes_final = (isMultiRoot) ? forest->getNodeManUsed(distance_mr) : forest->getNodeManUsed(distance_sr);
+    }
+
+    /* concretize TBD */
 
     /* wrap up the output */
     if (isOutputTable) {
@@ -446,18 +524,278 @@ void parallelFrontier(State initial, size_t num_threads) {
     std::cerr << "Total states discovered: " << total << "\n";
 }
 
+void file2BDD()
+{
+    /* Parser to read */
+    std::string tableName = "puzzle";
+    tableName += "_";
+    tableName += std::to_string(N);
+    tableName += "_";
+    tableName += std::to_string(M);
+    tableName += ".pla.xz";
+    ParserPla parser(tableName);
+    parser.readHeader();
+    long numFun = parser.getNum();
+
+    if (isMultiRoot) {
+        /* Vector of ExplictFunc to store */
+        ExplictFunc DT;
+        std::vector<Func> results(maxStep+1);
+        Func DC(forest);
+        DC.constant(1);
+        std::vector<int> permutation;
+        std::vector<bool> assignment(parser.getInBits());
+        int currOC = 0;
+        for (;;) {
+            int oc;
+            if (!parser.readAssignment(assignment, oc)) {
+                // reach the end, build the current first
+                std::cerr<<"build function " << oc << std::endl;
+                results[oc] = DT.buildFunc(forest);
+                // update don't cares
+                if (isConcretize) DC = DC & !results[oc];
+                // release the current
+                DT = ExplictFunc();
+                // initialize permutation
+                permutation.push_back(oc);
+                break;
+            }
+            // if (oc > maxOC) maxOC = oc;
+            if (oc != currOC) {
+                // reach next block, then build the current function
+                std::cerr<<"build function " << currOC << std::endl;
+                results[currOC] = DT.buildFunc(forest);
+                // update don't cares
+                if (isConcretize) DC = DC & !results[currOC];
+                // release the current
+                DT = ExplictFunc();
+                // initialize permutation
+                permutation.push_back(currOC);
+                currOC = oc;
+            }
+            DT.addAssignment(assignment, Value(1));
+            // DTs[oc].addAssignment(assignment, Value(1));
+        }
+        // store the number of nodes
+        nodes_final = forest->getNodeManUsed(results);
+        distance_mr = results;
+        std::cerr << "number of nodes: " << nodes_final << std::endl;
+
+        /* Concretization */
+        if (isConcretize) {
+            /* Permutation */
+            if (isPermutationNodeAsd + isPermutationNodeDsd + isPermutationStateAsd + isPermutationStateDsd == 1) {
+                if (isPermutationNodeAsd + isPermutationNodeDsd == 1) {
+                    std::sort(permutation.begin(), permutation.end(),
+                    [&](size_t i, size_t j) { 
+                        if (isPermutationNodeAsd) {
+                            return forest->getNodeManUsed(results[i]) < forest->getNodeManUsed(results[j]);
+                        } else {
+                            return forest->getNodeManUsed(results[i]) > forest->getNodeManUsed(results[j]);
+                        }
+                    });
+                } else {
+                    std::sort(permutation.begin(), permutation.end(),
+                    [&](size_t i, size_t j) { 
+                        long numState0, numState1;
+                        apply(CARDINALITY, results[i], numState0);
+                        apply(CARDINALITY, results[j], numState1);
+                        if (isPermutationNodeAsd) {
+                            return numState0 < numState1;
+                        } else {
+                            return numState0 > numState1;
+                        }
+                    });
+                }
+            }
+            std::vector<Func> concretizedRST;
+            std::vector<Func> concretizedOSM;
+            std::vector<Func> concretizedTSM;
+            double timeRST = 0.0, timeOSM = 0.0, timeTSM = 0.0;
+            Func cz(forest);
+            Func czDC = DC;
+            /* Restrict */
+            for (size_t i=1; i<permutation.size()-1; i++) {    // -1: remove the last one
+                // update dc
+                for (size_t k=0; k<i; k++) {
+                    czDC |= results[permutation[k]];
+                }
+                // Restrict
+                watch1.reset();
+                watch1.note_time();
+                apply(CONCRETIZE_RST, results[permutation[i]], czDC, cz);
+                watch1.note_time();
+                timeRST += watch1.get_last_seconds();
+                concretizedRST.push_back(cz);
+                // One-sided-match
+                watch1.reset();
+                watch1.note_time();
+                apply(CONCRETIZE_OSM, results[permutation[i]], czDC, cz);
+                watch1.note_time();
+                timeOSM += watch1.get_last_seconds();
+                concretizedOSM.push_back(cz);
+                // Two-sided-match
+                watch1.reset();
+                watch1.note_time();
+                apply(CONCRETIZE_TSM, results[permutation[i]], czDC, cz);
+                watch1.note_time();
+                timeTSM += watch1.get_last_seconds();
+                concretizedTSM.push_back(cz);
+            }
+            watch1.note_time();
+            nodes_rst = forest->getNodeManUsed(concretizedRST);
+            nodes_osm = forest->getNodeManUsed(concretizedOSM);
+            nodes_tsm = forest->getNodeManUsed(concretizedTSM);
+            std::cerr << "RST: number of nodes: " << nodes_rst << std::endl;
+            std::cerr << "RST: time: " << timeRST << std::endl;
+            std::cerr << "OSM: number of nodes: " << nodes_osm << std::endl;
+            std::cerr << "OSM: time: " << timeOSM << std::endl;
+            std::cerr << "TSM: number of nodes: " << nodes_tsm << std::endl;
+            std::cerr << "TSM: time: " << timeTSM << std::endl;                
+        }
+    } else {
+        /* ExplictFunc to store */
+        ExplictFunc DT;
+        std::vector<bool> assignment(parser.getInBits());
+        Value outcome;
+        int maxOC = 0;
+        for (;;) {
+            int oc;
+            if (!parser.readAssignment(assignment, oc)) break;
+            if (oc > maxOC) maxOC = oc;
+            // value mapping, TBD
+            outcome.setValue(oc, INT);
+            DT.addAssignment(assignment, outcome);
+        }
+        std::cerr << "Max outcome: " << maxOC << std::endl;
+
+        /* Build BDD */
+        DT.setDefaultValue(Value(SpecialValue::POS_INF));  // set default value
+        std::cerr<<"build function\n";
+        distance_sr = DT.buildFunc(forest);
+        nodes_final = forest->getNodeManUsed(distance_sr);
+        std::cerr << "number of nodes: " << nodes_final << std::endl;
+        long numStates = 0;
+        apply(CARDINALITY, distance_sr, numStates);
+        std::cerr << "number of states: " << numStates << std::endl;
+        if (numStates != numFun) {
+            std::cerr << "[BRAVE_DD] Error!\t Cardinality [" << numStates<<"] does not match number of assignments [" << numFun << "]!" << std::endl;
+        }
+
+        /* Release DT */
+        DT = ExplictFunc();
+
+        /* GC forest */
+        forest->markNodes(distance_sr);
+        forest->markSweep();
+
+        /* Concretization */
+        if (isConcretize) {
+            /* Restrict */
+            Func ans_rst(forest);
+            watch0.reset();
+            watch0.note_time();
+            apply(CONCRETIZE_RST, distance_sr, Value(SpecialValue::POS_INF), ans_rst);
+            watch0.note_time();
+            nodes_rst = forest->getNodeManUsed(ans_rst);
+            std::cerr << "RST: number of nodes: " << nodes_rst << std::endl;
+            std::cerr << "RST: time: " << watch0.get_last_seconds() << std::endl;
+            // GC
+            forest->markNodes(distance_sr);
+            forest->markSweep();
+
+            /* One-sided-match */
+            Func ans_osm(forest);
+            watch0.reset();
+            watch0.note_time();
+            apply(CONCRETIZE_OSM, distance_sr, Value(SpecialValue::POS_INF), ans_osm);
+            watch0.note_time();
+            nodes_osm = forest->getNodeManUsed(ans_osm);
+            std::cerr << "OSM: number of nodes: " << nodes_osm << std::endl;
+            std::cerr << "OSM: time: " << watch0.get_last_seconds() << std::endl;
+            // GC
+            forest->markNodes(distance_sr);
+            forest->markSweep();
+
+            /* Two-sided-match */
+            Func ans_tsm(forest);
+            watch0.reset();
+            watch0.note_time();
+            apply(CONCRETIZE_TSM, distance_sr, Value(SpecialValue::POS_INF), ans_tsm);
+            watch0.note_time();
+            nodes_tsm = forest->getNodeManUsed(ans_tsm);
+            std::cerr << "TSM: number of nodes: " << nodes_tsm << std::endl;
+            std::cerr << "OSM: time: " << watch0.get_last_seconds() << std::endl;
+            // GC
+            forest->markNodes(distance_sr);
+            forest->markSweep();
+        }
+    }
+}
+
+int usage(const char* who)
+{
+    std::ostream& out = std::cerr;
+    int align = 10;
+    /* Strip leading directory, if any: */
+    const char* name = who;
+    for (const char* ptr=who; *ptr; ptr++) {
+        if ('/' == *ptr) name = ptr+1;
+    }
+    out << std::left << std::setw(align) << "USAGE: " << name << " <N> <M>" << std::endl;
+    out << std::endl;
+    out << std::left << std::setw(align) << "OPTIONS: "<< std::endl;
+    out << std::left << std::setw(2*align) << "  -help, -h " << "Display help message and usage" << std::endl;
+    out << std::left << std::setw(2*align) << "  -numThreads, -nt <number>" << std::endl;
+    out << std::left << std::setw(2*align) << "" << "Set the number of threads. Default: 1" << std::endl;
+    out << std::left << std::setw(2*align) << "  -search, -s" << "Enable frontier search" << std::endl;
+    // std::cerr << "Usage: " << name << "[options] N M\n" << std::endl;
+    // std::cerr << "\t            N: the number of board rows" << std::endl;
+    // std::cerr << "\t            M: the number of board columns" << std::endl;
+    // std::cerr << "\t[option]  -nt: followed with a number of threads to BFS distance (default: 1)" << std::endl;
+    // std::cerr << "\t[option]  -s: switch to turn ON parallel Frontier search" << std::endl;
+    // std::cerr << "\t[option]  -ot: switch to turn ON the output of result distance table" << std::endl;
+    // std::cerr << "\t[option]  -p: switch to turn ON pipeline to compress" << std::endl;
+    // std::cerr << "\t[option]  -bb: switch to turn ON the BDD building" << std::endl;
+    out << std::endl;
+    out << std::left << std::setw(align) << "EXAMPLES: "<< std::endl;
+    out << std::left << std::setw(align) << "" << name << " 2 3" << std::endl;
+    out << std::left << std::setw(align) << "" << name << " 2 3 -s" << std::endl;
+    return 1;
+}
+
+/* Help message */
+int helpInfo(const char* who)
+{
+    std::ostream& out = std::cerr;
+    int align = 10;
+    // out << std::left << std::setw(align) << "OVERVIEW: " << "N-Queens Problem" << std::endl;
+    out << std::left << std::setw(align) << "OVERVIEW: "
+    << R"(
+    This program encodes the states of an N*M-Sliding Puzzle using Binary Decision
+    Diagrams (BDDs).
+    )"
+    << std::endl;
+    out << "----------------------------------------------------------" << std::endl;
+    return usage(who);
+}
+
 bool processArgs(int argc, const char** argv)
 {
     bool setN = 0, setM = 0;
     for (int i=1; i<argc; i++) {
         if ('-' == argv[i][0]) {
             // options other than size
-            if (strcmp("-nt", argv[i])==0) {
+            if ((strcmp("-help", argv[i])==0) || (strcmp("-h", argv[i])==0)) {
+                isHelp = 1;
+                return 1;
+            }
+            if ((strcmp("-numThreads", argv[i])==0) || (strcmp("-nt", argv[i])==0)) {
                 numThreads = atoi(argv[i+1]);
                 i++;
                 continue;
             }
-            if (strcmp("-s", argv[i])==0) {
+            if ((strcmp("-search", argv[i])==0) || (strcmp("-s", argv[i])==0)) {
                 isSearch = 1;
                 continue;
             }
@@ -465,12 +803,20 @@ bool processArgs(int argc, const char** argv)
                 isOutputTable = 1;
                 continue;
             }
-            if (strcmp("-p", argv[i])==0) {
+            if (strcmp("-pipe", argv[i])==0) {
                 isPipe = 1;
                 continue;
             }
-            if (strcmp("-bb", argv[i])==0) {
-                isBuildBDD = 1;
+            if (strcmp("-pb", argv[i])==0) {
+                isProcessToBDD = 1;
+                continue;
+            }
+            if (strcmp("-ps", argv[i])==0) {
+                isPackState = 1;
+                continue;
+            }
+            if (strcmp("-fb", argv[i])==0) {
+                isFileToBDD = 1;
                 continue;
             }
             if (strcmp("-cz", argv[i])==0) {
@@ -491,6 +837,7 @@ bool processArgs(int argc, const char** argv)
                 i++;
                 continue;
             }
+            /* Hide to users */
             if (strcmp("-pna", argv[i])==0) {
                 isPermutationNodeAsd = 1;
                 continue;
@@ -511,6 +858,10 @@ bool processArgs(int argc, const char** argv)
                 isResultOutFile = 1;
                 continue;
             }
+            if (strcmp("-ob", argv[i])==0) {
+                isOutBddx = 1;
+                continue;
+            }
         }
         if (!setN) {
             N = atoi(argv[i]);
@@ -524,28 +875,8 @@ bool processArgs(int argc, const char** argv)
         if (setN && setM) continue;
     }
 
-    if (!setN || N<1 || !setM || M<1) return 0;
-    // default target configure
-
-    return 1;
-}
-
-int usage(const char* who)
-{
-    /* Strip leading directory, if any: */
-    const char* name = who;
-    for (const char* ptr=who; *ptr; ptr++) {
-        if ('/' == *ptr) name = ptr+1;
-    }
-    std::cerr << "Usage: " << name << "[options] N M\n" << std::endl;
-    std::cerr << "\t            N: the number of board rows" << std::endl;
-    std::cerr << "\t            M: the number of board columns" << std::endl;
-    std::cerr << "\t[option]  -nt: followed with a number of threads to BFS distance (default: 1)" << std::endl;
-    std::cerr << "\t[option]  -s: switch to turn ON parallel Frontier search" << std::endl;
-    std::cerr << "\t[option]  -ot: switch to turn ON the output of result distance table" << std::endl;
-    std::cerr << "\t[option]  -p: switch to turn ON pipeline to compress" << std::endl;
-    std::cerr << "\t[option]  -bb: switch to turn ON the BDD building" << std::endl;
-    return 1;
+    if (!setN || N<1 || !setM || M<1) return 1;
+    return 0;
 }
 
 void report(std::ostream& out)
@@ -556,6 +887,10 @@ void report(std::ostream& out)
     out << std::left << std::setw(15) << "RST:" << std::setw(10) << nodes_rst << std::endl;
     out << std::left << std::setw(15) << "OSM:" << std::setw(10) << nodes_osm << std::endl;
     out << std::left << std::setw(15) << "TSM:" << std::setw(10) << nodes_tsm << std::endl;
+    out << "=========================| Time |=========================" << std::endl;
+    out << std::left << std::setw(15) << "Table:" << std::setw(10) << ((isProcessToBDD) ? table_time - bdd_time : table_time) << std::endl;
+    out << std::left << std::setw(15) << "BDD:" << std::setw(10) << bdd_time << std::endl;
+
     /* the end */
     out << "**********************************************************" << std::endl;
 }
@@ -564,7 +899,10 @@ int main(int argc, const char** argv)
 {
     
     /* Process arguments and initialize BDD forests*/
-    if (!processArgs(argc, argv)) return usage(argv[0]);
+    if (processArgs(argc, argv)) {
+        if (isHelp) return helpInfo(argv[0]);
+        return usage(argv[0]);
+    }
     std::cerr << "Solving " << N << " x " << M << "-sliding puzzle." << std::endl;
     std::cerr << "Using " << getLibInfo(0) << std::endl;
     std::cerr << "Target configure: " << std::endl;
@@ -607,6 +945,7 @@ int main(int argc, const char** argv)
     ROW_MASK = ((0x01ULL<<(M*BITS)) - 1);
     UC_MASK = (0x01ULL<<((M-1)*BITS)) - 1;
     SIZE = expectedSize(N*M);
+    PACK_LVLS = static_cast<uint16_t>(std::ceil(log2(SIZE)));
     // output headers
     if (isOutputTable) {
         if (isPipe) {
@@ -629,235 +968,66 @@ int main(int argc, const char** argv)
     }
     // encode the initial state in bits
     State initial = encodePuzzle2Bits(conf);
-    // search and output as a pla file
-    // if (isSearch) parallelBFS_Rex(initial, numThreads);
-    if (isSearch) parallelFrontier(initial, numThreads);
-    // BFS(initial);
-
-    if (isBuildBDD) {
-        /* Parser to read */
-        std::string tableName = "puzzle";
-        tableName += "_";
-        tableName += std::to_string(N);
-        tableName += "_";
-        tableName += std::to_string(M);
-        tableName += ".pla.xz";
-        //FileReader FR(tableName.c_str());
-        ParserPla parser(tableName);
-        parser.readHeader();
-        long numFun = parser.getNum();
-        /* Initial forest */
-        ForestSetting setting(bdd, parser.getInBits());
+    // adding to the vector of func?
+    if (isProcessToBDD || isFileToBDD) {
+        Level numVars = (isPackState) ? PACK_LVLS : MSB+1;
+        ForestSetting setting(bdd, numVars);
         setting.setValType(INT);
         if (!isMultiRoot) setting.setPosInf(1);
         setting.output(std::cerr);
-        Forest* forest = new Forest(setting);
-
-        if (isMultiRoot) {
-            /* Vector of ExplictFunc to store */
-            ExplictFunc DT;
-            std::vector<Func> results(maxStep+1);
-            Func DC(forest);
-            DC.constant(1);
-            std::vector<int> permutation;
-            std::vector<bool> assignment(parser.getInBits());
-            int currOC = 0;
-            for (;;) {
-                int oc;
-                if (!parser.readAssignment(assignment, oc)) {
-                    // reach the end, build the current first
-                    std::cerr<<"build function " << oc << std::endl;
-                    results[oc] = DT.buildFunc(forest);
-                    // update don't cares
-                    DC = DC ^ results[oc];
-                    // release the current
-                    DT = ExplictFunc();
-                    // initialize permutation
-                    permutation.push_back(oc);
-                    break;
-                }
-                // if (oc > maxOC) maxOC = oc;
-                if (oc != currOC) {
-                    // reach next block, then build the current function
-                    std::cerr<<"build function " << currOC << std::endl;
-                    results[currOC] = DT.buildFunc(forest);
-                    // update don't cares
-                    DC = DC ^ results[currOC];
-                    // release the current
-                    DT = ExplictFunc();
-                    // initialize permutation
-                    permutation.push_back(currOC);
-                    currOC = oc;
-                }
-                DT.addAssignment(assignment, Value(1));
-                // DTs[oc].addAssignment(assignment, Value(1));
-            }
-            // store the number of nodes
-            nodes_final = forest->getNodeManUsed(results);
-            std::cerr << "number of nodes: " << nodes_final << std::endl;
-
-            /* Concretization */
-            if (isConcretize) {
-                /* Permutation */
-                if (isPermutationNodeAsd + isPermutationNodeDsd + isPermutationStateAsd + isPermutationStateDsd == 1) {
-                    if (isPermutationNodeAsd + isPermutationNodeDsd == 1) {
-                        std::sort(permutation.begin(), permutation.end(),
-                        [&](size_t i, size_t j) { 
-                            if (isPermutationNodeAsd) {
-                                return forest->getNodeManUsed(results[i]) < forest->getNodeManUsed(results[j]);
-                            } else {
-                                return forest->getNodeManUsed(results[i]) > forest->getNodeManUsed(results[j]);
-                            }
-                        });
-                    } else {
-                        std::sort(permutation.begin(), permutation.end(),
-                        [&](size_t i, size_t j) { 
-                            long numState0, numState1;
-                            apply(CARDINALITY, results[i], numState0);
-                            apply(CARDINALITY, results[j], numState1);
-                            if (isPermutationNodeAsd) {
-                                return numState0 < numState1;
-                            } else {
-                                return numState0 > numState1;
-                            }
-                        });
-                    }
-                }
-                std::vector<Func> concretizedRST;
-                std::vector<Func> concretizedOSM;
-                std::vector<Func> concretizedTSM;
-                double timeRST = 0.0, timeOSM = 0.0, timeTSM = 0.0;
-                Func cz(forest);
-                Func czDC = DC;
-                /* Restrict */
-                for (size_t i=1; i<permutation.size()-1; i++) {    // -1: remove the last one
-                    // update dc
-                    for (size_t k=0; k<i; k++) {
-                        czDC |= results[permutation[k]];
-                    }
-                    // Restrict
-                    watch1.reset();
-                    watch1.note_time();
-                    apply(CONCRETIZE_RST, results[permutation[i]], czDC, cz);
-                    watch1.note_time();
-                    timeRST += watch1.get_last_seconds();
-                    concretizedRST.push_back(cz);
-                    // One-sided-match
-                    watch1.reset();
-                    watch1.note_time();
-                    apply(CONCRETIZE_OSM, results[permutation[i]], czDC, cz);
-                    watch1.note_time();
-                    timeOSM += watch1.get_last_seconds();
-                    concretizedOSM.push_back(cz);
-                    // Two-sided-match
-                    watch1.reset();
-                    watch1.note_time();
-                    apply(CONCRETIZE_TSM, results[permutation[i]], czDC, cz);
-                    watch1.note_time();
-                    timeTSM += watch1.get_last_seconds();
-                    concretizedTSM.push_back(cz);
-                }
-                watch1.note_time();
-                nodes_rst = forest->getNodeManUsed(concretizedRST);
-                nodes_osm = forest->getNodeManUsed(concretizedOSM);
-                nodes_tsm = forest->getNodeManUsed(concretizedTSM);
-                std::cerr << "RST: number of nodes: " << nodes_rst << std::endl;
-                std::cerr << "RST: time: " << timeRST << std::endl;
-                std::cerr << "OSM: number of nodes: " << nodes_osm << std::endl;
-                std::cerr << "OSM: time: " << timeOSM << std::endl;
-                std::cerr << "TSM: number of nodes: " << nodes_tsm << std::endl;
-                std::cerr << "TSM: time: " << timeTSM << std::endl;                
+        forest = new Forest(setting);
+        distance_sr = Func(forest);
+        if (!isMultiRoot) distance_sr.constant(SpecialValue::POS_INF);
+    }
+    // search and output as a pla file
+    timer watch;
+    watch.reset();
+    watch.note_time();
+    if (isSearch) parallelFrontier(initial, numThreads);
+    watch.note_time();
+    table_time = watch.get_last_seconds();
+    std::cerr << "frontier algorithm takes time: " << watch.get_last_seconds() << "seconds" << std::endl;
+    if (isFileToBDD) {
+        file2BDD();
+    }
+    if (isOutBddx) {
+        std::cerr << "out bddx start\n";
+        BddxMaker bm(forest);
+        if (isPipe) {
+            if (isMultiRoot) {
+                bm.buildBddx(distance_mr);
+            } else {
+                bm.buildBddx(distance_sr);
             }
         } else {
-            /* ExplictFunc to store */
-            ExplictFunc DT;
-            std::vector<bool> assignment(parser.getInBits());
-            Value outcome;
-            int maxOC = 0;
-            for (;;) {
-                int oc;
-                if (!parser.readAssignment(assignment, oc)) break;
-                if (oc > maxOC) maxOC = oc;
-                // value mapping, TBD
-                outcome.setValue(oc, INT);
-                DT.addAssignment(assignment, outcome);
+            std::string bddxName = forest->getSetting().getName();
+            bddxName += "_";
+            bddxName += (isPackState) ? "PK" : "OG";                // states encoding
+            bddxName += "_";
+            bddxName += std::to_string(N);                          // N
+            bddxName += "_";
+            bddxName += std::to_string(M);                          // M
+            if (isMultiRoot) {
+                bm.buildBddx(distance_mr, bddxName);
+            } else {
+                bm.buildBddx(distance_sr, bddxName);
             }
-            std::cerr << "Max outcome: " << maxOC << std::endl;
-
-            /* Build BDD */
-            DT.setDefaultValue(Value(SpecialValue::POS_INF));  // set default value
-            std::cerr<<"build function\n";
-            Func ans = DT.buildFunc(forest);
-            nodes_final = forest->getNodeManUsed(ans);
-            std::cerr << "number of nodes: " << nodes_final << std::endl;
-            long numStates = 0;
-            apply(CARDINALITY, ans, numStates);
-            std::cerr << "number of states: " << numStates << std::endl;
-            if (numStates != numFun) {
-                std::cerr << "[BRAVE_DD] Error!\t Cardinality [" << numStates<<"] does not match number of assignments [" << numFun << "]!" << std::endl;
-            }
-
-            /* Release DT */
-            DT = ExplictFunc();
-
-            /* GC forest */
-            forest->markNodes(ans);
-            forest->markSweep();
-
-            /* Concretization */
-            if (isConcretize) {
-                /* Restrict */
-                Func ans_rst(forest);
-                watch0.reset();
-                watch0.note_time();
-                apply(CONCRETIZE_RST, ans, Value(SpecialValue::POS_INF), ans_rst);
-                watch0.note_time();
-                nodes_rst = forest->getNodeManUsed(ans_rst);
-                std::cerr << "RST: number of nodes: " << nodes_rst << std::endl;
-                std::cerr << "RST: time: " << watch0.get_last_seconds() << std::endl;
-                // GC
-                forest->markNodes(ans);
-                forest->markSweep();
-
-                /* One-sided-match */
-                Func ans_osm(forest);
-                watch0.reset();
-                watch0.note_time();
-                apply(CONCRETIZE_OSM, ans, Value(SpecialValue::POS_INF), ans_osm);
-                watch0.note_time();
-                nodes_osm = forest->getNodeManUsed(ans_osm);
-                std::cerr << "OSM: number of nodes: " << nodes_osm << std::endl;
-                std::cerr << "OSM: time: " << watch0.get_last_seconds() << std::endl;
-                // GC
-                forest->markNodes(ans);
-                forest->markSweep();
-
-                /* Two-sided-match */
-                Func ans_tsm(forest);
-                watch0.reset();
-                watch0.note_time();
-                apply(CONCRETIZE_TSM, ans, Value(SpecialValue::POS_INF), ans_tsm);
-                watch0.note_time();
-                nodes_tsm = forest->getNodeManUsed(ans_tsm);
-                std::cerr << "TSM: number of nodes: " << nodes_tsm << std::endl;
-                std::cerr << "OSM: time: " << watch0.get_last_seconds() << std::endl;
-                // GC
-                forest->markNodes(ans);
-                forest->markSweep();
-
-                
-            }
-            
         }
-        if (isResultOutFile) {
-            // the result filename
-            std::string name = forest->getSetting().getName();  // bdd type
-            name += "_";
-            name += (isMultiRoot) ? "MR" : "SR";                // MR or SR
-            name += "_";
-            name += std::to_string(N);                          // N
-            name += "_";
-            name += std::to_string(M);                          // M
+        std::cerr << "out bddx done\n";
+    }
+    // report
+    if (isResultOutFile) {
+        // the result filename
+        std::string name = forest->getSetting().getName();  // bdd type
+        name += "_";
+        name += (isMultiRoot) ? "MR" : "SR";                // MR or SR
+        name += "_";
+        name += (isPackState) ? "PK" : "OG";                // states encoding
+        name += "_";
+        name += std::to_string(N);                          // N
+        name += "_";
+        name += std::to_string(M);                          // M
+        if (isConcretize) {
             name += "_";
             if (isMultiRoot && (isPermutationNodeAsd + isPermutationNodeDsd + isPermutationStateAsd + isPermutationStateDsd == 1)) {
                 //
@@ -873,16 +1043,17 @@ int main(int argc, const char** argv)
             } else {
                 name += "NN";
             }
-            name += ".txt";
-            std::ofstream file(name, std::ios::app);
-            if (!file) {
-                std::cerr << "Failed to open file " << name << std::endl;
-            } else {
-                report(file);
-                file.close();
-            }
         }
-        delete forest;
+        name += ".txt";
+        std::ofstream file(name, std::ios::app);
+        if (!file) {
+            std::cerr << "Failed to open file " << name << std::endl;
+        } else {
+            report(file);
+            file.close();
+        }
+    } else {
+        report(std::cerr);
     }
-    
+    if (isProcessToBDD || isFileToBDD) delete forest;
 }

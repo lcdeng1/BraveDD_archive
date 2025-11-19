@@ -75,9 +75,7 @@ class BRAVE_DD::BddxLexer {
         lexeme = std::string(MAX_STR, '\0');
         nextToken();
     }
-    ~BddxLexer() {
-        reader.~FileReader();
-    }
+    // ~BddxLexer() {}
 
     bool nextToken();
     inline std::string getLexeme() {
@@ -85,6 +83,12 @@ class BRAVE_DD::BddxLexer {
     }
     inline TokenType getLexemeType() {
         return tokenType;
+    }
+    inline std::string getFilename() {
+        return reader.getFileName();
+    }
+    inline uint64_t getLinenum() {
+        return lineNumber;
     }
     inline bool match(const TokenType tt) {
         if (tt != tokenType) {
@@ -108,9 +112,7 @@ class BRAVE_DD::BddxLexer {
     }
     // check if need to reload characters, and reload if needed
     inline void checkInBuffer() {
-        if ((bufferIndex == buffer.size()) || (buffer[bufferIndex] == '\0')) {
-            reader.readInBuffer(buffer, MAX_LEX);
-        }
+        if ((bufferIndex == buffer.size()) || (buffer[bufferIndex] == '\0')) readInBuffer();
     }
     // asuming we've identified /*, then continue until identifing */ or EOF
     bool consumCommentsML();
@@ -128,7 +130,7 @@ class BRAVE_DD::BddxLexer {
     private:
     /*-------------------------------------------------------------*/
     FileReader      reader;         // input file reader
-    unsigned        lineNumber;     // current line number of lexing file
+    uint64_t        lineNumber;     // current line number of lexing file
     TokenType       tokenType;      // token type defined in token.h
     std::string     lexeme;         // current lexeme
     std::string     buffer;         // buffer to store the ASCII character from the input file

@@ -150,9 +150,9 @@ bool testOperation(uint16_t num, PredefForest bdd, BinaryOperationType opt)
     }
     if (!isPass) {
         if (num < 6) {
-            DotMaker dot1(forest, "func1");
-            dot1.buildGraph(f1);
-            dot1.runDot("pdf");
+            DotMaker dot1(forest);
+            dot1.buildGraph(f1, "func1");
+            dot1.runDot("func1", "pdf");
         }
     }
     delete forest;
