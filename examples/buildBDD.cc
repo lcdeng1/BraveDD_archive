@@ -1,10 +1,6 @@
-<<<<<<< HEAD
-#include "/home/dara/Git/brave_dd/src/brave_dd.h"
-#include "/home/dara/Git/brave_dd/examples/BDDToDFA/Variable.h"
-#include "/home/dara/Git/brave_dd/examples/BDDToDFA/qRBDDToBoolForDFA.cc"
-=======
+#include "BDDToDFA/Variable.h"
+#include "BDDToDFA/qRBDDToBoolForDFA.cc"
 #include "brave_dd.h"
->>>>>>> 7afcd10bb9ee720cb7c939ea0ee6b978ff475eb2
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
@@ -62,8 +58,8 @@ int main()
 
 
 
-    BddxMaker bm(forestx_2, "test_QRBDD");
-    bm.buildBddx(result);
+    BddxMaker bm(forestx_2);
+    bm.buildBddx(result, "test_QRBDD");
 
     delete forestx_1;
     delete forestx_2;

@@ -4,7 +4,7 @@
  * @details All methods are O(1) unless otherwise noted.
  */
 
-#include "/home/dara/Git/brave_dd/examples/BDDToDFA/Variable.h"
+#include "Variable.h"
 #include <stdexcept> // For std::runtime_error
 
 // Static member definitions

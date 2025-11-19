@@ -1,5 +1,5 @@
-#include "/home/dara/Git/brave_dd/src/brave_dd.h"
-#include "/home/dara/Git/brave_dd/examples/BDDToDFA/Variable.h"
+#include "brave_dd.h"
+#include "Variable.h"
 #include <unordered_map>
 #include <iostream>
 #include <fstream>
