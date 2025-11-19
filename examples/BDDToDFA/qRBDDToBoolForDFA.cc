@@ -121,10 +121,10 @@ const std::vector<Variable*>& Variable::getRegistry() {
     return registry;
 }
 
-int numverticis = 12;
-int numInAlphabet = 2;
+int numverticisG;
+int numInAlphabetG;
 int numStatesG;
-int maxLvl = 4;
+int maxLvlG;
 
 /**
  *Mathod QRBDDToBoolForDFA
@@ -133,9 +133,12 @@ int maxLvl = 4;
  * this the sat solver will give wether or not it is possible to create a DFA of the given size
  * if it is possible, you can use the assignments to construct it.
  **/
-int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, std::string name)
+int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, std::string name, int maxLvl, int numverticis)
 {
     numStatesG = numStates;
+    maxLvlG = maxLvl;
+    numverticisG = numverticis;
+    numInAlphabetG = numAssignments;
 
     std::unordered_set<uint64_t> seen; // says weither a vertex has been seen yet (I want controlled order so I can't just have it here)
     BRAVE_DD::NodeHandle parentVertexHandle = qrbdd.getEdge().getNodeHandle();
@@ -150,7 +153,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     std::vector<uint64_t> allVerticies;
     allVerticies.push_back(uniqueVertexName);
     int verticiesOnLvl = curLevelVerticies.size();
-    for (int lvl = maxLvl - 1; lvl >= 0; lvl--)
+    for (int lvl = maxLvl - 1; lvl > 0; lvl--)
     {
         for (verticiesOnLvl; verticiesOnLvl > 0; verticiesOnLvl--)
         {
@@ -177,7 +180,12 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
         verticiesOnLvl = curLevelVerticies.size();
     }
 
+    for (int i = 0; i < numAssignments; i ++){
+        allVerticies.push_back(i);
+    }
+
     auto renamed = renameVertices(allVerticies);
+
 
     // initialize Variable
     Variable::init();
@@ -327,8 +335,8 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
         }
     }
 
-    /*// notes for using renamed
-    for (const auto& [name, id] : renamed) {
+    // notes for using renamed
+    /*for (const auto& [name, id] : renamed) {
         std::cout << "Vertex " << name << " -> ID " << id << "\n";
         std::cout << "TestID Retrival " << name << " -> ID " << renamed.at(name) << "\n";
     }*/
@@ -376,9 +384,9 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
                         function += tempFunction;
                         std::cout << variableName(deltaFun[i][j][x]) << std::endl;
                         function += "-" + std::to_string(deltaFun[i][j][x].getMyIndex()) + " ";
-                        // std::cout << (static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x)) << std::endl;
-                        std::cout << variableName(belongsTo[renamed.at(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x))][j]) << "\n"
-                                  << std::endl;
+                        std::cout << (static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x)) << std::endl;
+                        std::cout << renamed.at(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x)) << "\n" << std::endl;
+                        std::cout << variableName(belongsTo[renamed.at(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x))][j]) << "\n" << std::endl;
                         function += std::to_string(belongsTo[renamed.at(static_cast<uint64_t>(lvl) << 48 | qrbdd.getForest()->getChildNodeHandle(lvl + 1, parentVertexHandle, x))][j].getMyIndex()) + " 0\n";
                         numClauses++;
                     }
@@ -589,7 +597,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
     // Command-line arguments for the Java program
     std::string arg1 = "convertCoveringDFAtoQRBDD";
     std::string arg2 = "/home/dara/Git/brave_dd/build/examples/DFAFormat" + name + ".txt";
-    std::string arg3 = std::to_string(numStatesG);
+    std::string arg3 = std::to_string(maxLvl);
 
     // Construct the command
     command = "java -cp " + classPath + " " + javaClass + " " + arg1 + " " + arg2 + " " + arg3;
@@ -605,7 +613,7 @@ int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, s
         std::cerr << "Java program execution failed with code: " << result << std::endl;
     }
 
-    
+
 
 
 

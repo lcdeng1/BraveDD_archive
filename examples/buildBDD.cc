@@ -29,7 +29,11 @@ int main()
 
     rootx_1.variable(1);
 
-    Func resultx_1 = rootx_1;
+    Func resultx_1 = !rootx_1;
+
+    DotMaker dot1(forestx_1);
+    dot1.buildGraph(resultx_1, "func1");
+    dot1.runDot("func1", "pdf");
 
     // create bdd x_1
     // needs to also have
@@ -50,16 +54,36 @@ int main()
     Func result(forestx_2);
     result = (root4 & root2) | (root3 & root1);
 
-    DotMaker dot1(forestx_2);
-    dot1.buildGraph(result, "func2");
-    dot1.runDot("func2", "pdf");
+    DotMaker dot2(forestx_2);
+    dot2.buildGraph(result, "func2");
+    dot2.runDot("func2", "pdf");
 
-    qRBDDToBoolForDFA(result, 4, 2, "Func2");
 
+    Func toTest = result;
+    std::string funcName = "func2";
+    Forest *forestToTest = forestx_2;
+
+
+    //params: BRAVEDD Func, num states,  num assignments, FuncName, max level, numVertices
+    //qRBDDToBoolForDFA(toTest, 2, 2, funcName, 1, 3);
+    qRBDDToBoolForDFA(toTest, 4, 2, funcName, 4, 12);
 
 
     BddxMaker bm(forestx_2);
-    bm.buildBddx(result, "test_QRBDD");
+    bm.buildBddx(toTest, "test_QRBDD");
+
+
+    ParserBddx parser("DFAFormat" + funcName + "(OUTPUT).bddx");
+    // parsing the input file
+    parser.parse(forestToTest);
+    Func root = parser.getRoot();
+
+    if (toTest == root){
+        printf("YAY!\n");
+    }
+    else {
+        printf("BOO!\n");
+    }
 
     delete forestx_1;
     delete forestx_2;
