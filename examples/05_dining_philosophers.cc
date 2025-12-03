@@ -32,7 +32,7 @@
  * 
  * Author: Lichuan Deng
  * Version: 1.0
- * Last Update Date: Oct 27, 2025
+ * Last Update Date: Dec 3, 2025
  */
 
 #include "brave_dd.h"
@@ -45,16 +45,18 @@ using namespace BRAVE_DD;
 bool isHelp = 0;
 // Flag to output log
 bool isLog = 0;
-// The size of board
+// The number of philosophers
 int N = 3;
+// The type of encoding
+int encodingType = 0;
 // BDD type
-std::string bdd_type = "FBDD";
-std::string bmxd_type = "ESRBMxD";
+std::string bddType = "FBDD";
+std::string bmxdType = "ESRBMxD";
 // BDD forest
-Forest* bdd_forest;
-Forest* bmxd_forest;
+Forest* bddForest;
+Forest* bmxdForest;
 // time
-double time_initial = 0.0, time_transition = 0.0, time_explore = 0.0;
+double timeInitial = 0.0, timeTransition = 0.0, timeExplore = 0.0;
 
 /* Usage message */
 int usage(const char* who)
@@ -116,7 +118,12 @@ bool processArgs(int argc, const char** argv)
             }
             // options other than size
             if (strcmp("-type", argv[i])==0) {
-                bdd_type = argv[i+1];
+                bddType = argv[i+1];
+                i++;
+                continue;
+            }
+            if ((strcmp("-encodeType", argv[i])==0 || (strcmp("-et", argv[i])==0))) {
+                encodingType = atoi(argv[i+1]);
                 i++;
                 continue;
             }
@@ -127,6 +134,69 @@ bool processArgs(int argc, const char** argv)
     return 0;
 }
 
+/* Help find the starting BDD level of a philosopher */
+Level starting(const int phil)
+{
+    Level lvl = 0;
+    if (encodingType == 0) {
+        lvl = 6*phil + 1;
+    } else if (encodingType == 1) {
+        if (phil == 0) return 1;
+        bool isEven = (N%2 == 0);
+        int rightMost = N/2;
+        if (phil <= rightMost) {
+            lvl = 12*(phil-1) + 6 + 1;
+        } else {
+            lvl = 6*N - 12*(phil-rightMost-1) - 5 - (isEven?6:0);
+        }
+    } else {
+        //
+    }
+    return lvl;
+}
+Level fork(const int phil)
+{
+    return starting(phil) + 0;
+}
+Level idle(const int phil)
+{
+    return starting(phil) + 1;
+}
+Level waitL(const int phil)
+{
+    return starting(phil) + 2;
+}
+Level hasL(const int phil)
+{
+    return starting(phil) + 3;
+}
+Level waitR(const int phil)
+{
+    return starting(phil) + 4;
+}
+Level hasR(const int phil)
+{
+    return starting(phil) + 5;
+}
+
+/* Build the initial state */
+Func initialState()
+{
+    Func initial(bddForest);
+    initial.trueFunc();
+    for (int i=0; i<N; i++) {
+        for (int p=1; p<=6; p++) {
+            Func place(bddForest);
+            place.variable(6*i + p);
+            if ((p != 1) && (p != 2)) { // fork and idle
+                place = !place;
+            }
+            initial &= place;
+        }
+    }
+    return initial;
+}
+
 /* Build the transition relations 
  * Each philosopher has 4 transitions:
  *  0: "Release", 1: "GoEat", 2: "GetLeft", 3: "GetRight"
@@ -135,100 +205,96 @@ Func transition(const int phil, const int trans)
 {
     // helpers
     Level numVars = 6 * N;
-    Func const_zero(bmxd_forest), const_one(bmxd_forest);
-    // const_zero.constant(0);
-    // const_one.constant(1);
-    const_zero.falseFunc();
+    Func const_one(bmxdForest);
     const_one.trueFunc();
     std::vector<bool> dependance(numVars+1, 0);
-    Func var_from(bmxd_forest);
-    Func var_to(bmxd_forest);
+    Func var(bmxdForest);
     // the result
-    Func ans(bmxd_forest);
-    // ans.constant(1);
+    Func ans(bmxdForest);
     ans.trueFunc();
     // build
     if (trans == 0) {
         /* "Release" */
         // Enabling: X_hasL == 1, X_hasR == 1
-        var_from.variable(6*phil + 4, 0);
-        ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
-        var_from.variable(6*phil + 6, 0);
-        ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
+        var.variable(hasL(phil), 0);
+        ans &= var;
+        var.variable(hasR(phil), 0);
+        ans &= var;
         // Firing: Fork'_n == 1, Fork'_{n+1} == 1, X'_idle == 1 X'_hasL == 0, X'_hasR == 0
-        var_to.variable(6*(phil%N)+1, 1);
-        ans &= ((var_to & const_one) | ((!var_to) & (!const_one)));
-        var_to.variable(6*((phil+1)%N)+1, 1);
-        ans &= ((var_to & const_one) | ((!var_to) & (!const_one)));
-        var_to.variable(6*phil + 2, 1);
-        ans &= ((var_to & const_one) | ((!var_to) & (!const_one)));
-        var_to.variable(6*phil + 4, 1);
-        ans &= ((var_to & const_zero) | ((!var_to) & (!const_zero)));
-        var_to.variable(6*phil + 6, 1);
-        ans &= ((var_to & const_zero) | ((!var_to) & (!const_zero)));
+        var.variable(fork(phil), 1);
+        ans &= var;
+        var.variable(fork((phil+1)%N), 1);
+        ans &= var;
+        var.variable(idle(phil), 1);
+        ans &= var;
+        var.variable(hasL(phil), 1);
+        ans &= !var;
+        var.variable(hasR(phil), 1);
+        ans &= !var;
         // Dependance
-        dependance[6*phil + 2] = 1;
-        dependance[6*phil + 4] = 1;
-        dependance[6*phil + 6] = 1;
-        dependance[6*(phil%N)+1] = 1;
-        dependance[6*((phil+1)%N)+1] = 1;
+        dependance[idle(phil)] = 1;
+        dependance[hasL(phil)] = 1;
+        dependance[hasR(phil)] = 1;
+        dependance[fork(phil)] = 1;
+        dependance[fork((phil+1)%N)] = 1;
     } else if (trans == 1) {
         /* "GoEat" */
         // Enabling: X_idle == 1
-        var_from.variable(6*phil + 2, 0);
-        ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
+        var.variable(idle(phil), 0);
+        ans &= var;
         // Firing: X'_waitL == 1, X'_waitR == 1, X'_idle == 0
-        var_to.variable(6*phil + 3, 1);
-        ans &= ((var_to & const_one) | ((!var_to) & (!const_one)));
-        var_to.variable(6*phil + 5, 1);
-        ans &= ((var_to & const_one) | ((!var_to) & (!const_one)));
-        var_to.variable(6*phil + 2, 1);
-        ans &= ((var_to & const_zero) | ((!var_to) & (!const_zero)));
+        var.variable(waitL(phil), 1);
+        ans &= var;
+        var.variable(waitR(phil), 1);
+        ans &= var;
+        var.variable(idle(phil), 1);
+        ans &= !var;
         // Dependance
-        dependance[6*phil + 2] = 1;
-        dependance[6*phil + 3] = 1;
-        dependance[6*phil + 5] = 1;
+        dependance[waitL(phil)] = 1;
+        dependance[waitR(phil)] = 1;
+        dependance[idle(phil)] = 1;
     } else if (trans == 2) {
         /* "GetLeft" */
         // Enabling: Fork_n == 1, X_waitL == 1
-        var_from.variable(6*(phil%N)+1, 0);
-        ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
-        var_from.variable(6*phil + 3, 0);
-        ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
+        var.variable(fork(phil), 0);
+        ans &= var;
+        var.variable(waitL(phil), 0);
+        ans &= var;
         // Firing: X'+hasL == 1, Fork'_n == 0, X'_waitL == 0
-        var_to.variable(6*phil + 4, 1);
-        ans &= ((var_to & const_one) | ((!var_to) & (!const_one)));
-        var_to.variable(6*(phil%N)+1, 1);
-        ans &= ((var_to & const_zero) | ((!var_to) & (!const_zero)));
-        var_to.variable(6*phil + 3, 1);
-        ans &= ((var_to & const_zero) | ((!var_to) & (!const_zero)));
+        var.variable(hasL(phil), 1);
+        ans &= var;
+        var.variable(fork(phil), 1);
+        ans &= !var;
+        var.variable(waitL(phil), 1);
+        ans &= !var;
         // Dependance
-        dependance[6*phil + 3] = 1;
-        dependance[6*phil + 4] = 1;
-        dependance[6*(phil%N)+1] = 1;
+        dependance[hasL(phil)] = 1;
+        dependance[fork(phil)] = 1;
+        dependance[waitL(phil)] = 1;
     } else if (trans == 3) {
         /* "GetRight" */
         // Enabling: Fork_{n+1} == 1, X_waitR == 1
-        var_from.variable(6*((phil+1)%N)+1, 0);
-        ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
-        var_from.variable(6*phil + 5, 0);
-        ans &= ((var_from & const_one) | ((!var_from) & (!const_one)));
+        var.variable(fork((phil+1)%N), 0);
+        ans &= var;
+        var.variable(waitR(phil), 0);
+        ans &= var;
         // Firing: X'_hasR == 1, Fork'_{n+1} == 0, X'_waitR == 0
-        var_to.variable(6*phil + 6, 1);
-        ans &= ((var_to & const_one) | ((!var_to) & (!const_one)));
-        var_to.variable(6*((phil+1)%N)+1, 1);
-        ans &= ((var_to & const_zero) | ((!var_to) & (!const_zero)));
-        var_to.variable(6*phil + 5, 1);
-        ans &= ((var_to & const_zero) | ((!var_to) & (!const_zero)));
+        var.variable(hasR(phil), 1);
+        ans &= var;
+        var.variable(fork((phil+1)%N), 1);
+        ans &= !var;
+        var.variable(waitR(phil), 1);
+        ans &= !var;
         // Dependance
-        dependance[6*phil + 5] = 1;
-        dependance[6*phil + 6] = 1;
-        dependance[6*((phil+1)%N)+1] = 1;
+        dependance[hasR(phil)] = 1;
+        dependance[waitR(phil)] = 1;
+        dependance[fork((phil+1)%N)] = 1;
     } else {
         std::cerr << "unknown transition!" << std::endl;
         ans.constant(0);
         return ans;
     }
+    
     /* Identities */
     const_one.identity(dependance);
 
@@ -246,14 +312,14 @@ int main(int argc, const char** argv)
 
     /* Initialize BraveDD forest */
     Level numVars = 6 * N;
-    ForestSetting setting1(bdd_type, numVars);   // Set the BDD type and the number of variables
-    ForestSetting setting2(bmxd_type, numVars);   // Set the BMXD type and the number of variables
-    bdd_forest = new Forest(setting1);
-    bmxd_forest = new Forest(setting2);
+    ForestSetting setting1(bddType, numVars);   // Set the BDD type and the number of variables
+    ForestSetting setting2(bmxdType, numVars);   // Set the BMXD type and the number of variables
+    bddForest = new Forest(setting1);
+    bmxdForest = new Forest(setting2);
     std::cerr << "Using " << getLibInfo(0) << std::endl;
     std::cerr << "Exploring Reachability for " << N << std::left << std::setw(27) << "-Dining Philosophers in" << std::endl;
-    std::cerr << std::left << std::setw(align) << "BDD type: " << bdd_forest->getSetting().getName() << std::endl;
-    std::cerr << std::left << std::setw(align) << "BMXD type: " << bmxd_forest->getSetting().getName() << std::endl;
+    std::cerr << std::left << std::setw(align) << "BDD type: " << bddForest->getSetting().getName() << std::endl;
+    std::cerr << std::left << std::setw(align) << "BMXD type: " << bmxdForest->getSetting().getName() << std::endl;
     /* Expexted number of reachable states */
     std::cerr << std::left << std::setw(align) << "Expecting number of states: " << (fib(3*N+1) + fib(3*N-1)) << std::endl;
     if (N > 30) {
@@ -265,25 +331,13 @@ int main(int argc, const char** argv)
     watch.reset();
 
     /* Create the initial state */
-    Func initial(bdd_forest);
-    // initial.constant(1);
-    initial.trueFunc();
     watch.note_time();
-    for (int i=0; i<N; i++) {
-        for (int p=1; p<=6; p++) {
-            Func place(bdd_forest);
-            place.variable(6*i + p);
-            if ((p != 1) && (p != 2)) { // fork and idle
-                place = !place;
-            }
-            initial &= place;
-        }
-    }
+    Func initial = initialState();
     watch.note_time();
-    time_initial = watch.get_last_seconds();
+    timeInitial = watch.get_last_seconds();
     if (isLog) {
         std::cerr << "**************** Process Report ****************" << std::endl;
-        std::cerr << std::left << std::setw(align) << "Built the initial state, took " << time_initial << " seconds" << std::endl;
+        std::cerr << std::left << std::setw(align) << "Built the initial state, took " << timeInitial << " seconds" << std::endl;
     }
 
 
@@ -293,7 +347,7 @@ int main(int argc, const char** argv)
      */
     watch.reset();
     watch.note_time();
-    std::vector<Func> transitions(4*N, Func(bmxd_forest));
+    std::vector<Func> transitions(4*N, Func(bmxdForest));
     for (int i=0; i<N; i++) {
         for (int t=0; t<4; t++) {
             // std::cerr << "build transition " << t << " for philosopher " << i << std::endl;
@@ -301,36 +355,36 @@ int main(int argc, const char** argv)
         }
     }
     watch.note_time();
-    time_transition = watch.get_last_seconds();
+    timeTransition = watch.get_last_seconds();
     if (isLog) {
         std::cerr << "**************** Process Report ****************" << std::endl;
-        std::cerr << std::left << std::setw(align) << "Built transition relations, took " << time_transition << " seconds" << std::endl;
+        std::cerr << std::left << std::setw(align) << "Built transition relations, took " << timeTransition << " seconds" << std::endl;
     }
 
     /* Explore reachable states */
     watch.reset();
     watch.note_time();
-    Func reachables(bdd_forest);
+    Func reachables(bddForest);
     apply(SATURATE, initial, transitions, reachables);
     // SSG_chain(initial, transitions, reachables);
     /* Timer end */
     watch.note_time();
-    time_explore = watch.get_last_seconds();
+    timeExplore = watch.get_last_seconds();
     if (isLog) {
         std::cerr << "**************** Process Report ****************" << std::endl;
-        std::cerr << std::left << std::setw(align) << "Built reachability set, took " << time_explore << " seconds" << std::endl;
+        std::cerr << std::left << std::setw(align) << "Built reachability set, took " << timeExplore << " seconds" << std::endl;
     }
 
     /* Report */
-    long num;
+    long num = 0;
     apply(CARDINALITY, reachables, num);
     std::cerr << "******************** Report ********************" << std::endl;
     std::cerr << std::left << std::setw(align) << "Number of reachable states: " << num << std::endl;
-    std::cerr << std::left << std::setw(align) << "Elapsed time (seconds): " << (time_initial + time_transition + time_explore) << std::endl;
-    std::cerr << std::left << std::setw(align) << "Number of nodes (final): " << bdd_forest->getNodeManUsed(reachables) << std::endl;
-    std::cerr << std::left << std::setw(align) << "Number of nodes (peak): " << bdd_forest->getNodeManPeak() << std::endl;
+    std::cerr << std::left << std::setw(align) << "Elapsed time (seconds): " << (timeInitial + timeTransition + timeExplore) << std::endl;
+    std::cerr << std::left << std::setw(align) << "Number of nodes (final): " << bddForest->getNodeManUsed(reachables) << std::endl;
+    std::cerr << std::left << std::setw(align) << "Number of nodes (peak): " << bddForest->getNodeManPeak() << std::endl;
 
     /* delete Forest */
-    delete bdd_forest;
-    delete bmxd_forest;
+    delete bddForest;
+    delete bmxdForest;
 }
