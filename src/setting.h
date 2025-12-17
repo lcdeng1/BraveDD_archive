@@ -28,8 +28,7 @@ namespace BRAVE_DD {
         EVMODQBDD,
         EVMODFBDD,
         EVQBMXD,
-        EVFBMXDs,
-        UBDD
+        EVFBMXDs
     };
     /// Encoding mechanism
     enum EncodeMechanism{

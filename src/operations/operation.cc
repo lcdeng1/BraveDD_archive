@@ -1506,54 +1506,6 @@ Edge BinaryOperation::computeElmtWise(const Level lvl, const Edge& source1, cons
 #ifdef BRAVE_DD_OPERATION_TRACE
     std::cout << "\tcheck if recursive computing\n";
 #endif
-
-    // TODO: Optimize this operation
-    if (source1Forest->getSetting().hasReductionRule(RULE_AND)) {
-        // First we will cofact it then denormalize;
-        ReductionRule r1 = e1.getRule();
-        bool c1 = e1.getComp();
-        bool s1 = e1.getSwap(0);
-        std::vector<Edge> child1(2);
-        // cofact take care of the complement and swap
-        child1[0] = source1Forest->cofact(lvl, e1, 0);
-        child1[1] = source1Forest->cofact(lvl, e1, 1);
-        // if (s1 && r1 == RULE_AND) r1 = RULE_OR;
-        // else if (s1 && r1 == RULE_OR) r1 = RULE_AND;
-
-        ReductionRule r2 = e2.getRule();
-        bool c2 = e2.getComp();
-        bool s2 = e2.getSwap(0);
-        std::vector<Edge> child2(2);    
-        child2[0] = source2Forest->cofact(lvl, e2, 0);
-        child2[1] = source2Forest->cofact(lvl, e2, 1);
-        // if (s2 && r2 == RULE_AND) r2 = RULE_OR;
-        // else if (s2 && r2 == RULE_OR) r2 = RULE_AND;
-        std::vector<Edge> tmp(2);
-
-        tmp[0] = computeElmtWise(lvl-1, child1[0], child2[0]);
-        tmp[1] = computeElmtWise(lvl-1, child1[1], child2[1]);
-
-        EdgeLabel root = 0;
-        packRule(root, RULE_X);
-        ans = resForest->reduceEdge(lvl, root, lvl, tmp);            
-        cacheAdd(0, lvl, e1, e2, ans);
-        return ans;
-#ifdef BRAVE_DD_OPERATION_TRACE
-    std::cout << std::endl;
-    std::cout << "rule1: " << rule2String(r1) << " rule2: " << rule2String(r2) << std::endl;
-    std::cout << "child 1: ";
-    child1[0].print(std::cout);
-    std::cout << " , ";
-    child1[1].print(std::cout);
-    std::cout << std::endl;
-    std::cout << "child 2: ";
-    child2[0].print(std::cout);
-    std::cout << " , ";
-    child2[1].print(std::cout);
-    std::cout << std::endl;
-#endif    
-    }
-
     if (m1 == lvl) {
         std::vector<Edge> child1, child2, tmp;
         if (resForest->getSetting().isRelation()) {
