@@ -363,7 +363,35 @@ Value Func::evaluate(const std::vector<bool>& assignment) const
         /* check the incoming edge's reduction rule for terminal cases */
         ReductionRule incoming = current.getRule();
         /* if incoming edge skips levels */
-        if ((targetLvl < k) && (incoming != RULE_X)) {
+        if ((targetLvl < k) && (incoming == RULE_AND)) {
+            bool hasZero = false;
+            for (unsigned i = targetLvl + 1; i <= k; i++) {
+                if (assignment[i] == current.getSwap(0)) hasZero = true;
+            }
+            bool isComp = current.getComp();
+            if (hasZero) {
+                current = parent->getChildEdge(targetLvl, targetHandle, 0);
+                if (isComp) current.complement();
+            }
+
+            k = targetLvl;
+            targetHandle = current.getNodeHandle();
+            targetLvl = current.getNodeLevel();
+        } else if ((targetLvl < k) && (incoming == RULE_OR)) {
+            bool hasOne = false;
+            for (unsigned i = targetLvl + 1; i <= k; i++) {
+                if (assignment[i] == !current.getSwap(0)) hasOne = true;
+            }
+            bool isComp = current.getComp();
+            if (hasOne) {
+                current =  parent->getChildEdge(targetLvl, targetHandle, 1);
+                if (isComp) current.complement();
+            }
+            
+            k = targetLvl;
+            targetHandle = current.getNodeHandle();
+            targetLvl = current.getNodeLevel();
+        } else if ((targetLvl < k) && (incoming != RULE_X)) {
             // determine flags of all-ones and exist-ones
             for (Level i=k; i>targetLvl; i--) {
                 allOne &= assignment[i];

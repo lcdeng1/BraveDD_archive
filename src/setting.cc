@@ -157,6 +157,12 @@ ForestSetting::ForestSetting(const PredefForest type, const unsigned numVals, co
         // setting for EVQBMxD
     } else if (type == PredefForest::EVFBMXDs) {
         // setting for EVFBMxD
+    } else if (type == PredefForest::UBDD) {
+        reductions = Reductions(UNCHAINED);
+        mergeType = PUSH_UP;
+        name = "UBDD";
+        setCompType(COMP);
+        setSwapType(ONE);
     } else {
         // Unknown predefined BDD or BMxD
         std::cout << "[BRAVE_DD] ERROR!\t Unknown BDD/MxD!" << std::endl;
@@ -319,6 +325,12 @@ ForestSetting::ForestSetting(const std::string& bdd, const unsigned numVals, con
         // setting for EV+QBMxD
     } else if (bddLower == "evfbmxd" || bddLower == "ev+fbmxd") {
         // setting for EV+FBMxD
+    } else if (bddLower == "ubdd") {
+        reductions = Reductions(UNCHAINED);
+        mergeType = PUSH_UP;
+        name = "UBDD";
+        setCompType(COMP);
+        setSwapType(TO);
     } else {
         // Unknown predefined BDD or BMxD
         std::cout << "[BRAVE_DD] ERROR!\t Unknown BDD/MxD: " << bdd << std::endl;

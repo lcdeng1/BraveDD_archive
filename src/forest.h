@@ -329,6 +329,40 @@ class BRAVE_DD::Forest {
         }
         Edge ans;
         ReductionRule rule = edge.getRule();
+
+        if ((rule == RULE_OR) && (lvl > edge.getNodeLevel())) {
+            if (index == !edge.getSwap(0)) {
+                Edge temp;
+                temp = getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), 1);
+                EdgeLabel label = 0; 
+                packRule(label, RULE_X);
+                ans = mergeEdge(lvl-1, edge.getNodeLevel()-1, label, temp);
+                if (edge.getComp()) ans.complement();
+
+                return ans;
+            } else {
+                ans = normalizeEdge(lvl-1, edge);
+                return ans;
+            }
+        }
+
+        if ((rule == RULE_AND) && (lvl > edge.getNodeLevel())) {
+            if (index == edge.getSwap(0)) {
+                Edge temp;
+                temp = getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), 0);
+
+                EdgeLabel label = 0; 
+                packRule(label, RULE_X);
+                ans = mergeEdge(lvl-1, edge.getNodeLevel()-1, label, temp);
+                if (edge.getComp()) ans.complement();
+
+                return ans;
+            } else {
+                ans = normalizeEdge(lvl-1, edge);
+                return ans;
+            }
+        }
+
         if ((isRuleEL(rule) && (index == 0)) || (isRuleEH(rule) && (index == 1))
             || (isRuleAL(rule) && (lvl - edge.getNodeLevel() == 1) && (index == 0))
             || (isRuleAH(rule) && (lvl - edge.getNodeLevel() == 1) && (index == 1))
