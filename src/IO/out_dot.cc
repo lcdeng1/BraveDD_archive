@@ -26,10 +26,10 @@ void DotMaker::buildGraph(const Func& func, std::string fn)
         out.close();
     }
 }
-void DotMaker::buildGraph(const std::vector<Func>& func, std::string fn)
+void DotMaker::buildGraph(const std::vector<Func>& funcs, std::string fn)
 {
     if (fn=="") {
-        buildGraph(func, std::cout);
+        buildGraph(funcs, std::cout);
     } else {
         std::string fileName = fn+".gv";
         std::ofstream out;
@@ -38,7 +38,7 @@ void DotMaker::buildGraph(const std::vector<Func>& func, std::string fn)
             std::cout << "[BRAVE_DD] Error!\t DotMaker::buildGraph(): Could not open or create the file: "<< fileName << std::endl;
             exit(1);
         }
-        buildGraph(func, out);
+        buildGraph(funcs, out);
         out.close();
     }
 }
@@ -162,6 +162,15 @@ void DotMaker::buildEdge(std::ostream& outfile, const Level lvl, const Edge& edg
     char numChild = (parent->getSetting().isRelation()) ? 4 : 2;
     /* edge lable */
     std::string label = "";
+    if (st == 0) {
+        label += (parent->getSetting().isRelation()) ? "00: " : "0: ";
+    } else if (st == 1) {
+        label += (parent->getSetting().isRelation()) ? "01: " : "1: ";
+    } else if (st == 2) {
+        label += "10: ";
+    } else if (st == 3) {
+        label += "11: ";
+    }
     if (em == EDGE_PLUS || em == EDGE_PLUSMOD) {
         if (vt == INT) {
             int ev;
@@ -219,9 +228,11 @@ void DotMaker::buildEdge(std::ostream& outfile, const Level lvl, const Edge& edg
         root += std::to_string(rootHandle);
     }
     if (edge.getNodeLevel() == 0) {
-        EdgeHandle handle = edge.getEdgeHandle();
-        outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
-        outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
+        if (!isHideTerminalZero || !edge.isConstantZero()) {
+            EdgeHandle handle = edge.getEdgeHandle();
+            outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
+            outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
+        }
     } else {
         outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
         outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
