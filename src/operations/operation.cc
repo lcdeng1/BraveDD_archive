@@ -1,11 +1,48 @@
 #include "operation.h"
 #include "../IO/out_dot.h"
+#include "../../examples/timer.h"
 
+#define BRAVE_DD_TRACE
 // #define BRAVE_DD_OPERATION_TRACE
+#define BRAVE_DD_CACHE_REPORT
+#define BRAVE_DD_TIME_REPORT
+// #define BRAVE_DD_SATURATION_TRACE
 // #define BRAVE_DD_PRINT_RELATIONS
 // #define BRAVE_DD_CONCRETIZATION_HELP_CACHE  // better not turn it on
 #define BRAVE_DD_SAT_STRATEGY_1
 // #define BRAVE_DD_SAT_STRATEGY_2
+
+#ifdef BRAVE_DD_TRACE
+struct Trace
+{
+    static thread_local int depth;
+    std::string name;
+    timer watch;
+
+    Trace(std::string n) : name(std::move(n)) {
+        for (int i=0; i<depth; i++) {
+            std::cout << "|   ";
+        }
+        // std::cout << std::string(depth * 4, ' ')
+        //           << "enter " << name << '\n';
+        std::cout << "In  " << name << '\n';
+        ++depth;
+        watch.reset();
+        watch.note_time();
+    }
+    ~Trace() {
+        watch.note_time();
+        --depth;
+        for (int i=0; i<depth; i++) {
+            std::cout << "|   ";
+        }
+        std::cout << "Out " << name << " time: "<< watch.get_last_seconds() << '\n';
+        // std::cout << std::string(depth * 4, ' ')
+        //           << "exit " << name << '\n';
+    }
+};
+thread_local int Trace::depth = 0;
+#endif
 
 /* Thresholds to check if sweep and enlarge needed */
 // static float thresholdsSweep = 0.66f;
@@ -1167,12 +1204,20 @@ void BinaryOperation::compute(const Func& source1, const Func& source2, Func& re
         // Separate for efficiency? TBD
         ans = computeElmtWise(numVars, source1Equ.getEdge(), source2Equ.getEdge());
     } else if (opType == BinaryOperationType::BOP_PREIMAGE) {
-        ans = computeImage(numVars, source1.getEdge(), source2.getEdge(), 1);
+        if (source1Forest->getSetting().getRangeType() == BOOLEAN) {
+            ans = computeImage(numVars, source1.getEdge(), source2.getEdge(), 1);
+        } else {
+            ans = computeImageDistance(numVars, source1.getEdge(), source2.getEdge(), 1);
+        }
         Func ansEqu(source1.getForest(), ans);
         cp1->compute(ansEqu, res);
         return;
     } else if (opType == BinaryOperationType::BOP_POSTIMAGE) {
-        ans = computeImage(numVars, source1.getEdge(), source2.getEdge());
+        if (source1Forest->getSetting().getRangeType() == BOOLEAN) {
+            ans = computeImage(numVars, source1.getEdge(), source2.getEdge(), 0);
+        } else {
+            ans = computeImageDistance(numVars, source1.getEdge(), source2.getEdge(), 0);
+        }
         Func ansEqu(source1.getForest(), ans);
         cp1->compute(ansEqu, res);
         return;
@@ -1994,6 +2039,167 @@ Edge BinaryOperation::computeImage(const Level lvl, const Edge& source1, const E
     return ans;
 }
 
+Edge BinaryOperation::computeImageDistance(const Level lvl, const Edge& source1, const Edge& trans, bool isPre)
+{
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << ((isPre)?"Pre":"Post") << "ImageSatDistance: lvl: " << (Level)lvl << "; s: ";
+    source1.print(std::cout);
+    std::cout << "; r: ";
+    trans.print(std::cout);
+    std::cout << std::endl;
+#endif
+#ifdef BRAVE_DD_SATURATION_TRACE
+    int ev = 0;
+    source1.getValue().getValueTo(&ev, INT);
+    Trace t("ImageSat(" 
+            + std::to_string(lvl)
+            + ", v"+std::to_string(ev)
+            + ", <"+rule2String(source1.getRule())
+            + ", "+(source1.getComp()?"1":"0")
+            + ", "+(source1.getSwap(0)?"1":"0")
+            + ", "+std::to_string(source1.getNodeHandle())
+            + ">"+"l"+std::to_string(source1.getNodeLevel())
+            + ", <"+rule2String(trans.getRule())
+            + ", "+(trans.getComp()?"1":"0")
+            + ", "+(trans.getSwap(0)?"1":"0")
+            + ", "+std::to_string(trans.getNodeHandle())
+            + ">"+"l"+std::to_string(trans.getNodeLevel())
+            + ", "+std::to_string(begin)
+            + ")");
+#endif
+
+    Edge ans;
+    Edge s, r;
+    // normalize edges
+    s = source1Forest->normalizeEdge(lvl, source1);
+    r = source2Forest->normalizeEdge(lvl, trans);
+
+    /* -------------------------------------------------------------------------------------------------
+    * Base case 1: empty state (INF) or relation (Zero)
+    * ------------------------------------------------------------------------------------------------*/
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking base case 1\n";
+#endif
+    if (s.isConstantPosInf() || r.isConstantZero()) {
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "base case 1\n";
+#endif
+        EdgeHandle constant = makeTerminal(VOID, SpecialValue::POS_INF);
+        packRule(constant, RULE_X);
+        ans.setEdgeHandle(constant);
+        ans = source1Forest->normalizeEdge(lvl, ans);
+        return ans;
+    }
+
+    /* -------------------------------------------------------------------------------------------------
+    * Base case 2: identity or redundant relation
+    * ------------------------------------------------------------------------------------------------*/
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking base case 2\n";
+#endif
+    if (r.getNodeLevel() == 0) {
+        if ((r.getRule() == RULE_I0) 
+            && (isTerminalOne(r.getEdgeHandle()) || isTerminalZero(r.getEdgeHandle()))
+            && (r.getComp() ^ isTerminalOne(r.getEdgeHandle()))) {
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "base case 2: identity\n";
+#endif
+            return s;
+        } else if (r.isConstantOne()) {
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "base case 2: redundant\n";
+#endif
+            // optimization TBD
+            if ((source1Forest->setting.getEncodeMechanism() == TERMINAL) && (isTerminal(s.getEdgeHandle()))) {
+                EdgeHandle constant = makeTerminal(getTerminalValue(s.getEdgeHandle()));
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+                ans = source1Forest->normalizeEdge(lvl, ans);
+                return ans;
+            } else if (source1Forest->setting.getEncodeMechanism() != TERMINAL) {
+                EdgeHandle constant = makeTerminal(VOID, SpecialValue::OMEGA);
+                packRule(constant, RULE_X);
+                ans.setEdgeHandle(constant);
+                ans.setValue(s.getValue());
+                ans = source1Forest->normalizeEdge(lvl, ans);
+                return ans;
+            }
+        }
+    }
+
+    Level m = (s.getNodeLevel() > r.getNodeLevel()) ? s.getNodeLevel() : r.getNodeLevel();
+
+    /* -------------------------------------------------------------------------------------------------
+    * Check cache
+    * ------------------------------------------------------------------------------------------------*/
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "checking cache\n";
+#endif
+    Value originalVal;
+    if (source1Forest->setting.getEncodeMechanism() != EDGE_PLUSMOD) {
+        originalVal = s.getValue();
+        s.setValue(0);
+    }
+    if (!caches[0].check(lvl, s, r, ans)) {
+#ifdef BRAVE_DD_SATURATION_TRACE
+        for (int i=0; i<t.depth; i++) {
+            std::cout << "|   ";
+        }
+        std::cout << "Not in cache" << '\n';
+#endif
+        // not cached, computing needed
+        std::vector<Edge> child(2);
+        EdgeHandle constant = makeTerminal(VOID, SpecialValue::POS_INF);
+        packRule(constant, RULE_X);
+        for (size_t i=0; i<2; i++) {
+            child[i].setEdgeHandle(constant);
+            child[i] = source1Forest->normalizeEdge(m-1, child[i]);
+        }
+        if ((m > r.getNodeLevel()) && (r.getRule() == RULE_I0)) {
+            Edge rr = r;
+            if (m-r.getNodeLevel() == 1) rr.setRule(RULE_X);
+            child[0] = computeImageDistance(m-1, source1Forest->cofact(m, s, 0), rr);
+            child[1] = computeImageDistance(m-1, source1Forest->cofact(m, s, 1), rr);
+        } else {
+            // recursive computing
+            Edge sRec, rRec, resRec;
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "recursive computing\n";
+#endif
+            // Minimum of BDDs operation required
+            BinaryOperation* un = BOPs.find(BinaryOperationType::BOP_MINIMUM, source1Forest, source1Forest, source1Forest);
+            if (!un) {
+                un = BOPs.add(new BinaryOperation(BinaryOperationType::BOP_MINIMUM, source1Forest, source1Forest, source1Forest));
+            }
+            for (char i=0; i<4; i++) {
+                // if ((r.getRule() == RULE_I0) && (s.getNodeLevel() > m) && (i == 1 || i == 2)) continue;
+                char s0Idx = (isPre) ? (i&(0x01)) : ((i&(0x01<<1))>>1);
+                char s1Idx = (isPre) ? ((i&(0x01<<1))>>1) : (i&(0x01));
+                sRec = source1Forest->cofact(m, s, s0Idx);
+                rRec = source2Forest->cofact(m, r, i);
+                resRec = computeImageDistance(m-1, sRec, rRec);
+                child[s1Idx] = un->computeElmtWise(m-1, child[s1Idx], resRec);
+#ifdef BRAVE_DD_OPERATION_TRACE
+    std::cout << "after Minimum child[" << (int)s1Idx << "]: ";
+    child[s1Idx].print(std::cout);
+    std::cout << std::endl;
+#endif
+            }
+        }
+        EdgeLabel root = 0;
+        packRule(root, RULE_X);
+        ans = source1Forest->reduceEdge(m, root, m, child);
+        // merge with the incoming edge rule
+        EdgeLabel incoming = 0;
+        packRule(incoming, (r.getRule() == RULE_I0)?s.getRule():RULE_X);    // TBD for rex
+        ans = source1Forest->mergeEdge(lvl, m, incoming, ans);
+        // cache
+        cacheAdd(0, lvl, s, r, ans);
+    }
+    if (!ans.isConstantPosInf() && !ans.isConstantNegInf()) ans.setValue(originalVal + ans.getValue());
+    return ans;
+}
+
 Edge BinaryOperation::operateLL(const Level lvl, const Edge& e1, const Edge& e2)
 {
 #ifdef BRAVE_DD_OPERATION_TRACE
@@ -2347,7 +2553,9 @@ void SaturationOperation::sweepAndEnlarge(const size_t cacheID)
         caches[cacheID].enlarge(caches[cacheID].size);
     }
 }
-
+#if defined(BRAVE_DD_SATURATION_TRACE) || defined(BRAVE_DD_TIME_REPORT) 
+std::vector<double> times;
+#endif
 void SaturationOperation::compute(const Func& source1, Func& res)
 {
     // check if the relations are compatible
@@ -2389,8 +2597,42 @@ void SaturationOperation::compute(const Func& source1, Func& res)
     */
     if (resForest->setting.getRangeType() == BOOLEAN) {
         ans = computeSaturation(numVars, source1.getEdge(), 0);
+#ifdef BRAVE_DD_CACHE_REPORT
+        std::cout << "[Report] Saturation Cache:" << std::endl;
+        caches[0].reportStat(std::cerr);
+        std::cout << "[Report] ImageSat Cache:" << std::endl;
+        caches[1].reportStat(std::cerr);
+        std::cout << "[Report] Union Cache:" << std::endl;
+        BinaryOperation* un = BOPs.find(BinaryOperationType::BOP_UNION, source1Forest, source1Forest, source1Forest);
+        un->caches[0].reportStat(std::cerr);
+#endif
+#ifdef BRAVE_DD_TIME_REPORT
+        double time_min = 0;
+        for (size_t i=0; i<times.size(); i++) {
+            // std::cerr << times[i] << "\n";
+            time_min += times[i];
+        }
+        std::cerr << "[Report] Total Time for Union (sec): " << time_min << "\n";
+#endif
     } else {
         ans = computeSaturationDistance(numVars, source1.getEdge(), 0);
+#ifdef BRAVE_DD_CACHE_REPORT
+        std::cout << "[Report] Saturation Distance Cache:" << std::endl;
+        caches[0].reportStat(std::cerr);
+        std::cout << "[Report] ImageSat Distance Cache:" << std::endl;
+        caches[1].reportStat(std::cerr);
+        std::cout << "[Report] Minimum Cache:" << std::endl;
+        BinaryOperation* un = BOPs.find(BinaryOperationType::BOP_MINIMUM, source1Forest, source1Forest, source1Forest);
+        un->caches[0].reportStat(std::cerr);
+#endif
+#ifdef BRAVE_DD_TIME_REPORT
+        double time_min = 0;
+        for (size_t i=0; i<times.size(); i++) {
+            // std::cerr << times[i] << "\n";
+            time_min += times[i];
+        }
+        std::cerr << "[Report] Total Time for Minimum (sec): " << time_min << "\n";
+#endif
     }
     Func ansEqu(source1.getForest(), ans);
     cp1->compute(ansEqu, res);
@@ -2419,6 +2661,16 @@ Edge SaturationOperation::computeSaturation(const Level lvl, const Edge& source1
         exit(0);
     }
 #endif
+#ifdef BRAVE_DD_SATURATION_TRACE
+    Trace t("(" 
+            + std::to_string(lvl)
+            + ", <"+rule2String(source1.getRule())
+            + ", "+(source1.getComp()?"1":"0")
+            + ", "+(source1.getSwap(0)?"1":"0")
+            + ", "+std::to_string(source1.getNodeHandle())
+            + ">"+"l"+std::to_string(source1.getNodeLevel())
+            + ")");
+#endif
     Edge ans = source1;
 
     /* -------------------------------------------------------------------------------------------------
@@ -2442,7 +2694,6 @@ Edge SaturationOperation::computeSaturation(const Level lvl, const Edge& source1
 #endif
     if (relations[begin].getEdge().isConstantOne()) {
         if (source1Forest->setting.getEncodeMechanism() == TERMINAL) {
-            //
             ans.setEdgeHandle(makeTerminal(1));
             ans.setRule(RULE_X);
         } else {
@@ -2519,6 +2770,12 @@ Edge SaturationOperation::computeSaturation(const Level lvl, const Edge& source1
             if (must0) {
                 isChanged = 1;
                 // Step 1: keep firing 0 edge
+#ifdef BRAVE_DD_SATURATION_TRACE
+                for (int i=0; i<t.depth; i++) {
+                    std::cout << "|   ";
+                }
+                std::cout << "Step 1" << '\n';
+#endif
                 while (isChanged) {
                     oldChild = child[0];
                     for (size_t e=0; e<fires.size(); e++) {
@@ -2527,14 +2784,32 @@ Edge SaturationOperation::computeSaturation(const Level lvl, const Edge& source1
                         // protectRec.push_back(res);
                         // source1Forest->registerEdge(res);
                         // // source1Forest->deregisterEdge(res);
+#ifdef BRAVE_DD_TIME_REPORT
+                        timer watchMin;
+                        watchMin.reset();
+                        watchMin.note_time();
+#endif
                         child[0] = un->computeElmtWise(m-1, child[0], res);
                         // protectChild.push_back(child[0]);
                         // source1Forest->registerEdge(child[0]);
+#ifdef BRAVE_DD_TIME_REPORT
+                        watchMin.note_time();
+                        times.push_back(watchMin.get_last_seconds());
+#endif
+#if defined(BRAVE_DD_TIME_REPORT) && defined (BRAVE_DD_SATURATION_TRACE)
+                        std::cout << "Union op time: " << watchMin.get_last_seconds() << "\n";
+#endif
                     }
                     if (oldChild == child[0]) isChanged = 0;
                 }
                 must0 = 0;
                 // Step 2: firing 1 edge once more
+#ifdef BRAVE_DD_SATURATION_TRACE
+                for (int i=0; i<t.depth; i++) {
+                    std::cout << "|   ";
+                }
+                std::cout << "Step 2" << '\n';
+#endif
                 oldChild = child[1];
                 for (size_t e=0; e<fires.size(); e++) {
                     rel = source2Forest->cofact(m, fires[e].getEdge(), 1);      // alph[0][1]
@@ -2542,16 +2817,34 @@ Edge SaturationOperation::computeSaturation(const Level lvl, const Edge& source1
                     // protectRec.push_back(res);
                     // source1Forest->registerEdge(res);
                     // // source1Forest->deregisterEdge(res);
+#ifdef BRAVE_DD_TIME_REPORT
+                    timer watchMin;
+                    watchMin.reset();
+                    watchMin.note_time();
+#endif
                     child[1] = un->computeElmtWise(m-1, child[1], res);
                     // protectChild.push_back(child[1]);
                     // source1Forest->registerEdge(child[1]);
                     // // source1Forest->deregisterEdge(child[1]);
+#ifdef BRAVE_DD_TIME_REPORT
+                    watchMin.note_time();
+                    times.push_back(watchMin.get_last_seconds());
+#endif
+#if defined(BRAVE_DD_TIME_REPORT) && defined (BRAVE_DD_SATURATION_TRACE)
+                    std::cout << "Union op time: " << watchMin.get_last_seconds() << "\n";
+#endif
                 }
                 if (oldChild != child[1]) must1 = 1;
             }
             if (must1) {
                 isChanged = 1;
                 // Step 3: keep firing 1 edge
+#ifdef BRAVE_DD_SATURATION_TRACE
+                for (int i=0; i<t.depth; i++) {
+                    std::cout << "|   ";
+                }
+                std::cout << "Step 3" << '\n';
+#endif
                 while (isChanged) {
                     oldChild = child[1];
                     for (size_t e=0; e<fires.size(); e++) {
@@ -2560,15 +2853,33 @@ Edge SaturationOperation::computeSaturation(const Level lvl, const Edge& source1
                         // protectRec.push_back(res);
                         // source1Forest->registerEdge(res);
                         // // source1Forest->deregisterEdge(res);
+#ifdef BRAVE_DD_TIME_REPORT
+                        timer watchMin;
+                        watchMin.reset();
+                        watchMin.note_time();
+#endif
                         child[1] = un->computeElmtWise(m-1, child[1], res);
                         // protectChild.push_back(child[1]);
                         // source1Forest->registerEdge(child[1]);
                         // // source1Forest->deregisterEdge(child[1]);
+#ifdef BRAVE_DD_TIME_REPORT
+                        watchMin.note_time();
+                        times.push_back(watchMin.get_last_seconds());
+#endif
+#if defined(BRAVE_DD_TIME_REPORT) && defined (BRAVE_DD_SATURATION_TRACE)
+                        std::cout << "Union op time: " << watchMin.get_last_seconds() << "\n";
+#endif
                     }
                     if (oldChild == child[1]) isChanged = 0;
                 }
                 must1 = 0;
                 // Step 4: firing 0 edge once more
+#ifdef BRAVE_DD_SATURATION_TRACE
+                for (int i=0; i<t.depth; i++) {
+                    std::cout << "|   ";
+                }
+                std::cout << "Step 4" << '\n';
+#endif
                 oldChild = child[0];
                 for (size_t e=0; e<fires.size(); e++) {
                     rel = source2Forest->cofact(m, fires[e].getEdge(), 2);      // alph[1][0]
@@ -2576,10 +2887,22 @@ Edge SaturationOperation::computeSaturation(const Level lvl, const Edge& source1
                     // protectRec.push_back(res);
                     // source1Forest->registerEdge(res);
                     // // source1Forest->deregisterEdge(res);
+#ifdef BRAVE_DD_TIME_REPORT
+                    timer watchMin;
+                    watchMin.reset();
+                    watchMin.note_time();
+#endif
                     child[0] = un->computeElmtWise(m-1, child[0], res);
                     // protectChild.push_back(child[0]);
                     // source1Forest->registerEdge(child[0]);
                     // // source1Forest->deregisterEdge(child[0]);
+#ifdef BRAVE_DD_TIME_REPORT
+                    watchMin.note_time();
+                    times.push_back(watchMin.get_last_seconds());
+#endif
+#if defined(BRAVE_DD_TIME_REPORT) && defined (BRAVE_DD_SATURATION_TRACE)
+                    std::cout << "Union op time: " << watchMin.get_last_seconds() << "\n";
+#endif
                 }
                 if (oldChild != child[0]) must0 = 1;
             }
@@ -2642,6 +2965,27 @@ Edge SaturationOperation::computeSaturation(const Level lvl, const Edge& source1
 #endif
     return ans;
 }
+struct EdgeHash {
+    std::size_t operator()(const Edge& p) const {
+        std::size_t h1 = p.getEdgeHandle();
+        std::size_t h2;
+        p.getValue().getValueTo(&h2, INT);
+        return h1 ^ (h2 << 1);  // combine
+    }
+};
+std::vector<Edge> deduplicate(const std::vector<Edge>& edges)
+{
+    std::unordered_set<Edge, EdgeHash> seen;
+    std::vector<Edge> result;
+    result.reserve(edges.size());
+
+    for (const auto& x : edges) {
+        if (seen.insert(x).second) { // true if newly inserted
+            result.push_back(x);
+        }
+    }
+    return result;
+}
 
 Edge SaturationOperation::computeSaturationDistance(const Level lvl, const Edge& source1, const size_t begin)
 {
@@ -2657,6 +3001,28 @@ Edge SaturationOperation::computeSaturationDistance(const Level lvl, const Edge&
         std::cout << "out of range!\n";
         exit(0);
     }
+#endif
+#ifdef BRAVE_DD_SATURATION_TRACE
+    int ev = 0;
+    source1.getValue().getValueTo(&ev, INT);
+    // Trace t(std::string(__func__) 
+    //         + "("
+    //         + std::to_string(lvl)
+    //         + ", <"+rule2String(source1.getRule())
+    //         + ", "+(source1.getComp()?"1":"0")
+    //         + ", "+(source1.getSwap(0)?"1":"0")
+    //         + ", "+std::to_string(source1.getNodeHandle())
+    //         + ">"+"l"+std::to_string(source1.getNodeLevel())
+    //         + ")");
+    Trace t("(" 
+            + std::to_string(lvl)
+            + ", v"+std::to_string(ev)
+            + ", <"+rule2String(source1.getRule())
+            + ", "+(source1.getComp()?"1":"0")
+            + ", "+(source1.getSwap(0)?"1":"0")
+            + ", "+std::to_string(source1.getNodeHandle())
+            + ">"+"l"+std::to_string(source1.getNodeLevel())
+            + ")");
 #endif
     Edge ans = source1;
 
@@ -2683,11 +3049,17 @@ Edge SaturationOperation::computeSaturationDistance(const Level lvl, const Edge&
         source1Cache.setValue(0);
     }
     if (caches[0].check(lvl, source1Cache, ans)) {
+#ifdef BRAVE_DD_SATURATION_TRACE
+        for (int i=0; i<t.depth; i++) {
+            std::cout << "|   ";
+        }
+        std::cout << "Found in cache" << '\n';
+#endif
         if (!ans.isConstantPosInf() && !ans.isConstantNegInf()) ans.setValue(originalVal + ans.getValue());
         return ans;
     }
     std::vector<Edge> child(2);
-    /* locate the begin even index for recursive calls */
+    /* locate the begin event index for recursive calls */
     int childBegin = indexOfTopLessThan(m);
     child[0] = source1Forest->cofact(m, source1Cache, 0);
     child[1] = source1Forest->cofact(m, source1Cache, 1);
@@ -2729,54 +3101,162 @@ Edge SaturationOperation::computeSaturationDistance(const Level lvl, const Edge&
         // child edges firing enough
         bool must0 = !(child[0].isConstantZero() || (child[0].isConstantOmega() && (child[0].getValue() == Value(0))) || child[0].isConstantPosInf());
         bool must1 = !(child[1].isConstantZero() || (child[1].isConstantOmega() && (child[1].getValue() == Value(0))) || child[1].isConstantPosInf());
+        // deduplicate fires
+        std::vector<Edge> fires0, fires1, fires2, fires3;
+        for (size_t e=0; e<fires.size(); e++) {
+            fires0.push_back(source2Forest->cofact(m, fires[e].getEdge(), 0));
+            fires1.push_back(source2Forest->cofact(m, fires[e].getEdge(), 1));
+            fires2.push_back(source2Forest->cofact(m, fires[e].getEdge(), 2));
+            fires3.push_back(source2Forest->cofact(m, fires[e].getEdge(), 3));
+        }
+        fires0 = deduplicate(fires0);
+        fires1 = deduplicate(fires1);
+        fires2 = deduplicate(fires2);
+        fires3 = deduplicate(fires3);
         while (must0 || must1) {
             Edge oldChild, rel, res;
             bool isChanged = 1;
             if (must0) {
                 isChanged = 1;
                 // Step 1: keep firing 0 edge
+#ifdef BRAVE_DD_SATURATION_TRACE
+                for (int i=0; i<t.depth; i++) {
+                    std::cout << "|   ";
+                }
+                std::cout << "Step 1" << '\n';
+#endif
                 while (isChanged) {
                     oldChild = child[0];
-                    for (size_t e=0; e<fires.size(); e++) {
-                        rel = source2Forest->cofact(m, fires[e].getEdge(), 0);  // alph[0][0]
-                        res = computeImageSatDistance(m-1, child[0], rel, nextBegin);
+                    // for (size_t e=0; e<fires.size(); e++) {
+                    //     rel = source2Forest->cofact(m, fires[e].getEdge(), 0);  // alph[0][0]
+                    //     res = computeImageSatDistance(m-1, child[0], rel, nextBegin);
+                    //     res = pls->computeElmtWise(m-1, res, constantOne);  // +1
+                    //     child[0] = un->computeElmtWise(m-1, child[0], res);
+                    // }
+                    for (size_t e=0; e<fires0.size(); e++) {
+                        // alph[0][0]
+                        res = computeImageSatDistance(m-1, child[0], fires0[e], nextBegin);
                         res = pls->computeElmtWise(m-1, res, constantOne);  // +1
+#ifdef BRAVE_DD_TIME_REPORT
+                        timer watchMin;
+                        watchMin.reset();
+                        watchMin.note_time();
+#endif
                         child[0] = un->computeElmtWise(m-1, child[0], res);
+#ifdef BRAVE_DD_TIME_REPORT
+                        watchMin.note_time();
+                        times.push_back(watchMin.get_last_seconds());
+#endif
+#if defined(BRAVE_DD_TIME_REPORT) && defined (BRAVE_DD_SATURATION_TRACE)
+                        std::cout << "Minimum op time: " << watchMin.get_last_seconds() << "\n";
+#endif
                     }
                     if (oldChild == child[0]) isChanged = 0;
                 }
                 must0 = 0;
                 // Step 2: firing 1 edge once more
+#ifdef BRAVE_DD_SATURATION_TRACE
+                for (int i=0; i<t.depth; i++) {
+                    std::cout << "|   ";
+                }
+                std::cout << "Step 2" << '\n';
+#endif
                 oldChild = child[1];
-                for (size_t e=0; e<fires.size(); e++) {
-                    rel = source2Forest->cofact(m, fires[e].getEdge(), 1);      // alph[0][1]
-                    res = computeImageSatDistance(m-1, child[0], rel, nextBegin);
+                // for (size_t e=0; e<fires.size(); e++) {
+                //     rel = source2Forest->cofact(m, fires[e].getEdge(), 1);      // alph[0][1]
+                //     res = computeImageSatDistance(m-1, child[0], rel, nextBegin);
+                //     res = pls->computeElmtWise(m-1, res, constantOne);  // +1
+                //     child[1] = un->computeElmtWise(m-1, child[1], res);
+                // }
+                for (size_t e=0; e<fires1.size(); e++) {
+                    // alph[0][1]
+                    res = computeImageSatDistance(m-1, child[0], fires1[e], nextBegin);
                     res = pls->computeElmtWise(m-1, res, constantOne);  // +1
+#ifdef BRAVE_DD_TIME_REPORT
+                    timer watchMin;
+                    watchMin.reset();
+                    watchMin.note_time();
+#endif
                     child[1] = un->computeElmtWise(m-1, child[1], res);
+#ifdef BRAVE_DD_TIME_REPORT
+                    watchMin.note_time();
+                    times.push_back(watchMin.get_last_seconds());
+#endif
+#if defined(BRAVE_DD_TIME_REPORT) && defined (BRAVE_DD_SATURATION_TRACE)
+                    std::cout << "Minimum op time: " << watchMin.get_last_seconds() << "\n";
+#endif
                 }
                 if (oldChild != child[1]) must1 = 1;
             }
             if (must1) {
                 isChanged = 1;
                 // Step 3: keep firing 1 edge
+#ifdef BRAVE_DD_SATURATION_TRACE
+                for (int i=0; i<t.depth; i++) {
+                    std::cout << "|   ";
+                }
+                std::cout << "Step 3" << '\n';
+#endif
                 while (isChanged) {
                     oldChild = child[1];
-                    for (size_t e=0; e<fires.size(); e++) {
-                        rel = source2Forest->cofact(m, fires[e].getEdge(), 3);  // alph[1][1]
-                        res = computeImageSatDistance(m-1, child[1], rel, nextBegin);
+                    // for (size_t e=0; e<fires.size(); e++) {
+                    //     rel = source2Forest->cofact(m, fires[e].getEdge(), 3);  // alph[1][1]
+                    //     res = computeImageSatDistance(m-1, child[1], rel, nextBegin);
+                    //     res = pls->computeElmtWise(m-1, res, constantOne);  // +1
+                    //     child[1] = un->computeElmtWise(m-1, child[1], res);
+                    // }
+                    for (size_t e=0; e<fires3.size(); e++) {
+                        // alph[1][1]
+                        res = computeImageSatDistance(m-1, child[1], fires3[e], nextBegin);
                         res = pls->computeElmtWise(m-1, res, constantOne);  // +1
+#ifdef BRAVE_DD_TIME_REPORT
+                        timer watchMin;
+                        watchMin.reset();
+                        watchMin.note_time();
+#endif
                         child[1] = un->computeElmtWise(m-1, child[1], res);
+#ifdef BRAVE_DD_TIME_REPORT
+                        watchMin.note_time();
+                        times.push_back(watchMin.get_last_seconds());
+#endif
+#if defined(BRAVE_DD_TIME_REPORT) && defined (BRAVE_DD_SATURATION_TRACE)
+                        std::cout << "Minimum op time: " << watchMin.get_last_seconds() << "\n";
+#endif
                     }
                     if (oldChild == child[1]) isChanged = 0;
                 }
                 must1 = 0;
                 // Step 4: firing 0 edge once more
+#ifdef BRAVE_DD_SATURATION_TRACE
+                for (int i=0; i<t.depth; i++) {
+                    std::cout << "|   ";
+                }
+                std::cout << "Step 4" << '\n';
+#endif
                 oldChild = child[0];
-                for (size_t e=0; e<fires.size(); e++) {
-                    rel = source2Forest->cofact(m, fires[e].getEdge(), 2);      // alph[1][0]
-                    res = computeImageSatDistance(m-1, child[1], rel, nextBegin);
+                // for (size_t e=0; e<fires.size(); e++) {
+                //     rel = source2Forest->cofact(m, fires[e].getEdge(), 2);      // alph[1][0]
+                //     res = computeImageSatDistance(m-1, child[1], rel, nextBegin);
+                //     res = pls->computeElmtWise(m-1, res, constantOne);  // +1
+                //     child[0] = un->computeElmtWise(m-1, child[0], res);
+                // }
+                for (size_t e=0; e<fires2.size(); e++) {
+                    // alph[1][0]
+                    res = computeImageSatDistance(m-1, child[1], fires2[e], nextBegin);
                     res = pls->computeElmtWise(m-1, res, constantOne);  // +1
+#ifdef BRAVE_DD_TIME_REPORT
+                    timer watchMin;
+                    watchMin.reset();
+                    watchMin.note_time();
+#endif
                     child[0] = un->computeElmtWise(m-1, child[0], res);
+#ifdef BRAVE_DD_TIME_REPORT
+                    watchMin.note_time();
+                    times.push_back(watchMin.get_last_seconds());
+#endif
+#if defined(BRAVE_DD_TIME_REPORT) && defined (BRAVE_DD_SATURATION_TRACE)
+                    std::cout << "Minimum op time: " << watchMin.get_last_seconds() << "\n";
+#endif
                 }
                 if (oldChild != child[0]) must0 = 1;
             }
@@ -2832,6 +3312,25 @@ Edge SaturationOperation::computeImageSat(const Level lvl, const Edge& source1, 
     std::cout << "; r: ";
     trans.print(std::cout);
     std::cout << std::endl;
+#endif
+#ifdef BRAVE_DD_SATURATION_TRACE
+    int ev = 0;
+    source1.getValue().getValueTo(&ev, INT);
+    Trace t("ImageSat(" 
+            + std::to_string(lvl)
+            + ", v"+std::to_string(ev)
+            + ", <"+rule2String(source1.getRule())
+            + ", "+(source1.getComp()?"1":"0")
+            + ", "+(source1.getSwap(0)?"1":"0")
+            + ", "+std::to_string(source1.getNodeHandle())
+            + ">"+"l"+std::to_string(source1.getNodeLevel())
+            + ", <"+rule2String(trans.getRule())
+            + ", "+(trans.getComp()?"1":"0")
+            + ", "+(trans.getSwap(0)?"1":"0")
+            + ", "+std::to_string(trans.getNodeHandle())
+            + ">"+"l"+std::to_string(trans.getNodeLevel())
+            + ", "+std::to_string(begin)
+            + ")");
 #endif
 
     Edge ans;
@@ -2918,6 +3417,12 @@ Edge SaturationOperation::computeImageSat(const Level lvl, const Edge& source1, 
     // // protect edge
     // ProtectEdge protectS(source1Forest, s);
     if (!caches[1].check(lvl, s, r, ans)) {
+#ifdef BRAVE_DD_SATURATION_TRACE
+        for (int i=0; i<t.depth; i++) {
+            std::cout << "|   ";
+        }
+        std::cout << "Not in cache" << '\n';
+#endif
         // ------------------------------------------------
         // // protect edges
         // std::vector<Edge> protectChild;
@@ -3026,6 +3531,25 @@ Edge SaturationOperation::computeImageSatDistance(const Level lvl, const Edge& s
     trans.print(std::cout);
     std::cout << std::endl;
 #endif
+#ifdef BRAVE_DD_SATURATION_TRACE
+    int ev = 0;
+    source1.getValue().getValueTo(&ev, INT);
+    Trace t("ImageSat(" 
+            + std::to_string(lvl)
+            + ", v"+std::to_string(ev)
+            + ", <"+rule2String(source1.getRule())
+            + ", "+(source1.getComp()?"1":"0")
+            + ", "+(source1.getSwap(0)?"1":"0")
+            + ", "+std::to_string(source1.getNodeHandle())
+            + ">"+"l"+std::to_string(source1.getNodeLevel())
+            + ", <"+rule2String(trans.getRule())
+            + ", "+(trans.getComp()?"1":"0")
+            + ", "+(trans.getSwap(0)?"1":"0")
+            + ", "+std::to_string(trans.getNodeHandle())
+            + ">"+"l"+std::to_string(trans.getNodeLevel())
+            + ", "+std::to_string(begin)
+            + ")");
+#endif
 
     Edge ans;
     Edge s, r;
@@ -3100,6 +3624,12 @@ Edge SaturationOperation::computeImageSatDistance(const Level lvl, const Edge& s
         s.setValue(0);
     }
     if (!caches[1].check(lvl, s, r, ans)) {
+#ifdef BRAVE_DD_SATURATION_TRACE
+        for (int i=0; i<t.depth; i++) {
+            std::cout << "|   ";
+        }
+        std::cout << "Not in cache" << '\n';
+#endif
         // not cached, computing needed
         std::vector<Edge> child(2);
         EdgeHandle constant = makeTerminal(VOID, SpecialValue::POS_INF);
