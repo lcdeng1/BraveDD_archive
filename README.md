@@ -6,10 +6,6 @@
 🔗 Available in [GitHub](https://github.com/lcdeng1/BraveDD_archive)
 
 ## 💡 Overview
-This artifact accompanies the paper:
-> **"BraveDD: Binary Reduction and Value on Edge Decision Diagram Library"**
-> Submitted to: *TACAS 2026* (Tool-Demonstration Track)
-
 BraveDD is a C++ library of various forms of Binary Decision Diagrams to encode functions over binary variables with various ranges,
 various (including dynamic) reduction rules, possibly with edge values, swap flags, and complement flags.
 This supports the following types of BDDs:
