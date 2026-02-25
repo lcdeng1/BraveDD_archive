@@ -10,7 +10,7 @@ using namespace BRAVE_DD;
 
 
 
-int qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, std::string name);
+//qRBDDToBoolForDFA(BRAVE_DD::Func qrbdd, int numStates, int numAssignments, std::string name);
 
 
 /*int Variable::maxIndex;
@@ -18,75 +18,108 @@ std::vector<Variable *> Variable::registry;*/
 
 int main()
 {
+    //need file name
+    std::string fileName = "Func4.bddx";
 
-    // create bdd x_1
-    // needs to also have
-    ForestSetting settingx_1("QBDD", 1);
+    //need number of levels
 
-    Forest *forestx_1 = new Forest(settingx_1);
+    
 
-    Func rootx_1(forestx_1);
-
-    rootx_1.variable(1);
-
-    Func resultx_1 = !rootx_1;
-
-    DotMaker dot1(forestx_1);
-    dot1.buildGraph(resultx_1, "func1");
-    dot1.runDot("func1", "pdf");
-
-    // create bdd x_1
-    // needs to also have
-    ForestSetting settingx_2("QBDD", 4);
-
-    Forest *forestx_2 = new Forest(settingx_2);
-
-    Func root1(forestx_2);
-    Func root2(forestx_2);
-    Func root3(forestx_2);
-    Func root4(forestx_2);
-
-    root1.variable(1);
-    root2.variable(2);
-    root3.variable(3);
-    root4.variable(4);
-
-    Func result(forestx_2);
-    result = (root4 & root2) | (root3 & root1);
-
-    DotMaker dot2(forestx_2);
-    dot2.buildGraph(result, "func2");
-    dot2.runDot("func2", "pdf");
-
-
-    Func toTest = result;
-    std::string funcName = "func2";
-    Forest *forestToTest = forestx_2;
-
-
-    //params: BRAVEDD Func, num states,  num assignments, FuncName, max level, numVertices
-    //qRBDDToBoolForDFA(toTest, 2, 2, funcName, 1, 3);
-    qRBDDToBoolForDFA(toTest, 4, 2, funcName, 4, 12);
-
-
-    BddxMaker bm(forestx_2);
-    bm.buildBddx(toTest, "test_QRBDD");
-
-
-    ParserBddx parser("DFAFormat" + funcName + "(OUTPUT).bddx");
-    // parsing the input file
-    parser.parse(forestToTest);
+    ParserBddx parser(fileName);
+    ForestSetting settingx("QBDD", 4); 
+    Forest *forestx = new Forest(settingx);
+    Func result(forestx);
+    parser.parse(forestx);
     Func root = parser.getRoot();
+    std::string funcName = "func4";
 
-    if (toTest == root){
+    DotMaker dot4(forestx);
+    dot4.buildGraph(root, funcName);
+    dot4.runDot(funcName, "pdf");
+
+    //need width of the bdd
+    uint32_t width = root.width();
+
+    //params: BRAVE_DD::Func qrbdd, int numStates, int numAssignments, int numVerticies, func name)
+    qRBDDToBoolForDFA convert(root, 5, 2, forestx->getNodeManUsed(root) + 2, funcName);
+
+    
+    //qRBDDToBoolForDFA(toTest, 2, 2, funcName, 1, 3);
+    
+    
+
+    
+
+    convert.printToFile(convert.qRBDDToDFASAT(), "satFunctionForQRBDDtoDFA" + funcName, "txt");
+
+    //convert.printToFile(convert.SATtoReadableLatex(funcName), "satFunctionForQRBDDtoDFALatex" + funcName , "txt");
+
+    convert.runKissat(funcName);
+
+    /*while (!convert.isSatisfiable(funcName)){
+
+    }*/
+
+    convert.printToFile(convert.satToDFAOutput(funcName), "DFAFormat"+ funcName, "txt");
+
+    convert.runDFAToBDDx(funcName);
+
+
+
+    BddxMaker bm(forestx);
+    bm.buildBddx(result, "Func4.bddx");
+
+    ParserBddx parser2("DFAFormat" + funcName + "(OUTPUT).bddx");
+    //ParserBddx parser2("DFAFormatfunc3(OUTPUT).bddx"); //(!root4 & root2) | (root3 & root1);
+
+
+
+    // parsing the input file
+    parser2.parse(forestx); 
+    Func rootB = parser2.getRoot();
+
+    DotMaker dot4_2(forestx);
+    dot4_2.buildGraph(result, "func4");
+    dot4_2.runDot("func4", "pdf");
+
+    if (root == rootB){
         printf("YAY!\n");
     }
     else {
         printf("BOO!\n");
     }
 
-    delete forestx_1;
-    delete forestx_2;
+
+
+
+    /*BddxMaker bm(forestx_4);
+    bm.buildBddx(toTest, "test_QRBDD");*/
+
+    /*BddxMaker bm(forestx);
+    bm.buildBddx(result, "Func4.bddx");
+
+    ParserBddx parser2("DFAFormat" + funcName + "(OUTPUT).bddx");
+    //ParserBddx parser2("Func4.bddx"); //(!root4 & root2) | (root3 & root1);
+
+
+
+    // parsing the input file
+    parser2.parse(forestx); 
+    Func rootB = parser2.getRoot();
+
+    DotMaker dot4_2(forestx);
+    dot4_2.buildGraph(root, "func4");
+    dot4_2.runDot("func4", "pdf");
+
+    if (root == rootB){
+        printf("YAY!\n");
+    }
+    else {
+        printf("BOO!\n");
+    }
+
+    //delete forestx_1;
+    //delete forestx_4;*/
 
     printInfo();
     return 0;
