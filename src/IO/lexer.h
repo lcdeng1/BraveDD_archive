@@ -73,6 +73,7 @@ class BRAVE_DD::BddxLexer {
         tokenType = TokenType::END;
         buffer = std::string(MAX_LEX, '\0');
         lexeme = std::string(MAX_STR, '\0');
+        bufferIndex = 0;
         nextToken();
     }
     // ~BddxLexer() {}

@@ -65,7 +65,7 @@ NodeHandle NodeManager::SubManager::getFreeNodeHandle(const Node& node)
 Node& NodeManager::SubManager::getNodeFromHandle(const NodeHandle h)
 {
     if (h>=firstUnalloc) {
-        std::cout << "[BRAVE_DD] ERROR!\t getNodeFromHandle(): Invalid handle in node submanager; " 
+        std::cout << "[BRAVE_DD] ERROR!\t getNodeFromHandle(): Invalid handle: " << h << " in node submanager; " 
         << firstUnalloc-1 << " slots are allocated" << std::endl;
         exit(0);
     }
@@ -158,6 +158,7 @@ NodeManager::NodeManager(Forest *f):parent(f)
         chunks.emplace_back(f);  // Directly constructs SubManager
     }
     peak = 0;
+    numNodes = 0;
 }
 NodeManager::~NodeManager()
 {
