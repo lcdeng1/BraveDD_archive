@@ -39,7 +39,7 @@ int main (int argc, const char** argv) {
     x3.variable(3);
     x4.variable(4);
     /* Build the target logic expression */
-    Func target = ((x4) & (x1)) | (x3 & x2);
+    Func target = ((!x4) & (!x1)) | (x3 & x2);
 
     if (isVisual) {
         /* Build BDD in DOT language for visualization */

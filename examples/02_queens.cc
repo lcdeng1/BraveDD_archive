@@ -52,7 +52,7 @@ bool isHelp = 0;
 // The size of board
 int N = 6;
 // BDD type
-std::string bdd_type = "RexBDD";
+std::string bddType = "RexBDD";
 // BDD forest
 Forest* forest;
 
@@ -119,7 +119,7 @@ bool processArgs(int argc, const char** argv)
             }
             // options other than size
             if (strcmp("-type", argv[i])==0) {
-                bdd_type = argv[i+1];
+                bddType = argv[i+1];
                 i++;
                 continue;
             }
@@ -222,7 +222,7 @@ int main(int argc, const char** argv)
     }
 
     /* Initialize BraveDD forest */
-    ForestSetting setting(bdd_type, N*N);   // Set the BDD type and the number of variables
+    ForestSetting setting(bddType, N*N);   // Set the BDD type and the number of variables
     forest = new Forest(setting);
     // setting.output(std::cerr);
 
