@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 
 # Project name and version
-project(BraveDD VERSION 0.1.1)
+project(BraveDD VERSION 0.1.2)
 
 # Define metadata variables
 set(PROJECT_URL "https://github.com/asminer/brave_dd")
@@ -35,4 +35,3 @@ enable_testing()
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(examples)
-add_subdirectory(examples/BDDToDFA)
