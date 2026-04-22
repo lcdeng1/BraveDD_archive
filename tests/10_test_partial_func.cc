@@ -92,9 +92,9 @@ bool buildEvSetForest(uint16_t num, PredefForest bdd, unsigned long maxRange=0)
                     }
                     std::cout << std::endl;
     
-                    DotMaker dot(forest, "error_function");
-                    dot.buildGraph(function);
-                    dot.runDot("pdf");
+                    DotMaker dot(forest);
+                    dot.buildGraph(function, "error_function");
+                    dot.runDot("error_function", "pdf");
                     return 0;
                 }
             } else {
@@ -131,9 +131,9 @@ bool buildEvSetForest(uint16_t num, PredefForest bdd, unsigned long maxRange=0)
                     }
                     std::cout << std::endl;
     
-                    DotMaker dot(forest, "error_function");
-                    dot.buildGraph(function);
-                    dot.runDot("pdf");
+                    DotMaker dot(forest);
+                    dot.buildGraph(function, "error_function");
+                    dot.runDot("error_function", "pdf");
                     return 0;
                 }
             }

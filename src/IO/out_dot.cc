@@ -10,23 +10,40 @@ using namespace BRAVE_DD;
 // *                                                                *
 // ******************************************************************
 
-DotMaker::DotMaker(const Forest* f, const std::string bn)
+void DotMaker::buildGraph(const Func& func, std::string fn)
 {
-    basename = bn;
-    std::string fName = basename + ".gv";
-    outfile.open(fName);
-    if (!outfile) {
-        std::cout << "[BRAVE_DD] Error!\t Could not open or create the file: "<< fName << std::endl;
-        exit(1);
+    if (fn=="") {
+        buildGraph(func, std::cout);
+    } else {
+        std::string fileName = fn+".gv";
+        std::ofstream out;
+        out.open(fileName);
+        if (!out) {
+            std::cout << "[BRAVE_DD] Error!\t DotMaker::buildGraph(): Could not open or create the file: "<< fileName << std::endl;
+            exit(1);
+        }
+        buildGraph(func, out);
+        out.close();
     }
-    parent = f;
 }
-DotMaker::~DotMaker()
+void DotMaker::buildGraph(const std::vector<Func>& funcs, std::string fn)
 {
-    //
+    if (fn=="") {
+        buildGraph(funcs, std::cout);
+    } else {
+        std::string fileName = fn+".gv";
+        std::ofstream out;
+        out.open(fileName);
+        if (!out) {
+            std::cout << "[BRAVE_DD] Error!\t DotMaker::buildGraph(): Could not open or create the file: "<< fileName << std::endl;
+            exit(1);
+        }
+        buildGraph(funcs, out);
+        out.close();
+    }
 }
 
-void DotMaker::buildGraph(const Func& func)
+void DotMaker::buildGraph(const Func& func, std::ostream& outfile)
 {
 #ifdef BRAVE_DD_DOT_TRACE
     std::cout << "buildGraph: setting" << std::endl;
@@ -72,14 +89,13 @@ void DotMaker::buildGraph(const Func& func)
     outfile << "\tv" << numVars+1 << " [label=\"" << label << "\"]\n";
     outfile << "\tv" << numVars+1 << " -> v" << numVars << " [style=invis]\n";
     /* build the function */
-    buildEdge(numVars+1, func.getEdge());
+    buildEdge(outfile, numVars+1, func.getEdge());
     parent->unmark();
     /* end */
     outfile << "}";
-    outfile.close();    // close out file
 }
 
-void DotMaker::buildGraph(const std::vector<Func>& func)
+void DotMaker::buildGraph(const std::vector<Func>& func, std::ostream& outfile)
 {
 #ifdef BRAVE_DD_DOT_TRACE
     std::cout << "buildGraph: setting" << std::endl;
@@ -121,15 +137,14 @@ void DotMaker::buildGraph(const std::vector<Func>& func)
     outfile << "\tv" << numVars+1 << " -> v" << numVars << " [style=invis]\n";
     /* build the function */
     for (size_t i=0; i<func.size(); i++) {
-        buildEdge(numVars+1, func[i].getEdge(), (NodeHandle)i);
+        buildEdge(outfile, numVars+1, func[i].getEdge(), (NodeHandle)i);
     }
     parent->unmark();
     /* end */
     outfile << "}";
-    outfile.close();    // close out file
 }
 
-void DotMaker::buildEdge(const Level lvl, const Edge& edge, const NodeHandle rootHandle, const char st)
+void DotMaker::buildEdge(std::ostream& outfile, const Level lvl, const Edge& edge, const NodeHandle rootHandle, const char st)
 {
 #ifdef BRAVE_DD_DOT_TRACE
     std::cout << "buildEdge: lvl = " << lvl << std::endl;
@@ -147,6 +162,15 @@ void DotMaker::buildEdge(const Level lvl, const Edge& edge, const NodeHandle roo
     char numChild = (parent->getSetting().isRelation()) ? 4 : 2;
     /* edge lable */
     std::string label = "";
+    if (st == 0) {
+        label += (parent->getSetting().isRelation()) ? "00: " : "0: ";
+    } else if (st == 1) {
+        label += (parent->getSetting().isRelation()) ? "01: " : "1: ";
+    } else if (st == 2) {
+        label += "10: ";
+    } else if (st == 3) {
+        label += "11: ";
+    }
     if (em == EDGE_PLUS || em == EDGE_PLUSMOD) {
         if (vt == INT) {
             int ev;
@@ -204,9 +228,11 @@ void DotMaker::buildEdge(const Level lvl, const Edge& edge, const NodeHandle roo
         root += std::to_string(rootHandle);
     }
     if (edge.getNodeLevel() == 0) {
-        EdgeHandle handle = edge.getEdgeHandle();
-        outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
-        outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
+        if (!isHideTerminalZero || !edge.isConstantZero()) {
+            EdgeHandle handle = edge.getEdgeHandle();
+            outfile << "\t"<<root<<" -> \"T"<<unpackTermiValue(handle)<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
+            outfile << "\t{rank=same v0 \"T"<<unpackTermiValue(handle)<<"\" [label = \""<<unpackTermiValue(handle)<<"\", shape = square]}\n";
+        }
     } else {
         outfile << "\t"<<root<<" -> \"N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()<<"\" [style = "<<style<<" label = \""<<label<<"\"]\n";
         outfile << "\t{rank=same v"<<edge.getNodeLevel()<<" N"<<edge.getNodeLevel()<<"_"<<edge.getNodeHandle()
@@ -214,7 +240,8 @@ void DotMaker::buildEdge(const Level lvl, const Edge& edge, const NodeHandle roo
         // build child edges of target node if it's unmarked
         if (!parent->getNode(edge.getNodeLevel(), edge.getNodeHandle()).isMarked()) {
             for (char i=0; i<numChild; i++) {
-                buildEdge(edge.getNodeLevel(),
+                buildEdge(outfile,
+                            edge.getNodeLevel(),
                             parent->getChildEdge(edge.getNodeLevel(), edge.getNodeHandle(), i),
                             edge.getNodeHandle(),
                             i);
@@ -225,17 +252,17 @@ void DotMaker::buildEdge(const Level lvl, const Edge& edge, const NodeHandle roo
     }
 }
 
-void DotMaker::runDot(const std::string ext)
+void DotMaker::runDot(const std::string baseName, const std::string ext)
 {
     if (ext == "" || ext == "dot") return;
     /* build the command string */
     std::string cmd = "dot -T";
     cmd += ext;
     cmd += " ";
-    cmd += basename;
+    cmd += baseName;
     cmd += ".gv";
     cmd += " > ";
-    cmd += basename;
+    cmd += baseName;
     cmd += ".";
     cmd += ext;
     std::cout << "run dot: " << cmd << std::endl;
@@ -246,7 +273,7 @@ void DotMaker::runDot(const std::string ext)
     int result = system(("sh -c \"" + cmd + "\"").c_str());
 #endif
     if (result) {
-        std::cout << "[BRAVE_DD] Error!\t Failed to run dot and build file: "<< basename << "." << ext << std::endl;
+        std::cout << "[BRAVE_DD] Error!\t Failed to run dot and build file: "<< baseName << "." << ext << std::endl;
         throw error(MISCELLANEOUS, __FILE__, __LINE__);
     }
     // std::string testcmd = "dot --version";

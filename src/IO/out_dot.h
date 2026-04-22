@@ -19,21 +19,26 @@ class BRAVE_DD::DotMaker {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-    DotMaker(const Forest* f, const std::string bn);
-    ~DotMaker();
+    DotMaker(const Forest* f) {
+        parent = f;
+        isHideTerminalZero = 0;
+    }
+    ~DotMaker() {}
 
-    void buildGraph(const Func& func);
-    void buildGraph(const std::vector<Func>& func);
-    void runDot(const std::string ext);
+    inline void hideTerminalZero() { isHideTerminalZero = 1; }
+    inline void showTerminalZero() { isHideTerminalZero = 0; }
+    void buildGraph(const Func& func, std::string fn="");
+    void buildGraph(const std::vector<Func>& funcs, std::string fn="");
+    void runDot(const std::string baseName, const std::string ext);
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-    void buildEdge(const Level lvl, const Edge& edge, const NodeHandle rootHandle=0, const char st = 0);
+    void buildEdge(std::ostream& outfile, const Level lvl, const Edge& edge, const NodeHandle rootHandle=0, const char st = 0);
+    void buildGraph(const Func& func, std::ostream& outfile);
+    void buildGraph(const std::vector<Func>& funcs, std::ostream& outfile);
     /// ============================================================
-        const Forest* parent;
-        std::string basename;
-        std::ofstream outfile;
-
+    const Forest* parent;
+    bool isHideTerminalZero;
 };
 
 #endif

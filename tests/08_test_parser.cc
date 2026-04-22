@@ -43,8 +43,7 @@ int main(int argc, const char** argv) {
     }
 
     // 2) Open and parse the file (or stdin if none provided)
-    FileReader FR(infile);
-    ParserPla parserPla(&FR);
+    ParserPla parserPla(infile);
 
     // 3) Run the parser’s debug logic
     parserPla.readHeader();

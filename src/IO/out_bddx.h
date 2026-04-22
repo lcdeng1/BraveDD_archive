@@ -19,17 +19,21 @@ class BRAVE_DD::BddxMaker {
     /*-------------------------------------------------------------*/
     public:
     /*-------------------------------------------------------------*/
-    BddxMaker(const Forest* f, const std::string bn);
-    ~BddxMaker();
+    BddxMaker(const Forest* f) {
+        parent = f;
+    }
+    ~BddxMaker() {}
 
-    void buildBddx(const Func& func);
-    void buildBddx(const std::vector<Func>& func);
+    void buildBddx(const Func& func, const std::string fn="");
+    void buildBddx(const std::vector<Func>& func, const std::string fn="");
     /*-------------------------------------------------------------*/
     private:
     /*-------------------------------------------------------------*/
-        const Forest* parent;
-        std::string basename;
-        std::ofstream outfile;
+    void makeHeader(std::ostream& outfile);
+    void buildBddx(const Func& func, std::ostream& outfile);
+    void buildBddx(const std::vector<Func>& func, std::ostream& outfile);
+
+    const Forest* parent;
 };
 
 #endif

@@ -150,13 +150,13 @@ bool buildSetForest(uint16_t num, PredefForest bdd)
         // evaluate function
         // just setting arbitrary number
         if (i == 37784) {
-            DotMaker dot(forest, forest->getSetting().getName());
-            dot.buildGraph(function);
-            dot.runDot("pdf");
+            DotMaker dot(forest);
+            dot.buildGraph(function, forest->getSetting().getName());
+            dot.runDot(forest->getSetting().getName(), "pdf");
             std::vector<Func> funcs;
             funcs.push_back(function);
-            BddxMaker bddx(forest, forest->getSetting().getName());
-            bddx.buildBddx(funcs);
+            BddxMaker bddx(forest);
+            bddx.buildBddx(funcs, forest->getSetting().getName());
             return 0;
         }
     }
@@ -206,13 +206,13 @@ bool buildRelForest(uint16_t num, PredefForest bmxd)
         };
         eval.getValueTo(&valInt, INT);
         if (i == 11) {
-            DotMaker dot(forest, forest->getSetting().getName());
-            dot.buildGraph(function);
-            dot.runDot("pdf");
+            DotMaker dot(forest);
+            dot.buildGraph(function, forest->getSetting().getName());
+            dot.runDot(forest->getSetting().getName(), "pdf");
             std::vector<Func> funcs;
             funcs.push_back(function);
-            BddxMaker bddx(forest, forest->getSetting().getName());
-            bddx.buildBddx(funcs);
+            BddxMaker bddx(forest);
+            bddx.buildBddx(funcs, forest->getSetting().getName());
             return 0;
         }
 

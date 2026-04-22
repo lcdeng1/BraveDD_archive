@@ -248,6 +248,43 @@ void Func::variable(Level lvl, bool isPrime, Value low, Value high)
     // TBD
 }
 
+/*************************** Statistics *************************/
+uint64_t Func::numNodes()
+{
+    if (!parent) return 0;  // warning message?
+    return parent->getNodeManUsed(*this);
+}
+uint32_t Func::width()
+{
+    if (!parent) return 0;  // warning message?
+    parent->unmark();
+    parent->markNodes(edge);
+    uint32_t num = 0;
+    for (Level i=1; i<=edge.getNodeLevel(); i++) {
+        uint32_t numPerLvl = parent->nodeMan->numMarked(i);
+        if (numPerLvl > num) num = numPerLvl;
+    }
+    parent->unmark();
+    return num;
+}
+Level Func::depth()
+{
+    if (!parent) return 0;  // warning message?
+    parent->unmark();
+    parent->markNodes(edge);
+    uint32_t num = 0;
+    Level dep = 1;
+    for (Level i=1; i<=edge.getNodeLevel(); i++) {
+        uint32_t numPerLvl = parent->nodeMan->numMarked(i);
+        if (numPerLvl >= num) {
+            num = numPerLvl;
+            dep = i;
+        }
+    }
+    parent->unmark();
+    return dep;
+}
+
 // TODO: add more test and error cases around them 
 Edge Func::convert(Forest* evmodForest, Edge evEdge) {
     EdgeLabel label = 0;

@@ -60,6 +60,15 @@ class BRAVE_DD::Func {
     void variable(Level lvl, bool isPrime);
     void variable(Level lvl, bool isPrime, Value low, Value high);
 
+    /*************************** Statistics *************************/
+    /* Count the number of nodes used */
+    uint64_t numNodes();
+    /* Count the width, the maximum number of nodes per level */
+    uint32_t width();
+    /* Get the level that has the max number of nodes */
+    Level depth();
+
+
     // Convert EV+ to EVMOD
     Edge convert(Forest* evmodForest, Edge evEdge);
 

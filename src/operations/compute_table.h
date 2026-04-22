@@ -82,6 +82,9 @@ class BRAVE_DD::CacheEntry {
             hs.push(key[i].getSwap(1));
             hs.push(key[i].getNodeLevel());
             hs.push(key[i].getNodeHandle());
+            int ev = 0;
+            key[i].getValue().getValueTo(&ev, INT);
+            hs.push(ev);
         }
         // for edge valued, TBD
         return (uint64_t)hs.finish64();
